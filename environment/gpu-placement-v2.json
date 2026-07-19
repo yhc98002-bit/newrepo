@@ -1,0 +1,33 @@
+{
+  "command": "ssh an12 'cd /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo && set -o pipefail; env CUDA_VISIBLE_DEVICES=4 /HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python scripts/validate_gpu_placement.py --physical-gpu-id 4 | tee /HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/gpu4-placement-script-final-20260719T133300Z.log'",
+  "config_path": "configs/foundation_v2.json",
+  "config_sha256": "d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f",
+  "created_at": "2026-07-19T21:33:00+08:00",
+  "gpu_validation": {
+    "capability": [8, 0],
+    "cuda_visible_devices": "4",
+    "device": "NVIDIA A800 80GB PCIe",
+    "driver": "535.104.12",
+    "flash_attention_kernel_finite": true,
+    "gpu_ids": [4],
+    "memory_free_mib_at_validation": 81223,
+    "memory_used_mib_at_validation": 5,
+    "node": "an12",
+    "replica_count": 1,
+    "tensor_parallel_width": 1,
+    "utilization_percent_at_validation": 0,
+    "visible_device_count": 1,
+    "visible_index": 0
+  },
+  "justification": "The 1.4B model requires one A800. The researcher's normal neighboring RL job occupied physical GPUs 0-3, while physical GPU 4 was idle; using the disjoint idle GPU preserves one-node TP1 replica-one placement without interfering with that job.",
+  "log_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/gpu4-placement-script-final-20260719T133300Z.log",
+  "log_sha256": "a17adf276567f3af56b106414711b699101cf34b87570eef94501c3c3bc7f578",
+  "schema_version": 2,
+  "script_path": "scripts/validate_gpu_placement.py",
+  "script_sha256": "c122576bb215f5ceb54855b2f2fadde063688a9a5377555c4cf2b404477aab24",
+  "supersedes": {
+    "path": "environment/runtime.json",
+    "scope": "gpu_validation placement only; package and interpreter records remain unchanged",
+    "sha256": "b0e3c4d2dcb9023d862f80518a0bbb1a32f9541ab7c430e0ba7be8fd41fbec70"
+  }
+}

@@ -285,3 +285,41 @@ No foundation model call has occurred as of this correction. All benchmark,
 detector, constraint, policy, evaluator, and scientific-result work remains
 unauthorized. `BENCHMARK_PREREG_V1_FROZEN = NO` and
 `BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
+
+## D-0015 — Placement-only supersession to idle physical GPU 4
+
+- Date: 2026-07-19
+- Status: accepted operational supersession before model execution
+- Authority: Chief Scientist / PI, current foundation prompt and node-placement rules
+- Supersedes: `configs/foundation_v1.json` only for physical GPU ID,
+  placement justification, and config version; no sampling or acceptance rule
+
+Immediately before execution, physical GPUs 0-3 on `an12` were occupied by the
+researcher's normal neighboring four-GPU RL job. Physical GPU 4 was an idle
+A800 with 81,223 MiB free and passed the pinned Torch/Flash Attention kernel
+probe. Colocation on a disjoint idle GPU is the declared normal operating mode;
+launching into occupied GPU 0 would not be.
+
+`configs/foundation_v2.json` SHA-256
+`d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f`
+supersedes v1 SHA-256
+`42e99699e7c3f8fb56d615086684b10afd4fdc1a8b3f162e37818ec462814a14`
+only by selecting physical GPU 4, updating its justification, recording the
+supersession, and incrementing the config version. The model, snapshot,
+protocol hash, audio rules, prompts, sampler, steps, CFG, masks, tolerances,
+seeds, run root, one-node TP1 width, and replica count are byte-for-byte
+unchanged.
+
+The placement evidence is `environment/gpu-placement-v2.json` SHA-256
+`a76eb1fc11eac87238ecd9fcc11e1070968b6a423e9c650698445d45a631229a`.
+Execution must set `CUDA_VISIBLE_DEVICES=4`; the single visible device is then
+addressed as `cuda:0` inside the process. D-0013/D-0014's exact 11-call,
+14-output plan, one-shot claim, registered seeds, and all hard caps remain
+binding. `FOUNDATION_COST_SMOKE_AUTHORIZED = YES` only for that plan on this
+superseded placement.
+
+No foundation model call had occurred and no one-shot execution claim existed
+at this placement cutoff. Benchmark, detector, constraint, policy, evaluator,
+and scientific-result execution remains unauthorized.
+`BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.

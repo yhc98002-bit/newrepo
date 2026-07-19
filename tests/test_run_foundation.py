@@ -187,9 +187,9 @@ def _foundation_fixture(tmp_path: Path) -> SimpleNamespace:
         {
             "freeze_sha256": sha256_file(freeze_path),
             "gpu_validation": {
-                "cuda_visible_devices": "0",
+                "cuda_visible_devices": "4",
                 "device": "NVIDIA A800 80GB PCIe",
-                "gpu_ids": [0],
+                "gpu_ids": [4],
                 "node": "an12",
                 "replica_count": 1,
                 "tensor_parallel_width": 1,
@@ -210,7 +210,7 @@ def _foundation_fixture(tmp_path: Path) -> SimpleNamespace:
             "snapshot": str(snapshot),
         },
         "placement": {
-            "gpu_ids": [0],
+            "gpu_ids": [4],
             "justification": "fixture uses one A800 with TP1 and one replica",
             "node": "an12",
             "replica_count": 1,
@@ -280,16 +280,16 @@ def _foundation_fixture(tmp_path: Path) -> SimpleNamespace:
                 "waveform_min_snr_db": 80.0,
             },
         },
-        "version": 1,
+        "version": 2,
     }
-    config_path = repo / "configs" / "foundation_v1.json"
+    config_path = repo / "configs" / "foundation_v2.json"
     _write_json(config_path, config)
     process_context = {
         "argv": ["python", "-m", "sa3_smoke.run_foundation"],
         "cwd": str(repo.resolve()),
         "environment": {
             "full_environment_sha256": "0" * 64,
-            "safe_values": {"CUDA_VISIBLE_DEVICES": "0"},
+            "safe_values": {"CUDA_VISIBLE_DEVICES": "4"},
             "sensitive_value_sha256s": {},
             "variable_count": 1,
         },
@@ -382,7 +382,7 @@ def _dependencies(
     def hardware() -> dict[str, Any]:
         return {
             "cuda_available": True,
-            "cuda_visible_devices": "0",
+            "cuda_visible_devices": "4",
             "devices": [{"name": "NVIDIA A800 80GB PCIe"}],
             "node": "an12",
             "visible_device_count": 1,

@@ -18,6 +18,13 @@ UV_PROJECT_ENVIRONMENT=/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env \
 - Validated node/GPU: `an12`, GPU 0, NVIDIA A800 80 GB, TP1, one replica
 - Observed driver before installation: 535.104.12
 
+The GPU 0 row above is the immutable environment-creation validation. Before
+model execution, a normal neighboring job occupied physical GPUs 0-3, so
+`environment/gpu-placement-v2.json` and `configs/foundation_v2.json`
+superseded only the execution placement to idle physical GPU 4. The process
+uses `CUDA_VISIBLE_DEVICES=4` and addresses that sole visible device as
+`cuda:0`; TP1 and one replica are unchanged.
+
 CUDA 12.x minor-version compatibility was verified empirically on `an12`: a
 CUDA tensor allocation and a Flash Attention 2 kernel both passed. It is not
 inferred from the login node, which has no visible GPU.

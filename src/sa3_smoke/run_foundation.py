@@ -34,12 +34,16 @@ from sa3_smoke.artifacts import (
 from sa3_smoke.budget import ExecutionBudget, smoke_context
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_PATH = REPOSITORY_ROOT / "configs" / "foundation_v1.json"
+DEFAULT_CONFIG_PATH = REPOSITORY_ROOT / "configs" / "foundation_v2.json"
 DEFAULT_RUN_ROOT = Path("/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs")
-EXPECTED_CONFIG_SHA256 = "42e99699e7c3f8fb56d615086684b10afd4fdc1a8b3f162e37818ec462814a14"
+EXPECTED_CONFIG_SHA256 = "d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f"
+EXPECTED_SUPERSEDED_CONFIG_SHA256 = (
+    "42e99699e7c3f8fb56d615086684b10afd4fdc1a8b3f162e37818ec462814a14"
+)
+EXPECTED_GPU_PLACEMENT_SHA256 = "a76eb1fc11eac87238ecd9fcc11e1070968b6a423e9c650698445d45a631229a"
 EXPECTED_SEED_REGISTRY_SHA256 = "fcdcd09c6474fe2cfba477a0a0e70fcbfa6205ab10e3f8c9f460440850cad8d5"
 EXPECTED_MODEL_ID = "stabilityai/stable-audio-3-medium-base"
-EXPECTED_CONFIG_VERSION = 1
+EXPECTED_CONFIG_VERSION = 2
 EXPECTED_STABLE_AUDIO_3_COMMIT = "0385302ea26522f00c80392c4b708df5ebf1adf5"
 EXPECTED_STABLE_AUDIO_TOOLS_COMMIT = "3241adba4fc2a85cf5b29d9eb68d42f40a28e820"
 EXPECTED_MODELSCOPE_REVISION = "a9c479f5f28ee89f6fbdaca57b683e6b6c160314"
@@ -580,6 +584,18 @@ def validate_preflight(
             config.get("version"),
             EXPECTED_CONFIG_VERSION,
         )
+        if expected_config_sha256 == EXPECTED_CONFIG_SHA256:
+            expected_supersession = {
+                "path": "configs/foundation_v1.json",
+                "scope": "placement.gpu_ids, placement.justification, and version only",
+                "sha256": EXPECTED_SUPERSEDED_CONFIG_SHA256,
+            }
+            _check_equal(
+                failures,
+                "config.supersedes",
+                config.get("supersedes"),
+                expected_supersession,
+            )
         _check_equal(
             failures,
             "model.id",
@@ -869,6 +885,74 @@ def validate_preflight(
         failures.append(f"live environment validation failed: {type(exc).__name__}: {exc}")
     evidence["live_environment"] = live_environment
 
+    placement_record_path = repository_root / "environment" / "gpu-placement-v2.json"
+    if expected_config_sha256 == EXPECTED_CONFIG_SHA256:
+        try:
+            placement_record = _read_json_object(placement_record_path)
+            placement_record_sha256 = sha256_file(placement_record_path)
+            if placement_record_sha256 != EXPECTED_GPU_PLACEMENT_SHA256:
+                failures.append(
+                    "GPU placement record SHA-256 mismatch: "
+                    f"{placement_record_sha256} != {EXPECTED_GPU_PLACEMENT_SHA256}"
+                )
+            _check_equal(
+                failures,
+                "gpu_placement.schema_version",
+                placement_record.get("schema_version"),
+                2,
+            )
+            _check_equal(
+                failures,
+                "gpu_placement.config_sha256",
+                placement_record.get("config_sha256"),
+                config_sha256,
+            )
+            supersedes_runtime = placement_record.get("supersedes")
+            if not isinstance(supersedes_runtime, Mapping):
+                raise ValueError("GPU placement supersedes record must be an object")
+            _check_equal(
+                failures,
+                "gpu_placement.supersedes.runtime_sha256",
+                supersedes_runtime.get("sha256"),
+                sha256_file(runtime_path),
+            )
+            script_path = _resolve_repo_path(
+                repository_root,
+                placement_record.get("script_path"),
+                "gpu_placement.script_path",
+            )
+            _check_equal(
+                failures,
+                "gpu_placement.script_sha256",
+                sha256_file(script_path),
+                placement_record.get("script_sha256"),
+            )
+            log_path = Path(str(placement_record.get("log_path"))).resolve(strict=True)
+            _check_equal(
+                failures,
+                "gpu_placement.log_sha256",
+                sha256_file(log_path),
+                placement_record.get("log_sha256"),
+            )
+        except (OSError, ValueError) as exc:
+            failures.append(f"GPU placement record validation failed: {exc}")
+            placement_record = {}
+            placement_record_sha256 = None
+            script_path = repository_root / "scripts" / "validate_gpu_placement.py"
+            log_path = Path("/nonexistent/gpu-placement-validation.log")
+    else:
+        placement_record = {"gpu_validation": runtime.get("gpu_validation", {})}
+        placement_record_sha256 = None
+        script_path = None
+        log_path = None
+    evidence["gpu_placement_record"] = {
+        "path": str(placement_record_path.resolve()),
+        "sha256": placement_record_sha256,
+        "script_path": None if script_path is None else str(script_path.resolve()),
+        "log_path": None if log_path is None else str(log_path.resolve()),
+        "record": placement_record,
+    }
+
     try:
         git = dict(dependencies.git_probe(repository_root))
     except Exception as exc:  # noqa: BLE001 - validation must become terminal evidence
@@ -887,7 +971,7 @@ def validate_preflight(
         failures.append(f"hardware probe failed: {type(exc).__name__}: {exc}")
     placement = config.get("placement", {}) if isinstance(config.get("placement"), Mapping) else {}
     _check_equal(failures, "placement.node", placement.get("node"), "an12")
-    _check_equal(failures, "placement.gpu_ids", placement.get("gpu_ids"), [0])
+    _check_equal(failures, "placement.gpu_ids", placement.get("gpu_ids"), [4])
     _check_equal(
         failures,
         "placement.tensor_parallel_width",
@@ -896,27 +980,44 @@ def validate_preflight(
     )
     _check_equal(failures, "placement.replica_count", placement.get("replica_count"), 1)
     _check_equal(failures, "hardware.node", hardware.get("node"), placement.get("node"))
-    _check_equal(failures, "CUDA_VISIBLE_DEVICES", hardware.get("cuda_visible_devices"), "0")
+    _check_equal(failures, "CUDA_VISIBLE_DEVICES", hardware.get("cuda_visible_devices"), "4")
     _check_equal(failures, "hardware.cuda_available", hardware.get("cuda_available"), True)
     _check_equal(failures, "hardware.visible_device_count", hardware.get("visible_device_count"), 1)
-    recorded_gpu = runtime.get("gpu_validation", {})
+    recorded_gpu = placement_record.get("gpu_validation", {})
     recorded_gpu = recorded_gpu if isinstance(recorded_gpu, Mapping) else {}
-    _check_equal(failures, "runtime.gpu.node", recorded_gpu.get("node"), placement.get("node"))
     _check_equal(
         failures,
-        "runtime.gpu.gpu_ids",
+        "placement_record.gpu.cuda_visible_devices",
+        recorded_gpu.get("cuda_visible_devices"),
+        hardware.get("cuda_visible_devices"),
+    )
+    _check_equal(
+        failures,
+        "placement_record.gpu.visible_device_count",
+        recorded_gpu.get("visible_device_count", 1),
+        hardware.get("visible_device_count"),
+    )
+    _check_equal(
+        failures,
+        "placement_record.gpu.node",
+        recorded_gpu.get("node"),
+        placement.get("node"),
+    )
+    _check_equal(
+        failures,
+        "placement_record.gpu.gpu_ids",
         recorded_gpu.get("gpu_ids"),
         placement.get("gpu_ids"),
     )
     _check_equal(
         failures,
-        "runtime.gpu.tensor_parallel_width",
+        "placement_record.gpu.tensor_parallel_width",
         recorded_gpu.get("tensor_parallel_width"),
         placement.get("tensor_parallel_width"),
     )
     _check_equal(
         failures,
-        "runtime.gpu.replica_count",
+        "placement_record.gpu.replica_count",
         recorded_gpu.get("replica_count"),
         placement.get("replica_count"),
     )
@@ -1243,6 +1344,7 @@ def _common_manifest(
         "package_freeze_path": environment_freeze.get("path"),
         "package_freeze_sha256": environment_freeze.get("sha256"),
         "live_environment_validation": preflight.evidence.get("live_environment"),
+        "gpu_placement_record": preflight.evidence.get("gpu_placement_record"),
         "model_artifact_sha256s": dict(preflight.model_artifact_sha256s),
         "weights_manifests": preflight.evidence.get("weights_manifests"),
         "governance_authorization": preflight.evidence.get("governance_authorization"),
@@ -1388,6 +1490,9 @@ def run_foundation(
                     "cross_provider_overlay_sha256": preflight.evidence.get("weights_manifests", {})
                     .get("cross_provider_v2", {})
                     .get("sha256"),
+                    "gpu_placement_record_sha256": preflight.evidence.get(
+                        "gpu_placement_record", {}
+                    ).get("sha256"),
                     "observed_placement": preflight.evidence.get("placement"),
                 },
             )

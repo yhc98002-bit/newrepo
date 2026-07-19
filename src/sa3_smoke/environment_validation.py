@@ -36,6 +36,9 @@ EXPECTED_FILE_SHA256 = {
     "environment/licenses.json": (
         "10f99624b8438c1dbc385ca2cec9bebac73ecb96cfe1098af32f4b9be8bd3294"
     ),
+    "environment/gpu-placement-v2.json": (
+        "a76eb1fc11eac87238ecd9fcc11e1070968b6a423e9c650698445d45a631229a"
+    ),
     "pyproject.toml": "70ba55cccb73e7cb763faa20bcd94d6c46b0f447cbb7863aa63fdf563513aeb8",
     "uv.lock": "c61a7fa1375d6766cceed983b56051b5b3ea7f3dba3769a5ffde1561f05f2b8c",
     "THIRD_PARTY_LICENSES.md": ("57f0eb61f069678516ff6af513a1b80cdae3c39b99e4a5250b1f4cdb521c39c4"),
