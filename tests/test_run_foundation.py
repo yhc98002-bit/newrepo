@@ -19,6 +19,7 @@ from sa3_smoke.run_foundation import (
     REQUIRED_T5_MANIFEST_FILES,
     SMOKE_NAMES,
     OrchestrationDependencies,
+    _same_filesystem_object,
     _smoke_e_kwargs,
     run_foundation,
 )
@@ -45,6 +46,16 @@ def _write_json(path: Path, value: Any) -> None:
         json.dumps(value, allow_nan=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def test_same_filesystem_object_accepts_distinct_paths_for_one_inode(tmp_path: Path) -> None:
+    original = tmp_path / "original"
+    alias = tmp_path / "alias"
+    original.write_bytes(b"same artifact\n")
+    alias.hardlink_to(original)
+
+    assert original.resolve() != alias.resolve()
+    assert _same_filesystem_object(original.resolve(), alias.resolve()) is True
 
 
 def _foundation_fixture(tmp_path: Path) -> SimpleNamespace:
@@ -555,6 +566,44 @@ def test_snapshot_hash_drift_is_terminal_before_resolution_or_load(tmp_path: Pat
         for failure in outcome.result["preflight"]["failures"]
     )
     assert outcome.result["summary"]["statuses"] == dict.fromkeys(SMOKE_NAMES, "FAIL")
+
+
+def test_snapshot_mount_alias_is_accepted_by_filesystem_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _foundation_fixture(tmp_path)
+    dependencies, calls = _dependencies(fixture)
+    alias = tmp_path / "snapshot-mount-alias"
+    alias.symlink_to(fixture.snapshot, target_is_directory=True)
+
+    manifest = json.loads(fixture.v1_path.read_text(encoding="utf-8"))
+    manifest["artifact_root"] = str(alias)
+    _write_json(fixture.v1_path, manifest)
+    overlay = json.loads(fixture.v2_path.read_text(encoding="utf-8"))
+    overlay["supersedes"]["sha256"] = sha256_file(fixture.v1_path)
+    _write_json(fixture.v2_path, overlay)
+
+    real_resolve = Path.resolve
+
+    def resolve_with_mount_alias(self: Path, strict: bool = False) -> Path:
+        if self == alias:
+            return self.absolute()
+        return real_resolve(self, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", resolve_with_mount_alias)
+    assert alias.samefile(fixture.snapshot)
+    assert alias.resolve() != fixture.snapshot.resolve()
+
+    outcome = _run(fixture, tmp_path, dependencies)
+
+    assert outcome.exit_code == 0
+    assert outcome.result["preflight"]["evidence"]["live_snapshot_verification"]["status"] == "PASS"
+    assert not any(
+        "configured snapshot differs from weights manifest artifact_root" in failure
+        for failure in outcome.result["preflight"]["failures"]
+    )
+    assert [name for name, _, _ in calls] == ["resolve", "load", "A", "B", "C", "D", "E"]
 
 
 def test_live_environment_drift_is_terminal_before_resolution_or_load(

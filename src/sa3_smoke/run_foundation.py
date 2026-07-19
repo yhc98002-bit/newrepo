@@ -260,6 +260,12 @@ def _value(config: Mapping[str, Any], *keys: str) -> Any:
     return current
 
 
+def _same_filesystem_object(left: Path, right: Path) -> bool:
+    """Compare filesystem identity, including distinct bind-mount path aliases."""
+
+    return left.samefile(right)
+
+
 def _check_equal(
     failures: list[str],
     label: str,
@@ -1062,7 +1068,11 @@ def validate_preflight(
         if not isinstance(snapshot_value, str) or not snapshot_value:
             raise ValueError("model.snapshot must be a non-empty path")
         snapshot = Path(snapshot_value).resolve(strict=True)
-        if snapshot != Path(str(weights_manifest.get("artifact_root"))).resolve():
+        artifact_root_value = weights_manifest.get("artifact_root")
+        if not isinstance(artifact_root_value, str) or not artifact_root_value:
+            raise ValueError("weights manifest artifact_root must be a non-empty path")
+        artifact_root = Path(artifact_root_value).resolve(strict=True)
+        if not _same_filesystem_object(snapshot, artifact_root):
             raise ValueError("configured snapshot differs from weights manifest artifact_root")
         _check_equal(
             failures,

@@ -323,3 +323,34 @@ at this placement cutoff. Benchmark, detector, constraint, policy, evaluator,
 and scientific-result execution remains unauthorized.
 `BENCHMARK_PREREG_V1_FROZEN = NO` and
 `BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
+
+## D-0016 — Compare model snapshot aliases by filesystem identity
+
+- Date: 2026-07-19
+- Status: accepted operational correction before model execution
+- Authority: Chief Scientist / PI, current foundation prompt and provenance invariant
+- Supersedes: the preflight implementation's string-path equality check only
+
+The read-only production preflight at Git commit `8476841` stopped before the
+one-shot claim because the frozen config names the snapshot through `/HOME`
+while the immutable weights manifest names the same directory through
+`/XYFS01/HOME`. On `an12`, those two absolute names have the same device
+`3356821666` and inode `162130936496981305`; Python `Path.samefile` returns
+true, while lexical resolved-path equality returns false. The failed preflight
+log is
+`/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/foundation-8476841-production-preflight-20260719T135000Z.log`,
+SHA-256 `f1701f460ea93074da77275d42ad960a01d82c7681b35f0c97fc7001148610aa`.
+
+Preflight must therefore bind the configured snapshot and manifest
+`artifact_root` by filesystem identity (`samefile`, hence device and inode)
+after requiring both paths to exist. Exact manifest file sets, byte sizes, and
+SHA-256 verification remain mandatory, so this accepts only two names for the
+same stored object and does not relax content provenance.
+
+No model was loaded, no foundation generation occurred, and the one-shot
+execution claim remained absent at this correction cutoff. Config v2, the
+exact D-0013/D-0014 11-call/14-output plan, registered seeds, and all hard caps
+remain unchanged. `FOUNDATION_COST_SMOKE_AUTHORIZED = YES` only for that plan.
+Benchmark, detector, constraint, policy, evaluator, and scientific-result
+execution remains unauthorized. `BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
