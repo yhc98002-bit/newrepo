@@ -213,3 +213,42 @@ constraints, evaluators, labels, policy work, or scientific claims.
 
 `BENCHMARK_PREREG_V1_FROZEN = NO` and
 `BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
+
+## D-0013 — PI constraint amendment for bounded foundation cost smokes
+
+- Date: 2026-07-19
+- Status: accepted; bounded foundation cost smokes permitted and required
+- Authority: Chief Scientist / PI, current prompt
+- Supersedes: D-0012 for execution scope and caps; D-0011 only within this exception
+
+The no-generation constraint is amended for one bounded foundation-cost run
+against exact `stabilityai/stable-audio-3-medium-base`, using the already-frozen
+`SMOKE_PROTOCOL.md`, `configs/foundation_v1.json`, and `SEED_REGISTRY.md`.
+`FOUNDATION_COST_SMOKE_AUTHORIZED = YES` only for:
+
+1. two fixed-seed, 30-second text-to-audio outputs with decoded-waveform hash
+   comparison;
+2. one continuation from a retained 10-second source clip;
+3. single- and multi-segment inpainting on one retained generated clip;
+4. latent exports after 30%, 60%, and 80% of transitions, each reloaded and
+   continued in a separate process under the frozen equivalence tolerance; and
+5. one batch-of-four throughput measurement.
+
+Hard guards are `MAX_GENERATIONS = 20`, `MAX_CLIP_SECONDS = 30`,
+`MAX_GPUS = 1`, and `MAX_GPU_SECONDS = 1800`. A batch of four counts as four
+generations. The runner must fail closed before a call that would exceed a
+guard, and must stop after the current atomic write if the measured time cap is
+reached. Every output receives the frozen audio sanity checks, is retained in
+an immutable run directory, and has adjacent provenance plus a per-generation
+ledger row using only registered seeds. No output may be overwritten.
+
+The terminal record is `SA3_FOUNDATION_REPORT.md`, with per-smoke PASS/FAIL,
+actual NFE, synchronized wall time, peak VRAM, hashes, placement, commands,
+provenance, deviations, and the exact generation/time counters. Its measured
+costs must replace estimate/pending/unmeasured rows in the preregistration cost
+appendix before the original benchmark goal can complete.
+
+All other model execution and generation remain closed until a later
+append-only decision freezes `BENCHMARK_PREREG_v1.md` by exact hash.
+`BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
