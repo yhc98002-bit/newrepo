@@ -1,0 +1,14 @@
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+# Large, immutable run products stay on persistent project storage, not in Git.
+artifacts/
+runs/
+logs/
+
+# Credentials must never enter the repository.
+.env
+*.token
