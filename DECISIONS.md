@@ -354,3 +354,69 @@ remain unchanged. `FOUNDATION_COST_SMOKE_AUTHORIZED = YES` only for that plan.
 Benchmark, detector, constraint, policy, evaluator, and scientific-result
 execution remains unauthorized. `BENCHMARK_PREREG_V1_FROZEN = NO` and
 `BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
+
+## D-0017 — Terminal foundation-smoke result and retry gate
+
+- Date: 2026-07-19
+- Status: accepted terminal engineering record; one-shot authorization consumed
+- Authority: D-0013/D-0014 terminal-report requirement; immutable run evidence
+- Supersedes: the prior open foundation execution state only
+
+The one authorized foundation run is terminal
+`FOUNDATION_COST_SMOKE_STATUS = FAIL_ESCALATED`. Its immutable run ID is
+`sa3-foundation-20260719T134821.040493Z-9ea9d06209d6`, executed from Git commit
+`ae251c62e2ba2bae025ec4413aae875df967b021` with config SHA-256
+`d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f`.
+The result SHA-256 is
+`65adbde1e8abe9e744749a52745243d7c4bb572e778284d76827f98a05b6d912`,
+the one-shot claim SHA-256 is
+`ad71f0300d27ca84b2092981ac3283faaef9f24490097c1b7ad23394da09a6ac`,
+and the generation-ledger SHA-256 is
+`7caafac155c3e04519633749bb89a31d4a86f8d118926aabd0bcdd0130626a2c`.
+
+Smokes A, B, C, and D passed. Smoke E's uninterrupted reference and its
+15/30/40-step checkpoints were retained and validated, but all three fresh
+separate-process resume calls failed before a resumed DiT transition. The
+exported checkpoint latent was `torch.float32`; the official child allocated a
+fresh disposable initial latent as `torch.float16`; the resume adapter's
+strict pre-transition dtype-equality check rejected that expected boundary.
+This was not an OOM and did not corrupt or overwrite an artifact.
+
+The run reserved exactly 11 official calls and 14 generation slots. Eight
+calls succeeded, three resume calls failed, 11 model WAVs were retained, and
+the 14-row hash-chained ledger contains 11 PASS rows plus three
+`MODEL_CALL_FAILED` rows. Actual DiT NFE was 400, synchronized official-call
+wall time was 46.013083518 seconds, and the conservative one-GPU residency
+upper bound was 244.181992349 seconds. The 20-generation, 30-second, one-GPU,
+and 1800-GPU-second caps were all respected.
+
+`FOUNDATION_COST_SMOKE_AUTHORIZATION_STATUS = CONSUMED`,
+`FOUNDATION_COST_SMOKE_AUTHORIZED = NO`, and
+`FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO`. No claim may be removed and no
+model call may be retried unless a later explicit PI decision names this
+failure, the reviewed fix, a new immutable claim/config, and fresh repair caps.
+`BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
+
+## D-0018 — Safe flexible GPU placement pool; no execution expansion
+
+- Date: 2026-07-19
+- Status: accepted placement-only authority
+- Authority: Chief Scientist / PI, current prompt
+- Supersedes: D-0015 only for future node and physical-GPU selection
+
+For a future separately authorized job, physical GPUs on `an12` or `an29` may
+be selected operationally. The selected device must be disjoint from existing
+GPU processes, rechecked immediately before model load for occupancy and free
+memory, and protected by a device-specific lock. Existing jobs are normal
+neighbors: they must not be terminated, evicted, migrated, reconfigured, or
+placed at OOM risk. If an idle device with adequate safety headroom cannot be
+established, execution stops before model load.
+
+For this foundation scope, `MAX_GPUS = 1` remains binding: one node, one visible
+GPU, TP1, and one replica. This placement authority does not create a new
+claim, authorize a retry, permit another model call, or alter the terminal
+D-0017 result. `FOUNDATION_COST_SMOKE_AUTHORIZED = NO`,
+`FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO`,
+`BENCHMARK_PREREG_V1_FROZEN = NO`, and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.

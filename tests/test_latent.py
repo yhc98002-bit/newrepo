@@ -53,6 +53,20 @@ class TinyVelocity(torch.nn.Module):
         return latent * gain + timestep[:, None, None] * 0.25 + offset
 
 
+class PromotingTinyVelocity(TinyVelocity):
+    """Mimic the production backbone returning float32 from float16 noise."""
+
+    def forward(
+        self,
+        latent: torch.Tensor,
+        timestep: torch.Tensor,
+        *,
+        gain: float,
+        offset: float,
+    ) -> torch.Tensor:
+        return super().forward(latent, timestep, gain=gain, offset=offset).float()
+
+
 def fixture_latent() -> torch.Tensor:
     return torch.linspace(-0.75, 0.9, 24, dtype=torch.float64).reshape(2, 3, 4)
 
@@ -106,7 +120,7 @@ def injected_fake_runtime_factory(request: dict[str, Any], checkpoint: Any) -> R
         fresh_noise = torch.full(
             tuple(checkpoint.metadata["latent_shape"]),
             777.0,
-            dtype=checkpoint.latent.dtype,
+            dtype=torch.float32,
         )
         rebuilt_schedule = fixture_schedule()
         return sampler(
@@ -330,6 +344,49 @@ def test_resuming_sampler_rejects_rebuilt_schedule_mismatch(tmp_path: Path) -> N
         )
 
 
+def test_resume_preserves_promoted_checkpoint_dtype_when_fresh_noise_is_half(
+    tmp_path: Path,
+) -> None:
+    """Regression for the production float16-noise/float32-state boundary."""
+
+    initial = torch.linspace(-0.75, 0.9, 24, dtype=torch.float16).reshape(2, 3, 4)
+    base_schedule = fixture_schedule().to(torch.float32)
+    schedule = torch.stack((base_schedule, base_schedule))
+    reference_sampler = CheckpointingEulerSampler(
+        checkpoint_dir=tmp_path,
+        checkpoint_prefix="mixed-dtype",
+        run_id="unit-mixed-dtype-reference",
+        conditioning_sha256=CONDITIONING_SHA256,
+        config_sha256=CONFIG_SHA256,
+    )
+    uninterrupted = reference_sampler(
+        PromotingTinyVelocity(),
+        initial,
+        schedule,
+        gain=GAIN,
+        offset=OFFSET,
+    )
+    assert reference_sampler.last_run_result is not None
+
+    state = load_euler_checkpoint(reference_sampler.last_run_result.checkpoints[0].path)
+    assert state.latent.dtype == torch.float32
+    fresh_official_noise = torch.full(initial.shape, 777.0, dtype=torch.float16)
+    resumed_sampler = ResumingEulerSampler(state)
+    resumed = resumed_sampler(
+        PromotingTinyVelocity(),
+        fresh_official_noise,
+        schedule,
+        gain=GAIN,
+        offset=OFFSET,
+    )
+
+    assert resumed_sampler.fresh_initial_latent_dtype == "torch.float16"
+    assert resumed_sampler.checkpoint_latent_dtype == "torch.float32"
+    assert resumed_sampler.resume_latent_dtype_preserved is True
+    assert resumed.dtype == torch.float32
+    assert torch.equal(resumed, uninterrupted)
+
+
 def test_three_checkpoints_resume_in_three_real_python_processes(tmp_path: Path) -> None:
     checkpoint_dir = tmp_path / "checkpoints"
     reference_sampler = CheckpointingEulerSampler(
@@ -388,6 +445,9 @@ def test_three_checkpoints_resume_in_three_real_python_processes(tmp_path: Path)
         assert metadata["execution_mode"] == "official_generate_sampler_injection"
         assert metadata["runtime_schedule_validated"] is True
         assert metadata["ignored_fresh_initial_latent"] is True
+        assert metadata["fresh_initial_latent_dtype"] == "torch.float32"
+        assert metadata["checkpoint_latent_dtype"] == "torch.float64"
+        assert metadata["resume_latent_dtype_preserved"] is True
         assert metadata["finalize_metadata"]["generated_output_is_final_latent"] is True
         assert torch.equal(launched.artifact.latent, uninterrupted)
         stdout_summary = json.loads(launched.process.stdout.strip().splitlines()[-1])

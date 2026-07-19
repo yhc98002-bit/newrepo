@@ -114,6 +114,9 @@ def execute_request(request_path: str | Path) -> Mapping[str, Any]:
             execution_mode = "official_generate_sampler_injection"
             runtime_schedule_validated = True
             ignored_fresh_initial_latent = True
+            fresh_initial_latent_dtype = sampler.fresh_initial_latent_dtype
+            checkpoint_latent_dtype = sampler.checkpoint_latent_dtype
+            resume_latent_dtype_preserved = sampler.resume_latent_dtype_preserved
         else:
             model = runtime.model
             if not callable(model):
@@ -133,6 +136,9 @@ def execute_request(request_path: str | Path) -> Mapping[str, Any]:
             execution_mode = "direct_verified_euler"
             runtime_schedule_validated = False
             ignored_fresh_initial_latent = False
+            fresh_initial_latent_dtype = None
+            checkpoint_latent_dtype = str(checkpoint.latent.dtype)
+            resume_latent_dtype_preserved = True
 
         finalize_metadata: Mapping[str, Any] = {}
         if runtime.finalize is not None:
@@ -163,6 +169,9 @@ def execute_request(request_path: str | Path) -> Mapping[str, Any]:
         "execution_mode": execution_mode,
         "runtime_schedule_validated": runtime_schedule_validated,
         "ignored_fresh_initial_latent": ignored_fresh_initial_latent,
+        "fresh_initial_latent_dtype": fresh_initial_latent_dtype,
+        "checkpoint_latent_dtype": checkpoint_latent_dtype,
+        "resume_latent_dtype_preserved": resume_latent_dtype_preserved,
         "finalize_metadata": dict(finalize_metadata),
     }
     artifact = _save_resume_result_no_clobber(

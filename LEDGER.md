@@ -131,3 +131,145 @@ manifest and artifacts are named here with SHA-256 digests.
   future references use identifier plus title, and numbering continues here.
 - Supersedes: `provenance/weights.manifest.json` only for
   `cross_provider_verified` status; no prior bytes are changed
+
+## L-0005 — Smoke A fixed-seed repeat
+
+- Time: 2026-07-19T21:49:56+08:00
+- Kind: completed engineering smoke result
+- Git: `ae251c62e2ba2bae025ec4413aae875df967b021`
+- Node: `an12`; physical GPU IDs: `4`; TP: 1; replicas: 1
+- Placement: one idle disjoint A800, exposed as `cuda:0`; the 1.4B model fits
+  TP1 and no wider placement is justified
+- Seed: S-0001 = `73193001`, used for both frozen calls
+- Command: frozen production command recorded in `SA3_FOUNDATION_REPORT.md`
+- Config: `configs/foundation_v2.json` SHA-256
+  `d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f`;
+  protocol SHA-256
+  `84f15494462b99de2d8f8e71b0c90f7cecccbd17e92599d036b2a4785e4e70c6`
+- Run: `sa3-foundation-20260719T134821.040493Z-9ea9d06209d6`
+- Manifest: `smoke-a/manifest.json` SHA-256
+  `3f04c863c3420fb6e4635ea2f41ced25e27a95e168f27010ab9809ab9ed373d2`
+- Artifacts: `a_fixed_seed_run1.wav` SHA-256
+  `d51ba6038216f22b5ca6ef86d11371393b357444a90353d61bb716e2328d98db`;
+  `a_fixed_seed_run2.wav` SHA-256
+  `4d40ab211db8e10eb1b222093214a3539985917fb71d009006a17fcc4df53729`;
+  adjacent `synthetic_model_output` provenance valid
+- Result: PASS — both decoded-waveform SHA-256 values are
+  `b224f27d374209cfa76ed73b680cede18e9b7920677dbfc0be6afaa2d2a2b387`;
+  exact samples, zero error, infinite SNR; both 30 s, 44.1 kHz stereo and
+  non-silent
+- Measured calls: 100 actual DiT forwards across two 50-step official calls;
+  `19.62547130137682 s` cumulative synchronized inner-call wall
+- Deviations: WAV container hashes differ because of a timestamp-bearing PEAK
+  chunk; decoded audio is identical
+- Supersedes: none
+
+## L-0006 — Smoke B official continuation
+
+- Time: 2026-07-19T21:50:00+08:00
+- Kind: completed engineering smoke result
+- Git: `ae251c62e2ba2bae025ec4413aae875df967b021`
+- Node: `an12`; physical GPU IDs: `4`; TP: 1; replicas: 1
+- Placement: one idle disjoint A800, exposed as `cuda:0`
+- Seed: S-0002 = `73193002`
+- Command/config/protocol: same frozen production command and hashes as L-0005
+- Run: `sa3-foundation-20260719T134821.040493Z-9ea9d06209d6`
+- Manifest: `smoke-b/manifest.json` SHA-256
+  `0f465bedecd611f6c3d3030a84a09615a461d481fd0ec58118edc0bda7e36442`
+- Artifacts: `b_source_10s.wav` (`derived_audio`) SHA-256
+  `09cb40495c52ad9e91afdeb0077e8170263de256802b0e2cea9af2c192cac4d9`;
+  `b_continuation_30s.wav` (`synthetic_model_output`) SHA-256
+  `23786b4ae87d5ab856af48473f342365cefe29187adb7c47cb5cb95f2713e5a7`;
+  adjacent provenance valid
+- Result: PASS — official `[10,30]` second continuation mask, valid non-silent
+  30 s / 44.1 kHz / stereo output, and non-silent generated region
+- Measured call: 50 actual DiT forwards; synchronized inner-call wall
+  `3.911749802529812 s`
+- Deviations: B's named budget snapshot was captured after C and contains
+  combined A+B+C counters; it is not claimed as an immediate post-B snapshot
+- Supersedes: none
+
+## L-0007 — Smoke C single- and multi-segment inpainting
+
+- Time: 2026-07-19T21:50:09+08:00
+- Kind: completed engineering smoke result
+- Git: `ae251c62e2ba2bae025ec4413aae875df967b021`
+- Node: `an12`; physical GPU IDs: `4`; TP: 1; replicas: 1
+- Placement: one idle disjoint A800, exposed as `cuda:0`
+- Seeds: S-0003 = `73193003` for `[8,12]`; S-0004 = `73193004` for
+  `[4,6]` plus `[20,23]`
+- Command/config/protocol: same frozen production command and hashes as L-0005
+- Run: `sa3-foundation-20260719T134821.040493Z-9ea9d06209d6`
+- Manifest: `smoke-c/manifest.json` SHA-256
+  `f2f568225de66d63a1889d40b98142af742dae585dd6530d81c1f9981b58b210`
+- Artifacts: `c_inpaint_single_8_12s.wav` SHA-256
+  `84f07feb44a27ac23e794467116070d7807e59be032dd26870e23c3a153ecc61`;
+  `c_inpaint_multi_4_6_20_23s.wav` SHA-256
+  `f226278085a110282e6fdc3f9b481699eedf4ea54a1a62adf94f3d20a90b1c74`;
+  adjacent `synthetic_model_output` provenance valid
+- Result: PASS — both masks valid; both outputs non-silent, 30 s, 44.1 kHz,
+  stereo, finite, and provenance-valid
+- Measured calls: 100 actual DiT forwards; `7.432163719087839 s`
+  synchronized inner-call wall
+- Deviations: masked/unmasked sample comparisons are frozen diagnostics, not
+  preservation acceptance gates
+- Supersedes: none
+
+## L-0008 — Smoke D measured NFE and throughput
+
+- Time: 2026-07-19T21:50:18+08:00
+- Kind: completed measured engineering cost result; singleton, not a benchmark
+- Git: `ae251c62e2ba2bae025ec4413aae875df967b021`
+- Node: `an12`; physical GPU IDs: `4`; TP: 1; replicas: 1
+- Placement: one idle disjoint NVIDIA A800 80 GB PCIe, exposed as `cuda:0`
+- Seeds: S-0005 = `73193005` for batch one; S-0006 = `73193006` for batch four
+- Command/config/protocol: same frozen production command and hashes as L-0005
+- Run: `sa3-foundation-20260719T134821.040493Z-9ea9d06209d6`
+- Manifest: `smoke-d/manifest.json` SHA-256
+  `2a7923fa0bf4be95ca18beb3082c483b4d91fd55d1d0118f22c1f0107042f8ec`
+- Artifacts: one 30-second and four 10-second `synthetic_model_output` WAVs,
+  all retained with hashes and provenance in the manifest/report
+- Result: PASS — both official 50-step paths measured exactly 50 actual DiT
+  forwards and 50 sampler callbacks
+- Batch-one measurement: `3.642550054937601 s` synchronized end-to-end wall;
+  peak allocated/reserved VRAM `5,439,723,520` / `9,839,837,184` bytes
+- Batch-four measurement: `4.866168051958084 s` synchronized end-to-end wall;
+  peak allocated/reserved VRAM `5,890,185,728` / `10,464,788,480` bytes;
+  `0.8220020265001845` items/s and `8.220020265001844` audio-s/s
+- Deviations: inner budget-proxy walls are `3.604426071047783 s` and
+  `4.841174870729446 s`; the end-to-end values include measured wrapper overhead
+- Supersedes: no prior measured SA3 row; earlier UNMEASURED state remains as
+  historical evidence
+
+## L-0009 — Smoke E checkpoint/resume failure
+
+- Time: 2026-07-19T21:52:25+08:00
+- Kind: completed terminal engineering smoke result
+- Git: `ae251c62e2ba2bae025ec4413aae875df967b021`
+- Node: `an12`; physical GPU IDs: `4`; TP: 1; replicas: 1
+- Placement: one idle disjoint A800; parent fully offloaded to CPU before
+  sequential children
+- Seed: S-0007 = `73193007` for the reference and all three resume calls
+- Command/config/protocol: same frozen production command and hashes as L-0005
+- Run: `sa3-foundation-20260719T134821.040493Z-9ea9d06209d6`
+- Manifest: `smoke-e/manifest.json` SHA-256
+  `7d5a25e083e5cdf2385c3505b1896e8e512efc1f78a3082bc76d347a85103495`
+- Artifacts: valid 30-second reference WAV SHA-256
+  `476aaea35e40de0cdd8983ec95f02403f46f74f56610b5af98255e1fedf2fecc`;
+  valid `latent_checkpoint` files after 15/30/40 steps with SHA-256s
+  `52acec3c52d4f580978222a6f392fe9577cb6e1094719a1505cfd6a62671eee1`,
+  `95b31c86f4ae909f7009739fe20705cf0cd6c957c857c2cb303583b38b77033d`,
+  and `acadb11a0d17204370c41d120b09af322bc10388ba7a20600481191a1dc589f5`
+- Result: FAIL — child PIDs `1959026`, `1961040`, and `1962942` each stopped
+  with `CheckpointValidationError` because fresh official FP16 noise did not
+  equal the saved FP32 post-transition latent dtype; each had actual resumed
+  DiT NFE `0`
+- Tolerance: max absolute error `<= 1e-5` and SNR `>= 80 dB`; unmeasured
+  because no resumed waveform exists, not reported as a numerical mismatch
+- Budget: all 11 calls and 14 slots consumed; eight calls succeeded, three
+  failed; final synchronized official-call wall `46.01308351755142 s` and
+  conservative one-GPU residency `244.181992349 s`; all hard caps respected
+- Deviations: the manifest's top-level `terminal_failure` summary is null, but
+  all three nested errors and terminal ledger rows are retained; no retry or
+  overwrite occurred
+- Supersedes: none; aggregate status is `FAIL_ESCALATED`

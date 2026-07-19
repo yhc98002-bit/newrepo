@@ -3,14 +3,17 @@ from __future__ import annotations
 import inspect
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
+import sa3_smoke.run_foundation as run_foundation_module
 from sa3_smoke.artifacts import sha256_file
 from sa3_smoke.run_foundation import (
+    EXPECTED_CONFIG_SHA256,
     EXPECTED_HUGGINGFACE_REVISION,
     EXPECTED_MODEL_ID,
     EXPECTED_MODELSCOPE_REVISION,
@@ -19,6 +22,7 @@ from sa3_smoke.run_foundation import (
     REQUIRED_T5_MANIFEST_FILES,
     SMOKE_NAMES,
     OrchestrationDependencies,
+    _run_foundation_for_testing,
     _same_filesystem_object,
     _smoke_e_kwargs,
     run_foundation,
@@ -38,6 +42,46 @@ SNAPSHOT_FILES = (
     "t5gemma-b-b-ul2/README.md",
     *(f"t5gemma-b-b-ul2/{name}" for name in REQUIRED_T5_MANIFEST_FILES),
 )
+
+
+def test_live_entrypoint_hardcodes_authorization_guards(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parameters = inspect.signature(run_foundation).parameters
+
+    assert "dependencies" not in parameters
+    assert "expected_config_sha256" not in parameters
+    assert "process_context" not in parameters
+    assert "require_clean_git" not in parameters
+
+    sentinel_dependencies = object()
+    sentinel_outcome = object()
+    captured: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        run_foundation_module,
+        "default_dependencies",
+        lambda: sentinel_dependencies,
+    )
+
+    def fake_core(**kwargs: Any) -> Any:
+        captured.update(kwargs)
+        return sentinel_outcome
+
+    monkeypatch.setattr(run_foundation_module, "_run_foundation_core", fake_core)
+    outcome = run_foundation(
+        config_path=tmp_path / "config.json",
+        repository_root=tmp_path,
+        run_root=tmp_path / "runs",
+    )
+
+    assert outcome is sentinel_outcome
+    assert captured["dependencies"] is sentinel_dependencies
+    assert captured["expected_config_sha256"] == EXPECTED_CONFIG_SHA256
+    assert captured["process_context"] is None
+    assert captured["require_clean_git"] is True
+    assert captured["live_execution"] is True
 
 
 def _write_json(path: Path, value: Any) -> None:
@@ -418,6 +462,7 @@ def _dependencies(
 
     return (
         OrchestrationDependencies(
+            testing_only=True,
             resolve_model_config=resolve,
             load_model=load,
             run_smoke_a=smoke_a,
@@ -438,7 +483,7 @@ def _run(
     tmp_path: Path,
     dependencies: OrchestrationDependencies,
 ):
-    return run_foundation(
+    return _run_foundation_for_testing(
         fixture.config_path,
         repository_root=fixture.repo,
         run_root=tmp_path / "runs",
@@ -446,6 +491,17 @@ def _run(
         dependencies=dependencies,
         process_context=fixture.process_context,
     )
+
+
+def test_private_test_entry_rejects_live_dependencies(tmp_path: Path) -> None:
+    fixture = _foundation_fixture(tmp_path)
+    dependencies, _ = _dependencies(fixture)
+    live_dependencies = replace(dependencies, testing_only=False)
+
+    with pytest.raises(ValueError, match="requires testing-only dependencies"):
+        _run(fixture, tmp_path, live_dependencies)
+
+    assert not (tmp_path / "runs").exists()
 
 
 def test_orchestrator_runs_all_smokes_once_with_explicit_frozen_values(

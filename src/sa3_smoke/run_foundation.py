@@ -77,6 +77,7 @@ _SENSITIVE_ENV_RE = re.compile(
 class OrchestrationDependencies:
     """Injectable boundaries used by CPU-only orchestration tests."""
 
+    testing_only: bool
     resolve_model_config: Callable[..., Any]
     load_model: Callable[..., Any]
     run_smoke_a: Callable[..., Any]
@@ -238,6 +239,7 @@ def default_dependencies() -> OrchestrationDependencies:
     from sa3_smoke.smokes import run_smoke_a, run_smoke_b, run_smoke_c, run_smoke_d
 
     return OrchestrationDependencies(
+        testing_only=False,
         resolve_model_config=resolve_local_model_config,
         load_model=load_local_model,
         run_smoke_a=run_smoke_a,
@@ -1416,19 +1418,74 @@ def run_foundation(
     *,
     repository_root: str | os.PathLike[str] = REPOSITORY_ROOT,
     run_root: str | os.PathLike[str] | None = None,
-    expected_config_sha256: str = EXPECTED_CONFIG_SHA256,
-    dependencies: OrchestrationDependencies | None = None,
-    process_context: Mapping[str, Any] | None = None,
+) -> FoundationRunOutcome:
+    """Run the canonical live path with every authorization guard enabled.
+
+    Dependency injection and relaxed provenance checks intentionally are not
+    part of this public entry point.  CPU orchestration tests use the private
+    ``_run_foundation_for_testing`` boundary below.
+    """
+
+    return _run_foundation_core(
+        config_path=config_path,
+        repository_root=repository_root,
+        run_root=run_root,
+        expected_config_sha256=EXPECTED_CONFIG_SHA256,
+        dependencies=default_dependencies(),
+        process_context=None,
+        require_clean_git=True,
+        live_execution=True,
+    )
+
+
+def _run_foundation_for_testing(
+    config_path: str | os.PathLike[str],
+    *,
+    repository_root: str | os.PathLike[str],
+    run_root: str | os.PathLike[str],
+    expected_config_sha256: str,
+    dependencies: OrchestrationDependencies,
+    process_context: Mapping[str, Any],
     require_clean_git: bool = True,
 ) -> FoundationRunOutcome:
+    """Exercise orchestration with CPU fakes; never use for model execution."""
+
+    if not dependencies.testing_only:
+        raise ValueError("the private test entry point requires testing-only dependencies")
+
+    return _run_foundation_core(
+        config_path=config_path,
+        repository_root=repository_root,
+        run_root=run_root,
+        expected_config_sha256=expected_config_sha256,
+        dependencies=dependencies,
+        process_context=process_context,
+        require_clean_git=require_clean_git,
+        live_execution=False,
+    )
+
+
+def _run_foundation_core(
+    config_path: str | os.PathLike[str],
+    *,
+    repository_root: str | os.PathLike[str],
+    run_root: str | os.PathLike[str] | None,
+    expected_config_sha256: str,
+    dependencies: OrchestrationDependencies,
+    process_context: Mapping[str, Any] | None,
+    require_clean_git: bool,
+    live_execution: bool,
+) -> FoundationRunOutcome:
     """Validate, run A--E, and retain strict terminal results/manifests."""
+
+    if live_execution == dependencies.testing_only:
+        raise ValueError("execution mode does not match the dependency boundary")
 
     started_at = _utc_now()
     repo = Path(repository_root).resolve()
     config_file = Path(config_path).resolve()
     context = dict(process_context or capture_process_context())
-    live_execution = dependencies is None
-    deps = dependencies or default_dependencies()
+    deps = dependencies
     preflight = validate_preflight(
         config_path=config_file,
         repository_root=repo,

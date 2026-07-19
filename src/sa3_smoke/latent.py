@@ -637,14 +637,25 @@ class ResumingEulerSampler:
     This is designed for sampler injection into a fresh official ``generate``
     call in a separate process.  The official path rebuilds conditioning and a
     full schedule.  This callable checks that schedule bit-for-bit against the
-    saved one, checks the fresh latent's shape/dtype, ignores its values, and
-    executes only transitions beginning at ``next_step_index``.
+    saved one, checks the fresh latent's shape, ignores its values, preserves
+    the checkpoint latent's dtype, and executes only transitions beginning at
+    ``next_step_index``.
+
+    The fresh noise dtype is deliberately not required to equal the checkpoint
+    dtype.  The pinned upstream Euler path may promote the evolving latent
+    after its first model call (the production reference promoted float16
+    noise to float32), while every fresh official ``generate`` invocation
+    still allocates float16 noise.  Casting the saved state back to that
+    discarded noise dtype would change the resumed numerical trajectory.
     """
 
     def __init__(self, checkpoint: EulerCheckpointState) -> None:
         self.checkpoint = checkpoint
         self.last_run_result: EulerRunResult | None = None
         self.runtime_schedule_validated = False
+        self.fresh_initial_latent_dtype: str | None = None
+        self.checkpoint_latent_dtype = str(checkpoint.latent.dtype)
+        self.resume_latent_dtype_preserved = False
 
     def __call__(
         self,
@@ -665,10 +676,11 @@ class ResumingEulerSampler:
             raise CheckpointValidationError(
                 f"fresh official latent shape {tuple(x.shape)} != checkpoint {expected_shape}"
             )
-        if str(x.dtype) != expected_dtype:
+        if str(self.checkpoint.latent.dtype) != expected_dtype:
             raise CheckpointValidationError(
-                f"fresh official latent dtype {x.dtype} != checkpoint {expected_dtype}"
+                "loaded checkpoint latent dtype no longer matches its verified metadata"
             )
+        self.fresh_initial_latent_dtype = str(x.dtype)
         runtime_schedule_sha256 = tensor_sha256(sigmas)
         saved_schedule_sha256 = self.checkpoint.metadata["schedule_sha256"]
         if runtime_schedule_sha256 != saved_schedule_sha256:
@@ -678,7 +690,12 @@ class ResumingEulerSampler:
             )
         self.runtime_schedule_validated = True
 
-        resumed_x = self.checkpoint.latent.to(device=x.device, dtype=x.dtype)
+        resumed_x = self.checkpoint.latent.to(device=x.device)
+        self.resume_latent_dtype_preserved = str(resumed_x.dtype) == expected_dtype
+        if not self.resume_latent_dtype_preserved:
+            raise CheckpointValidationError(
+                "moving the checkpoint latent to the runtime device changed its dtype"
+            )
         result = run_euler_transitions(
             model,
             resumed_x,
