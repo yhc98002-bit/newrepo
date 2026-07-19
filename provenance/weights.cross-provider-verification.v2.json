@@ -1,0 +1,151 @@
+{
+  "created_at": "2026-07-19T12:15:04+00:00",
+  "huggingface": {
+    "gated": false,
+    "private": false,
+    "provider_role": "UPSTREAM",
+    "repo_id": "stabilityai/stable-audio-3-medium-base",
+    "revision": "b32993f73c3bdc3864043a72d8032606bba737c8"
+  },
+  "label": "external_upstream",
+  "modelscope": {
+    "organization_label": "Stability AI - Mirror",
+    "provider_role": "MIRROR",
+    "repo_id": "stabilityai/stable-audio-3-medium-base",
+    "revision": "a9c479f5f28ee89f6fbdaca57b683e6b6c160314"
+  },
+  "provider_metadata": {
+    "excluded_from_content_equivalence": [
+      {
+        "path": ".gitattributes",
+        "reason": "Provider-specific repository metadata differs between the mirror and upstream."
+      },
+      {
+        "path": "configuration.json",
+        "reason": "ModelScope-only provider metadata."
+      },
+      {
+        "path": "t5gemma-b-b-ul2/.gitattributes",
+        "reason": "Hugging-Face-only provider metadata."
+      }
+    ],
+    "runtime_required": false
+  },
+  "schema_version": 2,
+  "status": "PASS",
+  "superseded_diagnostic": {
+    "reason": "The first comparison did not exclude provider-specific .gitattributes and stopped before checking substantive files.",
+    "sha256": "5dadb4d0d2e8e3998b4baf1522352e664a269bbc8e144409f6682db81b2972db"
+  },
+  "supersedes": {
+    "path": "provenance/weights.manifest.json",
+    "scope": "cross_provider_verified flags only; the original acquisition manifest remains immutable",
+    "sha256": "3c120446c854e814a172d499af4757a2ed86c985ba9e45f36674ad0242ca1803"
+  },
+  "verification": {
+    "final_log_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/huggingface-cross-verify-b32993f7-20260719T121500Z.log",
+    "final_log_sha256": "fd76776b092a56896c8cb3d940f693d9da1e5f952d3193af01dac07886a2c335",
+    "metadata_log_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/huggingface-metadata-b32993f7-20260719T121200Z.log",
+    "metadata_log_sha256": "b15c79e0ea18c04122cff66d76d0dd2308b33dccdae1177168b203ac449c1c47",
+    "method": "Unauthenticated public Hugging Face API at the pinned revision: LFS SHA-256 metadata for LFS files; proxied exact-file downloads and local SHA-256 for Git files.",
+    "verified_common_file_count": 16
+  },
+  "verified_files": [
+    {
+      "byte_size": 11852,
+      "cross_provider_verified": true,
+      "path": "LICENSE.md",
+      "sha256": "d6f6b1a4dce5c852bd6d7d9482d002baf0ccdb71e662250b73be9eec8764ee8d"
+    },
+    {
+      "byte_size": 10541,
+      "cross_provider_verified": true,
+      "path": "LICENSE_GEMMA.md",
+      "sha256": "e77acc0d3163bb7534675045c584b4d04b387b529239fc4b3647da0a01ba4745"
+    },
+    {
+      "byte_size": 97,
+      "cross_provider_verified": true,
+      "path": "NOTICE",
+      "sha256": "66f856d7da72797f528fca46b7c80634ab481f917bfe020960e123d84b19f75f"
+    },
+    {
+      "byte_size": 5240,
+      "cross_provider_verified": true,
+      "path": "README.md",
+      "sha256": "f46e841635ce2c1278dddb67e12d83d4094a5c4ec99d04d47feb026435f3e665"
+    },
+    {
+      "byte_size": 1462873,
+      "cross_provider_verified": true,
+      "path": "Stable_Audio_3.0_Thumbnail_1x1.png",
+      "sha256": "a9834815023e381f367ed5e63a4cf6276a75b876b6fd6076f633e3135b786512"
+    },
+    {
+      "byte_size": 9222116660,
+      "cross_provider_verified": true,
+      "path": "model.safetensors",
+      "sha256": "c443fcc4d491475064cd0ff3eb92459b1e5f5060e86d96d016f048e528e24195"
+    },
+    {
+      "byte_size": 7842,
+      "cross_provider_verified": true,
+      "path": "model_config.json",
+      "sha256": "27e2a299f0bda6ff742d3387398f929299575642f2c6a4d4c4f94830928fd0d5"
+    },
+    {
+      "byte_size": 3842356410,
+      "cross_provider_verified": true,
+      "path": "svd_bases.pt",
+      "sha256": "d62c8d3855998fea824fb651885d220f216d2d6a86d14b19224f806ddb125692"
+    },
+    {
+      "byte_size": 18296,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/README.md",
+      "sha256": "6a96748c87d323d6080d037191346e68c3eda39c34c0530cb4f7f3bd8cc20319"
+    },
+    {
+      "byte_size": 2540,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/config.json",
+      "sha256": "575334409716886ac2952f5a275ed92868deef8a0ea560258d9970a431c6fb3a"
+    },
+    {
+      "byte_size": 156,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/generation_config.json",
+      "sha256": "1068b94599a94ceea097dd3936819f108c2e70806d7c6cc5ec425610af347625"
+    },
+    {
+      "byte_size": 1183022944,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/model.safetensors",
+      "sha256": "9b05ea5a4f211d023832f706fb2c0e83e4fc721b6da35ab69ceb0b55eb7800d3"
+    },
+    {
+      "byte_size": 636,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/special_tokens_map.json",
+      "sha256": "baec30ea10906f16adb8c18af7a34023002c1746542612b8b41c9f09e1351351"
+    },
+    {
+      "byte_size": 34362429,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/tokenizer.json",
+      "sha256": "7794135caa3ea73918949c902a781cc61dab674a4b59c17d85931c77c1114cbd"
+    },
+    {
+      "byte_size": 4241003,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/tokenizer.model",
+      "sha256": "61a7b147390c64585d6c3543dd6fc636906c9af3865a5548f27f31aee1d4c8e2"
+    },
+    {
+      "byte_size": 46437,
+      "cross_provider_verified": true,
+      "path": "t5gemma-b-b-ul2/tokenizer_config.json",
+      "sha256": "9546baec0dfefec0e29873edea9488ecde153f846e18c06ea48cb44587bf408f"
+    }
+  ]
+}

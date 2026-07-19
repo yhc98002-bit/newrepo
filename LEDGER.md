@@ -96,3 +96,38 @@ manifest and artifacts are named here with SHA-256 digests.
 - Deviations: model acquisition/verification logs exist but are not generation
   timings and are not used as benchmark-cost evidence
 - Supersedes: none
+
+## L-0004 — Public-upstream cross-provider verification
+
+- Time: 2026-07-19T20:15:04+08:00
+- Kind: completed provenance verification; no model result
+- Git: `3ca49a6247603a6541ac76cdd190f3a8d68b0e80`
+- Node: `ln206`; GPU IDs: none; TP: not applicable; replicas: not applicable
+- Seed: not applicable
+- Command: unauthenticated `huggingface_hub` metadata and exact-file reads
+  through `scripts/with_proxy.sh` at the pinned public revision
+- Config: `provenance/weights.manifest.json` SHA-256
+  `3c120446c854e814a172d499af4757a2ed86c985ba9e45f36674ad0242ca1803`
+- Artifact: `provenance/weights.cross-provider-verification.v2.json`
+  SHA-256
+  `905bac35a86f98b5db961b7258a31ca2f7a9c47d67760fb9ca110f83013f7dfb`
+- Evidence: official Hugging Face revision
+  `b32993f73c3bdc3864043a72d8032606bba737c8` reported
+  `gated=false`, `private=false`; all 16 substantive files common to the
+  mirror and upstream matched byte size and SHA-256
+- Provider metadata: root `.gitattributes` differs by provider;
+  `configuration.json` is ModelScope-only; embedded-T5 `.gitattributes` is
+  Hugging-Face-only. None is loaded by the runtime.
+- Logs: final verification SHA-256
+  `fd76776b092a56896c8cb3d940f693d9da1e5f952d3193af01dac07886a2c335`;
+  official metadata SHA-256
+  `b15c79e0ea18c04122cff66d76d0dd2308b33dccdae1177168b203ac449c1c47`
+- Result: PASS — the D-0005 cross-provider prerequisite is satisfied without
+  a token or interactive acceptance
+- Deviations: the earlier diagnostic SHA-256
+  `5dadb4d0d2e8e3998b4baf1522352e664a269bbc8e144409f6682db81b2972db`
+  stopped on provider metadata and is superseded by the final verification
+- Identifier note: two concurrent append-only entries used L-0003. Both remain;
+  future references use identifier plus title, and numbering continues here.
+- Supersedes: `provenance/weights.manifest.json` only for
+  `cross_provider_verified` status; no prior bytes are changed
