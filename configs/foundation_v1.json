@@ -1,0 +1,81 @@
+{
+  "audio": {
+    "channels": 2,
+    "sample_rate": 44100,
+    "subtype": "FLOAT"
+  },
+  "model": {
+    "huggingface_revision": "b32993f73c3bdc3864043a72d8032606bba737c8",
+    "id": "stabilityai/stable-audio-3-medium-base",
+    "model_half": true,
+    "modelscope_revision": "a9c479f5f28ee89f6fbdaca57b683e6b6c160314",
+    "snapshot": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/models/stable-audio-3-medium-base-ms-a9c479f5"
+  },
+  "placement": {
+    "gpu_ids": [0],
+    "justification": "The 1.4B model fits one A800; TP1 avoids unjustified multi-GPU execution.",
+    "node": "an12",
+    "replica_count": 1,
+    "tensor_parallel_width": 1
+  },
+  "protocol": {
+    "path": "SMOKE_PROTOCOL.md",
+    "sha256": "84f15494462b99de2d8f8e71b0c90f7cecccbd17e92599d036b2a4785e4e70c6"
+  },
+  "run_root": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs",
+  "sampling": {
+    "cfg_scale": 7.0,
+    "chunked_decode": true,
+    "duration_padding_sec": 6.0,
+    "duration_seconds": 30,
+    "negative_prompt": "low quality, clipping, silence",
+    "prompt": "A steady instrumental electronic music loop with drums, bass, and warm synthesizer, clean studio recording, 120 BPM",
+    "sampler_type": "euler",
+    "steps": 50
+  },
+  "smokes": {
+    "a": {
+      "repeat_count": 2,
+      "seed": 73193001,
+      "seed_id": "S-0001"
+    },
+    "b": {
+      "continuation_mask_seconds": [10, 30],
+      "prompt": "Continue the same instrumental electronic music with consistent rhythm and instrumentation",
+      "seed": 73193002,
+      "seed_id": "S-0002",
+      "source_seconds": 10
+    },
+    "c": {
+      "multi_mask_seconds": [[4, 6], [20, 23]],
+      "multi_seed": 73193004,
+      "multi_seed_id": "S-0004",
+      "prompt": "A seamless instrumental electronic music passage with steady drums and warm synthesizer",
+      "single_mask_seconds": [[8, 12]],
+      "single_seed": 73193003,
+      "single_seed_id": "S-0003"
+    },
+    "d": {
+      "batch_duration_seconds": 10,
+      "batch_prompts": [
+        "Steady electronic drums and warm synthesizer, 100 BPM",
+        "Clean acoustic guitar rhythm with light percussion, 110 BPM",
+        "Ambient synthesizer pulse with a steady beat, 90 BPM",
+        "Bright piano groove with bass and drums, 120 BPM"
+      ],
+      "batch_seed": 73193006,
+      "batch_seed_id": "S-0006",
+      "batch_size": 4,
+      "single_seed": 73193005,
+      "single_seed_id": "S-0005"
+    },
+    "e": {
+      "checkpoint_completed_steps": [15, 30, 40],
+      "seed": 73193007,
+      "seed_id": "S-0007",
+      "waveform_max_abs_tolerance": 1e-05,
+      "waveform_min_snr_db": 80.0
+    }
+  },
+  "version": 1
+}

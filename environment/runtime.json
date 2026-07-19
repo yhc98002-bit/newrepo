@@ -1,0 +1,45 @@
+{
+  "created_at": "2026-07-19T19:40:00+08:00",
+  "environment_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env",
+  "environment_size_bytes": 6326634022,
+  "freeze_sha256": "da6aae61a6189ee8fc3842fa76652359ff802c6252ce191a199bad5953f98eab",
+  "git_hash_at_creation": "0d1318557f05870641aff953abc87820d29be568",
+  "gpu_validation": {
+    "capability": [8, 0],
+    "cuda_visible_devices": "0",
+    "device": "NVIDIA A800 80GB PCIe",
+    "driver": "535.104.12",
+    "flash_attention_kernel_finite": true,
+    "gpu_ids": [0],
+    "node": "an12",
+    "replica_count": 1,
+    "tensor_parallel_width": 1
+  },
+  "license_inventory_sha256": "10f99624b8438c1dbc385ca2cec9bebac73ecb96cfe1098af32f4b9be8bd3294",
+  "lock_sha256": "c61a7fa1375d6766cceed983b56051b5b3ea7f3dba3769a5ffde1561f05f2b8c",
+  "logs": {
+    "flash_import": {
+      "path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/import-an12-gpu0-flash-20260719T114000Z.log",
+      "sha256": "27a43e6322d0cb7ffd9f3299d2c1b4146acf94735648a1d7f7507243b0224071"
+    },
+    "login_import": {
+      "path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/import-login-20260719T113300Z.log",
+      "sha256": "479722ba729df1582f3557978a2785a1c991935327c17d019cedfc60cf2ce124"
+    },
+    "sync": {
+      "path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/logs/environment-sync-20260719T112400Z-retry3.log",
+      "sha256": "6b93125c18bbe8e87bc498fe84464ff8966aaa42142b18e257aff8471a4c1062"
+    }
+  },
+  "placement_justification": "The 1.4B model fits one A800; TP1 and one replica avoid unjustified multi-GPU or cross-node placement.",
+  "pyproject_sha256": "70ba55cccb73e7cb763faa20bcd94d6c46b0f447cbb7863aa63fdf563513aeb8",
+  "python": "3.10.12",
+  "storage_deviation": {
+    "logical_repository": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo",
+    "physical_repository": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/repository",
+    "preserved_original": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo.xyfs-project-quota-backup-20260719T113200Z",
+    "reason": "Lustre project quota E122 on project ID 2228473301"
+  },
+  "torch": "2.7.1+cu126",
+  "torchaudio": "2.7.1+cu126"
+}

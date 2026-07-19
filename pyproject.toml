@@ -1,0 +1,58 @@
+[project]
+name = "sa3-foundation-smoke"
+version = "0.1.0"
+description = "Engineering-only Stable Audio 3 foundation smoke harness"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+  "flash-attn @ https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.7.16/flash_attn-2.6.3%2Bcu126torch2.7-cp310-cp310-linux_x86_64.whl",
+  "huggingface-hub==1.7.1",
+  "modelscope==1.38.1",
+  "numpy==2.2.6",
+  "safetensors==0.7.0",
+  "soundfile==0.13.1",
+  "stable-audio-3 @ https://github.com/Stability-AI/stable-audio-3/archive/0385302ea26522f00c80392c4b708df5ebf1adf5.tar.gz",
+  "stable-audio-tools @ https://github.com/Stability-AI/stable-audio-tools/archive/3241adba4fc2a85cf5b29d9eb68d42f40a28e820.tar.gz",
+  "transformers==5.8.0",
+]
+
+[dependency-groups]
+dev = [
+  "pip-licenses==5.5.0",
+  "pytest==9.0.3",
+  "ruff==0.15.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sa3_smoke"]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu126", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+]
+torchaudio = [
+  { index = "pytorch-cu126", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
