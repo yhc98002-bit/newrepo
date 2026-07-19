@@ -252,3 +252,36 @@ All other model execution and generation remain closed until a later
 append-only decision freezes `BENCHMARK_PREREG_v1.md` by exact hash.
 `BENCHMARK_PREREG_V1_FROZEN = NO` and
 `BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
+
+## D-0014 — Correct bounded foundation call enumeration before execution
+
+- Date: 2026-07-19
+- Status: accepted; clarification recorded before any foundation generation
+- Authority: Chief Scientist / PI, current foundation prompt
+- Supersedes: D-0013 only where its enumerated list omitted the separately
+  required batch-one cost call; all D-0013 hard guards remain binding
+
+D-0013 correctly added fail-closed cost caps, but its five-item enumeration
+named only the batch-of-four part of smoke D. The current foundation prompt also
+explicitly requires the base 50-step batch-one path for measured DiT forward
+calls, synchronized wall time, and peak VRAM. That batch-one call is therefore
+inside the same bounded foundation authorization; it is not benchmark
+execution and does not authorize any additional experiment.
+
+The exact authorized plan is 11 official generation calls producing 14 model
+outputs: A has two batch-one outputs; B has one; C has two; D has one 30-second
+batch-one cost output and one 10-second batch-of-four call producing four
+outputs; E has one uninterrupted reference and three separate-process resumed
+outputs. The derived 10-second continuation source is retained and labeled but
+is not a model generation. Only registered seeds S-0001 through S-0007 may be
+used.
+
+`FOUNDATION_COST_SMOKE_AUTHORIZED = YES` for that exact plan. The unchanged
+guards are `MAX_GENERATIONS = 20`, `MAX_CLIP_SECONDS = 30`, `MAX_GPUS = 1`, and
+`MAX_GPU_SECONDS = 1800`, with the D-0013 pre-call, post-atomic-write stop,
+per-generation ledger, immutable-artifact, sanity, and provenance requirements.
+
+No foundation model call has occurred as of this correction. All benchmark,
+detector, constraint, policy, evaluator, and scientific-result work remains
+unauthorized. `BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
