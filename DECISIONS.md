@@ -187,3 +187,29 @@ Current states are `SA3_FOUNDATION_SMOKE_AUTHORIZED = NO`,
 `BENCHMARK_EXECUTION_AUTHORIZED = NO`. Model loading, forward execution,
 decoding, and all audio-generating smokes remain prohibited until a later
 user-authorized, uniquely identified decision satisfies the applicable gate.
+
+## D-0012 — Current-prompt SA3 foundation execution authorization
+
+- Date: 2026-07-19
+- Status: accepted; frozen foundation smokes A–E authorized
+- Supersedes: D-0011 only for the five SA3 foundation smokes
+
+The user's current, explicit SA3 foundation goal requires execution of smokes
+A–E and identifies only interactive weight-license acceptance or a required
+token as a valid blocking terminal. The exact base snapshot is public and
+ungated, all substantive mirror files now match the pinned public upstream
+revision, and the rules/config/seeds were frozen before any model output.
+
+`SA3_FOUNDATION_SMOKE_AUTHORIZED = YES` for only the five engineering smokes
+in `SMOKE_PROTOCOL.md` version 1 using
+`configs/foundation_v1.json`. Execution must use the committed clean
+`origin/main` revision, the declared one-A800 TP1 placement, offline local
+model paths, and immutable run directories.
+
+D-0011 correctly governed the separate no-generation benchmark drafting goal
+at its cutoff; this later decision records the current user's distinct
+foundation instruction. It does not authorize benchmark audio, detectors,
+constraints, evaluators, labels, policy work, or scientific claims.
+
+`BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
