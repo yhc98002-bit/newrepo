@@ -43,3 +43,23 @@ manifest and artifacts are named here with SHA-256 digests.
 - Deviations: runtime relocated to `/HOME` after verified Lustre project-quota
   failure; original checkout retained
 - Supersedes: none
+
+## L-0003 — Benchmark cost-evidence and no-audio audit
+
+- Time: 2026-07-19T19:58:19+08:00
+- Kind: completed diagnostic evidence; no model result
+- Git: `2b968906a899d044e5c2549beb8aab1184c077d4`
+- Node: `ln206`; GPU IDs: none; TP: not applicable; replicas: not applicable
+- Seed: not applicable
+- Commands: repository/report/timing search, process audit, run-directory
+  inventory, audio-extension inventory, and remote-ref verification
+- Config: `BENCHMARK_PREREG_v1.md` SHA-256
+  `2e3d4fc50b8d020953bdbfad861f561fb95d461dc39667e16befc1b61bedbe38`
+- Evidence: zero entries under the declared foundation `runs/` directory; zero
+  audio files in the repository; no active smoke/generation process; no
+  committed foundation report, immutable timing row, or successful
+  project-local cost row for any requested benchmark backbone
+- Result: `GPU_BUDGET_STATUS = UNMEASURED`; no audio generated
+- Deviations: model acquisition/verification logs exist but are not generation
+  timings and are not used as benchmark-cost evidence
+- Supersedes: none

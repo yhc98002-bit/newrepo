@@ -140,6 +140,8 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
                 "D-0006 — Benchmark design drafting scope",
                 "D-0007 — Benchmark preregistration and execution gates",
                 "D-0009 — Decision-identifier collision resolution and benchmark gate",
+                "D-0011 — Revoke foundation-smoke execution under no-generation goal",
+                "SA3_FOUNDATION_SMOKE_AUTHORIZED = NO",
                 "BENCHMARK_PREREG_V1_FROZEN = NO",
                 "BENCHMARK_EXECUTION_AUTHORIZED = NO",
                 "No audio generation is authorized",

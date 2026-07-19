@@ -169,3 +169,21 @@ any benchmark, detector, constraint, evaluator, labeling, or policy gate.
 `BENCHMARK_PREREG_V1_FROZEN = NO` and
 `BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged. Foundation smoke
 artifacts and results cannot be claimed as benchmark artifacts or results.
+
+## D-0011 — Revoke foundation-smoke execution under no-generation goal
+
+- Date: 2026-07-19
+- Status: accepted; all model execution and audio generation closed
+- Supersedes: D-0010 in full
+
+D-0010 incorrectly treated a concurrent foundation workflow as authorization
+under the user's active benchmark-preregistration goal. That goal explicitly
+requires design work only and no generated audio. At this correction cutoff,
+the foundation run directory is empty, no smoke process is active, and the
+repository contains no audio file, so the revocation precedes execution.
+
+Current states are `SA3_FOUNDATION_SMOKE_AUTHORIZED = NO`,
+`BENCHMARK_PREREG_V1_FROZEN = NO`, and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`. Model loading, forward execution,
+decoding, and all audio-generating smokes remain prohibited until a later
+user-authorized, uniquely identified decision satisfies the applicable gate.
