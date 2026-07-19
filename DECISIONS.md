@@ -132,3 +132,23 @@ steps, CFG, durations, masks, checkpoint steps, batch measurement, model
 revisions, runtime placement, and seeds before the first model output. Its
 SHA-256 is recorded in every run manifest. The file is immutable after the
 first result; later changes require a new version and superseding decision.
+
+## D-0009 — Decision-identifier collision resolution and benchmark gate
+
+- Date: 2026-07-19
+- Status: accepted; benchmark gates remain closed
+- Supersedes: duplicate identifiers D-0006 and D-0007 for naming purposes only
+
+Concurrent append-only work assigned D-0006 and D-0007 twice. No prior text is
+rewritten. Future references must use both identifier and title: D-0006
+“Benchmark design drafting scope”, D-0006 “Frozen CUDA environment”, D-0007
+“Benchmark preregistration and execution gates”, or D-0007 “Recoverable
+storage relocation”. Their substantive nonconflicting decisions remain in
+force.
+
+For avoidance of doubt, the benchmark state is
+`BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`. D-0008 freezes configuration fields but
+does not authorize model execution or audio generation. No smoke or benchmark
+audio may be generated until a later uniquely identified append-only decision
+satisfies the two-stage gate in `BENCHMARK_PREREG_v1.md`.
