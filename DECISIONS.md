@@ -152,3 +152,20 @@ For avoidance of doubt, the benchmark state is
 does not authorize model execution or audio generation. No smoke or benchmark
 audio may be generated until a later uniquely identified append-only decision
 satisfies the two-stage gate in `BENCHMARK_PREREG_v1.md`.
+
+## D-0010 — SA3 foundation smoke execution authorization
+
+- Date: 2026-07-19
+- Status: accepted; SA3 foundation smokes A–E authorized
+- Supersedes: D-0009 only for the five SA3 foundation smokes
+
+The user's current instruction explicitly authorizes execution of only the five
+engineering smokes A–E in frozen `SMOKE_PROTOCOL.md` version 1 with frozen
+`configs/foundation_v1.json` and `SEED_REGISTRY.md` version 1. This bounded
+authorization satisfies the later-execution requirement introduced by D-0009
+for those foundation smokes only. It does not freeze, execute, amend, or open
+any benchmark, detector, constraint, evaluator, labeling, or policy gate.
+
+`BENCHMARK_PREREG_V1_FROZEN = NO` and
+`BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged. Foundation smoke
+artifacts and results cannot be claimed as benchmark artifacts or results.
