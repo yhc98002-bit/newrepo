@@ -480,17 +480,18 @@ fresh repair caps. The consumed claim must not be removed or reused.
 
 ## 12. Verification
 
-The final clean-commit test command is:
+The final repository test command is:
 
 ```text
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src /HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m pytest -q -p no:cacheprovider
+/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m pytest -q
 ```
 
-Result: `89 passed, 73 subtests passed`. The suite includes environment and
-provenance drift rejection, governance checks, all smoke harnesses, the
-mixed-dtype checkpoint regression, and the public live-entry-point
-authorization-boundary regression. Ruff lint, Ruff format verification, and
-`git diff --check` also pass for the changed Python and repository files.
+Result: `90 passed, 98 subtests passed`. The suite includes environment and
+provenance drift rejection, governance markers, all smoke harnesses, retained
+report assertions, the mixed-dtype checkpoint regression, and the public live
+entry-point authorization-boundary regression. Ruff lint and `git diff
+--check` also pass for the changed Python and repository files. This section
+records command results, not an external transcript artifact.
 
 `FINAL_TEST_STATUS = PASS`
 

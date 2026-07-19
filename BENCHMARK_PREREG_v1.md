@@ -3,23 +3,28 @@
 - Draft date: 2026-07-19
 - Status: `DRAFT_FOR_CO_PI_REVIEW_NOT_FROZEN`
 - Generation authorization: `CLOSED`
-- Results in this document: none
-- Audio generated under this preregistration: none
+- Benchmark results in this document: none
+- Benchmark audio generated under this preregistration: none
+- Foundation engineering evidence: one bounded SA3 Base run, reported only in
+  Appendix A; it is not benchmark evidence
 - Intended scientific unit: one model × one evaluation axis
 
 This is a design document, not an experiment report. Every number below is a
-planned sample size, fixed threshold, budget coefficient, or provenance fact;
-none is a benchmark result. No audio generation of any kind may begin until a
-later append-only entry in `DECISIONS.md` names this file, its exact SHA-256,
-all required companion hashes, and
+planned sample size, fixed threshold, budget coefficient, provenance fact, or
+explicitly labeled foundation engineering measurement; none is a benchmark
+result. No benchmark audio generation may begin until a later append-only entry
+in `DECISIONS.md` names this file, its exact SHA-256, all required companion
+hashes, and
 `BENCHMARK_PREREG_V1_FROZEN = YES`.
 
-No completed project-local cost smoke exists at this cutoff. The first design
-freeze may therefore authorize only the bounded entry, cost, true-state, and
-conditional Gate-0 smokes named in its freeze package. It does not authorize
-the benchmark corpus. Full benchmark generation additionally requires a
-measured-cost amendment and a later decision stating
-`BENCHMARK_EXECUTION_AUTHORIZED = YES`. Both gates are currently closed.
+One project-local SA3 foundation run exists at this cutoff under the separate,
+bounded D-0013/D-0014 authorization. Smokes A–D passed, including Smoke D's
+single batch-one and single batch-four cost observations; Smoke E failed before
+any resumed DiT transition, so D-0017 records the overall run as terminal
+`FAIL_ESCALATED` and consumes the authorization. This does not authorize the
+benchmark corpus or a retry. Full benchmark generation still requires a frozen
+preregistration, adequate per-model cost calibration, and a later decision
+stating `BENCHMARK_EXECUTION_AUTHORIZED = YES`; those gates remain closed.
 
 ## 1. Purpose, claims, and non-claims
 
@@ -48,13 +53,15 @@ reference, not evidence of population consensus.
 
 Exact repository revisions, weight-file hashes, inference-library revisions,
 model-native inference configurations, and license records are required before
-the design freeze. Successful measured smoke rows are required only before
-full benchmark execution authorization, because generating them is currently
-prohibited. A similarly named checkpoint is never a substitute.
+the design freeze. Successful measured smoke rows for every eligible model are
+required before full benchmark execution authorization. The bounded SA3
+foundation record does not waive that requirement: it ended `FAIL_ESCALATED`,
+and its cost samples are too few for the registered p95 coefficients. A
+similarly named checkpoint is never a substitute.
 
 | Logical backbone | Canonical artifact | Status in this draft | Required evidence before full execution |
 | --- | --- | --- | --- |
-| `stable-audio-3-medium-base` | `stabilityai/stable-audio-3-medium-base` | Mandatory. This is pre-trained **Base**, not post-trained `stabilityai/stable-audio-3-medium`. | Exact snapshot; successful generation/NFE/cost smoke; native-config hash; state capability recorded as PASS or `NOT_IDENTIFIABLE`. |
+| `stable-audio-3-medium-base` | `stabilityai/stable-audio-3-medium-base` | Mandatory. This is pre-trained **Base**, not post-trained `stabilityai/stable-audio-3-medium`. D-0017: foundation A–D PASS, E FAIL, overall `FAIL_ESCALATED`. | Exact snapshot; adequate successful generation/NFE/cost calibration; native-config hash; reviewed capability preflight reaching a valid terminal PASS or `NOT_IDENTIFIABLE` classification. |
 | `stable-audio-open-1.0` | `stabilityai/stable-audio-open-1.0` | Mandatory. | License/access without bypass; exact snapshot; successful generation/NFE/cost smoke; state capability recorded as PASS or `NOT_IDENTIFIABLE`. |
 | `ACE-Step v1` | `ACE-Step/ACE-Step-v1-3.5B` | Mandatory. | Exact snapshot; successful generation/NFE/cost smoke; native-config hash; state capability recorded as PASS or `NOT_IDENTIFIABLE`. |
 | `ACE-Step v1.5` | Gate-0 candidate `ACE-Step/acestep-v15-xl-sft@d1ca0bc96e29cd46435219ceb4f8e3a13a8eaf50`, non-Turbo | **Inactive and excluded. Latest merged retry status: `V15_GATE0_STATUS = FAIL_ESCALATED`.** | After design freeze, a specifically authorized continuation fix and fresh bounded Gate-0 must PASS before a prospective amendment may seek inclusion. |
@@ -77,7 +84,8 @@ reported `NOT_IDENTIFIABLE` for Section 11 and remains eligible for Sections
 Before the design-freeze decision, these companion artifacts must exist and
 their SHA-256s must be named in `DECISIONS.md`:
 
-- this preregistration, including its exact cost formula and unmeasured rows;
+- this preregistration, including its exact cost formula, obtained singleton
+  evidence, and reason-coded incomplete rows;
 - exact prompt IDs/text, intervention strings, and prompt-cluster map;
 - the eight-seed manifest and deterministic seed-construction code;
 - model IDs/revisions, inference configs, environments, evaluator weights, and
@@ -92,8 +100,9 @@ their SHA-256s must be named in `DECISIONS.md`:
 
 The draft specifies prompt construction below, but the exact prompt-text and
 seed companion manifests do not yet exist; it is reviewable, not freeze-ready.
-The first freeze can authorize only its named bounded smokes. Before the later
-execution decision, immutable smoke rows, measured GPU-hour rows and caps,
+The completed bounded foundation run does not freeze this document or open an
+execution gate. Before the later benchmark-execution decision, adequate
+immutable smoke rows, measured GPU-hour rows and caps for every eligible model,
 state-capability reports, and any v1.5 amendment must be added and hashed.
 
 Frozen prompt rows, seeds, evaluator thresholds, failed outputs, and label
@@ -380,12 +389,24 @@ not call seeds common random noise.
 
 The only confirmatory null per axis/model is
 `H0: mean_cluster(success_FIXED-success_BASE) <= 0`, against improvement.
-The test statistic is the cluster mean difference. A one-sided Rademacher
-cluster sign-flip test is exhaustive for ≤20 clusters; for >20 it uses 100,000
-fixed-seed draws and p-value `(1 + count(T_null >= T_obs))/(B+1)`. A zero
-observed difference has p=1. Holm adjustment is applied across eligible models
-within each axis. BoN contrasts and all structure results are estimate-only and
-receive no significance label.
+Inference uses the same 10,000 deterministic, stratified two-stage cluster
+bootstrap registered above, not a sign-flip test. Let `D_hat` be the observed
+cluster-mean contrast and `SE_hat` its stratified between-cluster standard
+error. For replicate `b`, recompute both after resampling whole clusters within
+frozen strata and seed indices within clusters, then set
+`SE_b^+=max(SE_b,1e-12)` and `Z_b=(D_b-D_hat)/SE_b^+`. The
+one-sided 95% lower bound is
+`D_hat-q_0.95(Z_b)*SE_hat`, and the unadjusted p-value is
+`(1 + count(Z_b >= D_hat/SE_hat))/(10000+1)`. If `SE_hat` or a required
+effect estimate is nonfinite, or if `SE_hat=0`, the row receives no significance
+claim (`p=1`, lower bound `-∞`); `D_hat<=0` also sets `p=1`. Zero bootstrap
+standard errors use the stated floor and their count is reported. This
+studentized bootstrap is an approximate weak-null procedure
+conditional on independent, exchangeable clusters within each frozen stratum
+and finite nonzero cluster variance; it does not assume sign symmetry or label
+exchangeability. Holm adjustment is applied across eligible models within each
+axis. BoN contrasts and all structure results are estimate-only and receive no
+significance label.
 
 No conclusion uses a pooled clip-level test, favorable single seed, best
 observed prompt, post hoc threshold, or unreported excluded row.
@@ -470,15 +491,17 @@ LEGIBILITY(q) =
   [OOF logloss(prompt-only) - OOF logloss(prompt+state)] / ln(2)
 
 OUTCOME_COMMITMENT(q) =
-  mean over held-out roots of abs(2*p_hat_KEEP_state(root,q) - 1)
+  mean over held-out clusters of abs(2*p_hat_KEEP_state(cluster,q) - 1)
 ```
 
 `LEGIBILITY` is incremental predictive information in bits per registered
 Bernoulli outcome. `p_hat_KEEP_state` is the out-of-fold prompt+state predicted
-probability of that root’s terminal KEEP success, so commitment can evolve with
-preview state even though an exact resumed terminal is constant across
-checkpoints. Report calibration, Brier score, and prompt-cluster intervals at
-all three fractions; no favorable point is selected after viewing curves.
+probability of KEEP success for a registered replicate in that cluster, from
+the binomial decision unit defined in Section 11.3. Commitment can evolve with
+the four-preview state summary even though each replicate's exact resumed
+terminal is constant across checkpoints. Report calibration, Brier score, and
+prompt-cluster intervals at all three fractions; no favorable point is selected
+after viewing curves.
 
 The primary gate remains:
 
@@ -525,8 +548,10 @@ applied to timed work plus overhead.
 The UI hides model, condition, seed, automatic score, stratum, and repeat
 identity. The administrative map is hashed before ratings. Repeat agreement,
 direction reversals, tap consistency, unsure counts, actual time, and deviations
-are reported. At 180 minutes the PI stops after the current block; missing
-scheduled labels stay missing and no result-guided subset is preferred.
+are reported. Before each presentation or replay, the UI verifies that its full
+registered time allowance fits within the remaining 180-minute budget; if not,
+it does not begin that item. The PI never continues merely to finish a block.
+Missing scheduled labels stay missing and no result-guided subset is preferred.
 
 ## 13. Execution and placement
 
@@ -565,15 +590,20 @@ results of this study.
    official [Stable Audio 3 Medium Base card](https://huggingface.co/stabilityai/stable-audio-3-medium-base).
 2. Zach Evans et al., [Stable Audio Open](https://arxiv.org/abs/2407.14358),
    2024; official [Stable Audio Open 1.0 card](https://huggingface.co/stabilityai/stable-audio-open-1.0).
-3. Junmin Gong et al., [ACE-Step](https://arxiv.org/abs/2506.00045), 2025;
+3. Junmin Gong et al.,
+   [ACE-Step: A Step Towards Music Generation Foundation Model](https://arxiv.org/abs/2506.00045), 2025;
    official [ACE-Step repository](https://github.com/ace-step/ACE-Step).
-4. Junmin Gong et al., [ACE-Step 1.5](https://arxiv.org/abs/2602.00744), 2026;
+4. Junmin Gong et al.,
+   [ACE-Step 1.5: Pushing the Boundaries of Open-Source Music Generation](https://arxiv.org/abs/2602.00744), 2026;
    official [ACE-Step 1.5 repository](https://github.com/ace-step/ACE-Step-1.5).
 5. Francesco Foscarin, Jan Schlüter, and Gerhard Widmer,
-   [Beat This!](https://arxiv.org/abs/2407.21658), ISMIR 2024; official
+   [Beat this! Accurate beat tracking without DBN postprocessing](https://arxiv.org/abs/2407.21658),
+   ISMIR 2024; official
    [implementation](https://github.com/CPJKU/beat_this).
-6. Brian McFee et al., [librosa](https://doi.org/10.25080/Majora-7b98e3ed-003),
-   SciPy 2015; [librosa 0.11.0 archive](https://doi.org/10.5281/zenodo.15006942).
+6. Brian McFee et al.,
+   [librosa: Audio and Music Signal Analysis in Python](https://doi.org/10.25080/Majora-7b98e3ed-003),
+   SciPy 2015;
+   [librosa 0.11.0 archive](https://doi.org/10.5281/zenodo.15006942).
 
 `MTRF` is excluded because no primary work was verified for this design. It has
 no citation, borrowed result, operationalization, or benchmark role.
@@ -655,57 +685,91 @@ librosa, DSP, bootstrap, and packaging are separate. Authorization cap is
 `1.25*H_m`; reaching it stops after the current immutable shard and does not
 permit fewer seeds or favorable prompts.
 
-## A.3 Measured-smoke evidence at draft cutoff
+The D-0013/D-0014 foundation plan was deliberately smaller than this formal
+calibration: it contained one warmed batch-one call and one batch-four call,
+not the 20 and five repetitions registered above. Its measurements are raw
+engineering observations, not substitutes for `c_m`, `g_m`, `b_m`, `s_m`,
+`d_m`, `v_m`, or `t_m`.
 
-There is no completed measured-cost smoke in this repository. The frozen
-`SMOKE_PROTOCOL.md` specifies SA3 Base Smoke D, but no foundation report,
-immutable run ledger, or obtained cost row is committed. Stable Audio Open 1.0
-and ACE-Step v1 likewise have no project-local measured cost rows.
+## A.3 Terminal foundation-smoke evidence at draft cutoff
 
-| Model | Successful project-local timing row | Authorized GPU-hour point estimate |
+The only obtained project-local foundation run is
+`sa3-foundation-20260719T134821.040493Z-9ea9d06209d6` on `an12` physical GPU 4,
+one NVIDIA A800 80GB PCIe GPU, TP1, replica count one. It used
+`stable-audio-3-medium-base`, Git commit
+`ae251c62e2ba2bae025ec4413aae875df967b021`, and config SHA-256
+`d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f`.
+The immutable result SHA-256 is
+`65adbde1e8abe9e744749a52745243d7c4bb572e778284d76827f98a05b6d912`
+and ledger SHA-256 is
+`7caafac155c3e04519633749bb89a31d4a86f8d118926aabd0bcdd0130626a2c`.
+
+Smokes A–D passed. Smoke E's uninterrupted reference and 15/30/40-step
+checkpoints were retained, but every separate-process resume stopped before
+its first resumed DiT transition: the exported checkpoint latent was
+`torch.float32`, while the official child created its disposable comparison
+latent as `torch.float16`, and the strict boundary check rejected the mismatch.
+This was not an OOM. The overall foundation status is terminal
+`SA3_FOUNDATION_RUN_STATUS = FAIL_ESCALATED`; its one-shot authorization is
+consumed and no retry is authorized.
+
+Raw SA3 observations are:
+
+| Observation (measurement scope) | n / NFE | Synchronized wall | Peak CUDA allocated / reserved | Interpretation |
+| --- | ---: | ---: | ---: | --- |
+| Model load | 1 / not applicable | 74.005551 s | Not reset around load | Obtained setup wall only. |
+| First A batch-one, 30 s (outer official-call wrapper) | 1 / 50 | 15.963724 s | 5,437,102,080 / 9,839,837,184 B | Load plus first call was 89.969274 s; one cold observation only. |
+| Warmed D batch-one, 30 s (Smoke D protocol timer) | 1 / 50 | 3.642550 s | 5,439,723,520 / 9,839,837,184 B | Too few rows for `g_m` (requires at least 20). |
+| Warmed D batch-four, 4 × 10 s (Smoke D protocol timer) | 1 / 50 | 4.866168 s | 5,890,185,728 / 10,464,788,480 B | 0.822002 items/s and 8.220020 generated-audio-s/s; too few rows for `b_m` (requires at least five). |
+| E uninterrupted reference, 30 s (outer official-call wrapper) | 1 / 50 | 3.901632 s | 5,440,120,832 / 10,464,788,480 B | Reference and three checkpoints succeeded. |
+| E resume attempts at 15/30/40 steps (outer official-call wrapper) | 3 / 0 each | 0.908469, 0.878612, 0.909384 s | allocated 5,280,795,648; 5,281,319,936; 5,281,319,936 B / reserved 9,837,740,032 B each | Failed pre-transition; inadmissible for resume-equivalence or state-cost coefficients. |
+| Entire bounded run (outer budget wrapper) | 11 reserved calls; 8 succeeded; 400 total NFE | 46.013084 s = 0.012781 GPU-h | run maximum 5,890,185,728 / 10,464,788,480 B (5.486 / 9.746 GiB) | Conservative one-GPU residency upper bound: 244.181992 s = 0.067828 GPU-h. |
+
+The Smoke D rows use its nested protocol timer around an already-loaded
+`StableAudioModel.generate`; whole-run accounting uses the outer budget
+wrapper. They are retained as distinct scopes and are not summed together.
+The run reserved 14 generation slots, retained 11 model WAVs, and wrote 14
+hash-chained ledger rows: 11 PASS rows plus three `MODEL_CALL_FAILED` rows. The
+derived 10-second continuation source was also retained, for 12 retained audio
+files total.
+
+Cost evidence is therefore reason-coded as follows:
+
+| Model/scope | Status | Consequence for the registered GPU budget |
 | --- | --- | --- |
-| SA3 Medium Base | None | Unavailable. |
-| Stable Audio Open 1.0 | None | Unavailable. |
-| ACE-Step v1 | None | Unavailable. |
-| ACE-Step v1.5 | Inactive; `FAIL_ESCALATED` | Excluded. |
+| SA3 Medium Base raw cost observation | `SA3_COST_OBSERVATION_STATUS = MEASURED_SINGLETON` | Raw singleton values above are obtained engineering evidence despite the terminal Smoke E failure. |
+| SA3 Medium Base formal calibration | `SA3_BENCHMARK_COST_CALIBRATION_STATUS = INSUFFICIENT_REPETITIONS` | No registered p95 coefficient, `H_m`, or 25% cap can be calculated; formal state/evaluator timing is absent and state-resume equivalence failed. |
+| Stable Audio Open 1.0 | `SAO_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION` | No project-local cost coefficient, `H_m`, or cap. |
+| ACE-Step v1 | `ACE_STEP_V1_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION` | No project-local cost coefficient, `H_m`, or cap. |
+| ACE-Step v1.5 | Inactive; `V15_GATE0_STATUS = FAIL_ESCALATED` | Excluded from v1; no cost row is applicable. |
+| Mandatory multi-backbone budget | `MULTI_BACKBONE_BENCHMARK_GPU_BUDGET_STATUS = INCOMPLETE` | Full benchmark execution remains closed. |
 
-This is missing evidence, not a zero-cost result. Runtime numbers from sibling
-projects are not imported: their checkpoints, post-training state, duration,
-steps, environment, or wrappers differ, and repository policy forbids borrowing
-their metrics. A measured post-trained `stable-audio-3-medium` smoke is not a
-measurement of `stable-audio-3-medium-base`.
-
-The table below is arithmetic sensitivity only, not an obtained estimate:
-
-| Future measured `g_m` (GPU-s/output) | Terminal GPU-h/model | Three models at same coefficient |
-| ---: | ---: | ---: |
-| 1 | 0.40 | 1.20 |
-| 2 | 0.80 | 2.40 |
-| 5 | 2.00 | 6.00 |
-| 10 | 4.00 | 12.00 |
-| 30 | 12.00 | 36.00 |
-| 60 | 24.00 | 72.00 |
-
-No point estimate may be copied from this sensitivity. Current status is
-`GPU_BUDGET_STATUS = UNMEASURED`.
+Absent SAO/ACE and formal p95 rows are missing evidence, not zero-cost results.
+Runtime numbers from sibling projects are not imported: their checkpoints,
+post-training state, duration, steps, environment, or wrappers differ. A
+measurement of post-trained `stable-audio-3-medium` would not be a measurement
+of `stable-audio-3-medium-base`.
 
 ## A.4 PI-minute budget
 
-Obtained PI time is zero because rating has not begun. Planned totals from
-Section 12 are 142.9 minutes for three mandatory models and 175.3 minutes if a
-later amendment admits v1.5, including hidden repeats and contingency. The
-absolute stop is 180 minutes. Actual playback, pause, third-tap, replay, and
-adjudication time is logged; “gold” remains explicitly solo-PI gold.
+`PI_LABELING_MINUTES_OBTAINED = 0.0`: rating has not begun, and automated
+foundation execution is not PI labeling. Planned totals from Section 12 remain
+142.9 minutes for three mandatory models and 175.3 minutes if a later amendment
+admits v1.5, including hidden repeats and contingency. The absolute stop is 180
+minutes. Actual playback, pause, third-tap, replay, and adjudication time is
+logged; “gold” remains explicitly solo-PI gold.
 
 ## A.5 Cost approval rule
 
-The initial design freeze may retain these `UNMEASURED` rows because it is the
-prerequisite for any generation. Its decision must name the exact smoke
-protocol, maximum generated outputs, node/GPU, TP1 placement, seeds, immutable
-paths, and a hard smoke GPU-hour ceiling. It authorizes no other generation.
+This draft retains the obtained raw rows and the reason-coded gaps above. It
+does not authorize another foundation call, a repair of Smoke E, or any
+benchmark generation. A later explicit decision would have to name a reviewed
+fix, new immutable claim/config, and fresh hard caps before any repair run.
 
-After those bounded smokes, a versioned measured-cost amendment must contain
-every eligible model’s smoke hashes, node/GPU, config hash, duration, actual
-NFE, cold maximum, warmed median/p95, batch-four throughput, conditional state
-cost, evaluator cost, calculated `H_m`, and 25% cap. Missing or proxy costs keep
-`BENCHMARK_EXECUTION_AUTHORIZED = NO`.
+Before full benchmark execution, a separately authorized, versioned
+measured-cost amendment must contain every eligible model’s smoke hashes,
+node/GPU, config hash, duration, actual NFE, cold maximum, warmed median/p95,
+batch-four throughput, conditional state cost, evaluator cost, calculated
+`H_m`, and 25% cap. Missing, singleton-only, failed, or proxy costs keep
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`. This review draft remains
+`BENCHMARK_PREREG_V1_FROZEN = NO`.

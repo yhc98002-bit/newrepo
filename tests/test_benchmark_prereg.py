@@ -6,10 +6,11 @@ import re
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PREREG = (ROOT / "BENCHMARK_PREREG_v1.md").read_text(encoding="utf-8")
 DECISIONS = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+REPORT_PATH = ROOT / "SA3_FOUNDATION_REPORT.md"
+REPORT = REPORT_PATH.read_text(encoding="utf-8") if REPORT_PATH.is_file() else ""
 AUDIO_SUFFIXES = {".aac", ".flac", ".m4a", ".mp3", ".ogg", ".wav"}
 
 
@@ -25,8 +26,8 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
             (
                 "DRAFT_FOR_CO_PI_REVIEW_NOT_FROZEN",
                 "Generation authorization: `CLOSED`",
-                "Results in this document: none",
-                "Audio generated under this preregistration: none",
+                "Benchmark results in this document: none",
+                "Benchmark audio generated under this preregistration: none",
                 "stable-audio-3-medium-base",
                 "stable-audio-open-1.0",
                 "ACE-Step v1",
@@ -127,13 +128,43 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
                 "max(1440-R_m,0)*g_m",
                 "142.9 minutes",
                 "175.3 minutes",
-                "no completed measured-cost smoke in this repository",
-                "projects are not imported",
-                "GPU_BUDGET_STATUS = UNMEASURED",
+                "SA3_FOUNDATION_RUN_STATUS = FAIL_ESCALATED",
+                "SA3_COST_OBSERVATION_STATUS = MEASURED_SINGLETON",
+                ("SA3_BENCHMARK_COST_CALIBRATION_STATUS = INSUFFICIENT_REPETITIONS"),
+                ("SAO_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION"),
+                ("ACE_STEP_V1_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION"),
+                "MULTI_BACKBONE_BENCHMARK_GPU_BUDGET_STATUS = INCOMPLETE",
+            ),
+        )
+        self.assertNotIn("GPU_BUDGET_STATUS = UNMEASURED", PREREG)
+        self.assertNotIn("no completed measured-cost smoke in this repository", PREREG)
+        self.assertNotIn("Future measured `g_m`", PREREG)
+        appendix = PREREG.split("# Appendix A — execution cost and human effort", 1)[1]
+        self.assertNotRegex(appendix, r"\b(?:ESTIMATE|PENDING)\b")
+
+    def test_terminal_foundation_report_records_partial_failure(self) -> None:
+        self.assertTrue(REPORT_PATH.is_file(), "missing SA3_FOUNDATION_REPORT.md")
+        self.assert_markers(
+            REPORT,
+            (
+                "SA3_FOUNDATION_RUN_STATUS = FAIL_ESCALATED",
+                "sa3-foundation-20260719T134821.040493Z-9ea9d06209d6",
+                "65adbde1e8abe9e744749a52745243d7c4bb572e778284d76827f98a05b6d912",
+                "7caafac155c3e04519633749bb89a31d4a86f8d118926aabd0bcdd0130626a2c",
+                "| A | PASS |",
+                "| B | PASS |",
+                "| C | PASS |",
+                "| D | PASS |",
+                "| E | FAIL |",
+                "MODEL_CALL_FAILED",
+                "Actual DiT NFE",
+                "Synchronized official-call wall time",
+                "Peak VRAM",
+                "FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO",
             ),
         )
 
-    def test_generation_gates_are_closed(self) -> None:
+    def test_foundation_terminal_state_and_generation_gates(self) -> None:
         self.assert_markers(
             DECISIONS,
             (
@@ -144,23 +175,47 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
                 "SA3_FOUNDATION_SMOKE_AUTHORIZED = NO",
                 "D-0013 — PI constraint amendment for bounded foundation cost smokes",
                 "FOUNDATION_COST_SMOKE_AUTHORIZED = YES",
+                "D-0014 — Correct bounded foundation call enumeration before execution",
                 "MAX_GENERATIONS = 20",
                 "MAX_CLIP_SECONDS = 30",
                 "MAX_GPUS = 1",
                 "MAX_GPU_SECONDS = 1800",
+                "D-0017 — Terminal foundation-smoke result and retry gate",
+                "FOUNDATION_COST_SMOKE_STATUS = FAIL_ESCALATED",
+                "FOUNDATION_COST_SMOKE_AUTHORIZATION_STATUS = CONSUMED",
+                "FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO",
+                "D-0018 — Safe flexible GPU placement pool; no execution expansion",
+                "physical GPUs on `an12` or `an29`",
+                "must not be terminated, evicted, migrated, reconfigured, or",
+                "placed at OOM risk",
                 "BENCHMARK_PREREG_V1_FROZEN = NO",
                 "BENCHMARK_EXECUTION_AUTHORIZED = NO",
-                "No audio generation is authorized",
             ),
         )
+        normalized_decisions = " ".join(DECISIONS.split())
+        self.assertIn(
+            "11 official generation calls producing 14 model outputs",
+            normalized_decisions,
+        )
+        self.assertIn(
+            "Eight calls succeeded, three resume calls failed",
+            normalized_decisions,
+        )
+        for gate in (
+            "FOUNDATION_COST_SMOKE_AUTHORIZED",
+            "FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED",
+            "BENCHMARK_PREREG_V1_FROZEN",
+            "BENCHMARK_EXECUTION_AUTHORIZED",
+        ):
+            values = re.findall(rf"\b{re.escape(gate)}\s*=\s*(YES|NO)\b", DECISIONS)
+            self.assertTrue(values, f"no decision value found for {gate}")
+            self.assertEqual(values[-1], "NO", f"latest {gate} must be NO")
 
     def test_repository_contains_no_audio(self) -> None:
         audio_files = sorted(
             path.relative_to(ROOT)
             for path in ROOT.rglob("*")
-            if ".git" not in path.parts
-            and path.is_file()
-            and path.suffix.lower() in AUDIO_SUFFIXES
+            if ".git" not in path.parts and path.is_file() and path.suffix.lower() in AUDIO_SUFFIXES
         )
         self.assertEqual(audio_files, [])
 
