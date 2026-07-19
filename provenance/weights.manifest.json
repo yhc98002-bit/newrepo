@@ -1,0 +1,168 @@
+{
+  "artifact_root": "/XYFS01/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/models/stable-audio-3-medium-base-ms-a9c479f5",
+  "created_at": "2026-07-19T11:56:32.968008+00:00",
+  "files": [
+    {
+      "byte_size": 2323,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": ".gitattributes",
+      "role": "repository_metadata",
+      "sha256": "fd6cc1d416c362fd60d19324aa2cb99067b4d02bc7719fe8e0a43ae0c21129c8"
+    },
+    {
+      "byte_size": 11852,
+      "cross_provider_verified": true,
+      "label": "external_upstream",
+      "path": "LICENSE.md",
+      "role": "weight_license",
+      "sha256": "d6f6b1a4dce5c852bd6d7d9482d002baf0ccdb71e662250b73be9eec8764ee8d"
+    },
+    {
+      "byte_size": 10541,
+      "cross_provider_verified": true,
+      "label": "external_upstream",
+      "path": "LICENSE_GEMMA.md",
+      "role": "conditioner_license",
+      "sha256": "e77acc0d3163bb7534675045c584b4d04b387b529239fc4b3647da0a01ba4745"
+    },
+    {
+      "byte_size": 97,
+      "cross_provider_verified": true,
+      "label": "external_upstream",
+      "path": "NOTICE",
+      "role": "conditioner_notice",
+      "sha256": "66f856d7da72797f528fca46b7c80634ab481f917bfe020960e123d84b19f75f"
+    },
+    {
+      "byte_size": 5240,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "README.md",
+      "role": "model_card",
+      "sha256": "f46e841635ce2c1278dddb67e12d83d4094a5c4ec99d04d47feb026435f3e665"
+    },
+    {
+      "byte_size": 1462873,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "Stable_Audio_3.0_Thumbnail_1x1.png",
+      "role": "model_card_asset",
+      "sha256": "a9834815023e381f367ed5e63a4cf6276a75b876b6fd6076f633e3135b786512"
+    },
+    {
+      "byte_size": 71,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "configuration.json",
+      "role": "modelscope_metadata",
+      "sha256": "3eefed50f26939655a89fcb85efb21acbe4b0fe470f9f61146092fdd83c8d894"
+    },
+    {
+      "byte_size": 9222116660,
+      "cross_provider_verified": true,
+      "label": "external_upstream",
+      "path": "model.safetensors",
+      "role": "base_model_and_autoencoder_weights",
+      "sha256": "c443fcc4d491475064cd0ff3eb92459b1e5f5060e86d96d016f048e528e24195"
+    },
+    {
+      "byte_size": 7842,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "model_config.json",
+      "role": "upstream_model_config",
+      "sha256": "27e2a299f0bda6ff742d3387398f929299575642f2c6a4d4c4f94830928fd0d5"
+    },
+    {
+      "byte_size": 3842356410,
+      "cross_provider_verified": true,
+      "label": "external_upstream",
+      "path": "svd_bases.pt",
+      "role": "optional_lora_svd_bases",
+      "sha256": "d62c8d3855998fea824fb651885d220f216d2d6a86d14b19224f806ddb125692"
+    },
+    {
+      "byte_size": 18296,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/README.md",
+      "role": "conditioner_model_card",
+      "sha256": "6a96748c87d323d6080d037191346e68c3eda39c34c0530cb4f7f3bd8cc20319"
+    },
+    {
+      "byte_size": 2540,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/config.json",
+      "role": "conditioner_config",
+      "sha256": "575334409716886ac2952f5a275ed92868deef8a0ea560258d9970a431c6fb3a"
+    },
+    {
+      "byte_size": 156,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/generation_config.json",
+      "role": "conditioner_generation_config",
+      "sha256": "1068b94599a94ceea097dd3936819f108c2e70806d7c6cc5ec425610af347625"
+    },
+    {
+      "byte_size": 1183022944,
+      "cross_provider_verified": true,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/model.safetensors",
+      "role": "conditioner_weights",
+      "sha256": "9b05ea5a4f211d023832f706fb2c0e83e4fc721b6da35ab69ceb0b55eb7800d3"
+    },
+    {
+      "byte_size": 636,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/special_tokens_map.json",
+      "role": "conditioner_tokenizer_metadata",
+      "sha256": "baec30ea10906f16adb8c18af7a34023002c1746542612b8b41c9f09e1351351"
+    },
+    {
+      "byte_size": 34362429,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/tokenizer.json",
+      "role": "conditioner_tokenizer",
+      "sha256": "7794135caa3ea73918949c902a781cc61dab674a4b59c17d85931c77c1114cbd"
+    },
+    {
+      "byte_size": 4241003,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/tokenizer.model",
+      "role": "conditioner_tokenizer",
+      "sha256": "61a7b147390c64585d6c3543dd6fc636906c9af3865a5548f27f31aee1d4c8e2"
+    },
+    {
+      "byte_size": 46437,
+      "cross_provider_verified": false,
+      "label": "external_upstream",
+      "path": "t5gemma-b-b-ul2/tokenizer_config.json",
+      "role": "conditioner_tokenizer_config",
+      "sha256": "9546baec0dfefec0e29873edea9488ecde153f846e18c06ea48cb44587bf408f"
+    }
+  ],
+  "huggingface": {
+    "provider_role": "UPSTREAM",
+    "repo_id": "stabilityai/stable-audio-3-medium-base",
+    "revision": "b32993f73c3bdc3864043a72d8032606bba737c8"
+  },
+  "label": "external_upstream",
+  "licenses": [
+    "Stability AI Community License Agreement (2024-07-05)",
+    "Gemma Terms of Use",
+    "Gemma Prohibited Use Policy"
+  ],
+  "modelscope": {
+    "organization_label": "Stability AI - Mirror",
+    "provider_role": "MIRROR",
+    "repo_id": "stabilityai/stable-audio-3-medium-base",
+    "revision": "a9c479f5f28ee89f6fbdaca57b683e6b6c160314"
+  },
+  "schema_version": 1
+}

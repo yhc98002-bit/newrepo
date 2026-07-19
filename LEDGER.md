@@ -44,6 +44,39 @@ manifest and artifacts are named here with SHA-256 digests.
   failure; original checkout retained
 - Supersedes: none
 
+## L-0003 — ModelScope-first base-weight acquisition
+
+- Time: 2026-07-19T19:56:32+08:00
+- Kind: completed acquisition and cryptographic verification; no model result
+- Git: `2b968906a899d044e5c2549beb8aab1184c077d4`
+- Node: `ln206`; GPU IDs: none; TP: not applicable; replicas: not applicable
+- Seed: not applicable
+- Command: `python -m sa3_smoke.acquire <snapshot> <snapshot>/weights.manifest.json`
+  after the pinned ModelScope CLI download at revision
+  `a9c479f5f28ee89f6fbdaca57b683e6b6c160314`
+- Config: `configs/foundation_v1.json` SHA-256
+  `42e99699e7c3f8fb56d615086684b10afd4fdc1a8b3f162e37818ec462814a14`
+- Artifacts: `provenance/weights.manifest.json` SHA-256
+  `3c120446c854e814a172d499af4757a2ed86c985ba9e45f36674ad0242ca1803`;
+  18 files, 14,287,668,350 bytes; core `model.safetensors` SHA-256
+  `c443fcc4d491475064cd0ff3eb92459b1e5f5060e86d96d016f048e528e24195`
+- Logs: ModelScope download SHA-256
+  `70ac4170429756d850b3df7eac06f096be6ffc8de9adf133a46797dde9bc93f6`;
+  verification SHA-256
+  `b6703c2d574bc04cbd17a6cf68451ab00aa5b8510f2ce1ea3a852f431457e3e4`
+- Provenance: ModelScope organization label `Stability AI - Mirror` (MIRROR);
+  official Hugging Face revision
+  `b32993f73c3bdc3864043a72d8032606bba737c8` (UPSTREAM) used for public
+  cross-provider file verification only
+- Licenses: Stability AI Community License Agreement (weights); Gemma Terms of
+  Use and prohibited-use policy (embedded T5Gemma conditioner), with exact
+  license hashes in the manifest and canonical links in
+  `THIRD_PARTY_LICENSES.md`
+- Result: PASS — every expected file matched its frozen byte size and SHA-256
+- Deviations: ModelScope mirror source is explicitly labelled; no gated,
+  differently named model and no credential were used
+- Supersedes: none
+
 ## L-0003 — Benchmark cost-evidence and no-audio audit
 
 - Time: 2026-07-19T19:58:19+08:00
