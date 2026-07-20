@@ -218,14 +218,14 @@ def _read_object(path: Path) -> dict[str, Any]:
     return value
 
 
-def _visible_gpu_ids() -> tuple[str, ...]:
+def _visible_gpu_ids(max_gpus: int = MAX_GPUS) -> tuple[str, ...]:
     value = os.environ.get("CUDA_VISIBLE_DEVICES")
     if value is None:
         raise BudgetExceeded("CUDA_VISIBLE_DEVICES must explicitly bind the one authorized GPU")
     identifiers = tuple(item.strip() for item in value.split(",") if item.strip())
-    if len(identifiers) != MAX_GPUS:
+    if len(identifiers) != max_gpus:
         raise BudgetExceeded(
-            f"MAX_GPUS={MAX_GPUS} requires exactly one visible GPU, got {list(identifiers)}"
+            f"MAX_GPUS={max_gpus} requires exactly one visible GPU, got {list(identifiers)}"
         )
     return identifiers
 
@@ -272,37 +272,141 @@ class ExecutionBudget:
         run_dir: str | os.PathLike[str],
         run_root: str | os.PathLike[str],
         claim_identity: Mapping[str, Any],
+        decision: str = "D-0013 as corrected before execution by D-0014",
+        claim_name: str = CLAIM_NAME,
+        caps: Mapping[str, int | float] | None = None,
+        exact_plan: Mapping[str, Any] | None = None,
     ) -> ExecutionBudget:
         run = Path(run_dir).resolve()
         root = Path(run_root).resolve()
+        if Path(claim_name).name != claim_name or not claim_name.startswith("."):
+            raise ValueError("claim_name must be one hidden basename")
         paths = BudgetPaths(
             state=run / "execution-budget.state.json",
             ledger=run / "generation-ledger.jsonl",
             lock=run / ".execution-budget.lock",
-            claim=root / CLAIM_NAME,
+            claim=root / claim_name,
         )
-        caps = {
-            "max_generations": MAX_GENERATIONS,
-            "max_clip_seconds": MAX_CLIP_SECONDS,
-            "max_gpus": MAX_GPUS,
-            "max_gpu_seconds": MAX_GPU_SECONDS,
+        selected_caps = dict(
+            {
+                "max_generations": MAX_GENERATIONS,
+                "max_clip_seconds": MAX_CLIP_SECONDS,
+                "max_gpus": MAX_GPUS,
+                "max_gpu_seconds": MAX_GPU_SECONDS,
+            }
+            if caps is None
+            else caps
+        )
+        selected_plan = dict(
+            {
+                "official_generate_calls": EXPECTED_CALLS,
+                "generated_outputs": EXPECTED_GENERATIONS,
+                "calls_by_smoke": dict(EXPECTED_CALLS_BY_SMOKE),
+                "generations_by_smoke": dict(EXPECTED_GENERATIONS_BY_SMOKE),
+                "seed_calls": {key: dict(value) for key, value in EXPECTED_SEED_CALLS.items()},
+            }
+            if exact_plan is None
+            else exact_plan
+        )
+        required_caps = {"max_generations", "max_clip_seconds", "max_gpus", "max_gpu_seconds"}
+        if set(selected_caps) != required_caps:
+            raise ValueError(f"caps must have exact keys {sorted(required_caps)}")
+        for name in ("max_generations", "max_gpus"):
+            if isinstance(selected_caps[name], bool) or not isinstance(selected_caps[name], int):
+                raise ValueError(f"{name} must be a positive integer")
+        if selected_caps["max_gpus"] != 1:
+            raise ValueError("this budget supports exactly one visible GPU")
+        if any(
+            isinstance(selected_caps[name], bool)
+            or not isinstance(selected_caps[name], (int, float))
+            or float(selected_caps[name]) <= 0
+            for name in required_caps
+        ):
+            raise ValueError("all execution caps must be positive numbers")
+        required_plan = {
+            "official_generate_calls",
+            "generated_outputs",
+            "calls_by_smoke",
+            "generations_by_smoke",
+            "seed_calls",
         }
-        plan = {
-            "official_generate_calls": EXPECTED_CALLS,
-            "generated_outputs": EXPECTED_GENERATIONS,
-            "calls_by_smoke": dict(EXPECTED_CALLS_BY_SMOKE),
-            "generations_by_smoke": dict(EXPECTED_GENERATIONS_BY_SMOKE),
-            "seed_calls": {key: dict(value) for key, value in EXPECTED_SEED_CALLS.items()},
+        if set(selected_plan) != required_plan:
+            raise ValueError(f"exact_plan must have exact keys {sorted(required_plan)}")
+        for name in ("official_generate_calls", "generated_outputs"):
+            if (
+                isinstance(selected_plan[name], bool)
+                or not isinstance(selected_plan[name], int)
+                or selected_plan[name] <= 0
+            ):
+                raise ValueError(f"exact plan {name} must be a positive integer")
+        calls_by_smoke = selected_plan["calls_by_smoke"]
+        generations_by_smoke = selected_plan["generations_by_smoke"]
+        seed_calls = selected_plan["seed_calls"]
+        if not all(
+            isinstance(value, Mapping)
+            for value in (calls_by_smoke, generations_by_smoke, seed_calls)
+        ):
+            raise ValueError("exact plan smoke and seed quotas must be mappings")
+        if set(calls_by_smoke) != set(generations_by_smoke) or set(calls_by_smoke) != set(
+            seed_calls
+        ):
+            raise ValueError("exact plan smoke keys must agree")
+        if not calls_by_smoke:
+            raise ValueError("exact plan must authorize at least one smoke")
+        for quota_map in (calls_by_smoke, generations_by_smoke):
+            if any(
+                isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                for value in quota_map.values()
+            ):
+                raise ValueError("smoke call and generation quotas must be positive integers")
+        for quotas in seed_calls.values():
+            if not quotas or any(
+                isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                for value in quotas.values()
+            ):
+                raise ValueError("seed call quotas must be positive integers")
+        if int(selected_plan["official_generate_calls"]) != sum(
+            int(v) for v in calls_by_smoke.values()
+        ):
+            raise ValueError("exact plan official call total does not match smoke quotas")
+        if int(selected_plan["generated_outputs"]) != sum(
+            int(v) for v in generations_by_smoke.values()
+        ):
+            raise ValueError("exact plan output total does not match smoke quotas")
+        if int(selected_plan["generated_outputs"]) > int(selected_caps["max_generations"]):
+            raise ValueError("exact plan outputs exceed max_generations")
+        for smoke, quotas in seed_calls.items():
+            if smoke not in EXPECTED_CALLS_BY_SMOKE or not isinstance(quotas, Mapping):
+                raise ValueError(f"unsupported smoke or seed quota mapping: {smoke!r}")
+            if sum(int(value) for value in quotas.values()) != int(calls_by_smoke[smoke]):
+                raise ValueError(f"seed call quotas do not match smoke {smoke}")
+            if any(seed_id not in EXPECTED_SEED_CALLS[smoke] for seed_id in quotas):
+                raise ValueError(f"exact plan contains unauthorized seed for smoke {smoke}")
+        selected_caps = {
+            "max_generations": int(selected_caps["max_generations"]),
+            "max_clip_seconds": float(selected_caps["max_clip_seconds"]),
+            "max_gpus": int(selected_caps["max_gpus"]),
+            "max_gpu_seconds": float(selected_caps["max_gpu_seconds"]),
+        }
+        selected_plan = {
+            "official_generate_calls": int(selected_plan["official_generate_calls"]),
+            "generated_outputs": int(selected_plan["generated_outputs"]),
+            "calls_by_smoke": {str(k): int(v) for k, v in calls_by_smoke.items()},
+            "generations_by_smoke": {str(k): int(v) for k, v in generations_by_smoke.items()},
+            "seed_calls": {
+                str(smoke): {str(seed_id): int(count) for seed_id, count in quotas.items()}
+                for smoke, quotas in seed_calls.items()
+            },
         }
         claim = {
             "schema_version": 1,
-            "decision": "D-0013 as corrected before execution by D-0014",
+            "decision": decision,
             "created_at_utc": _utc_now(),
             "run_dir": str(run),
             "creator_pid": os.getpid(),
             "identity": dict(claim_identity),
-            "caps": caps,
-            "exact_plan": plan,
+            "caps": selected_caps,
+            "exact_plan": selected_plan,
             "no_retry_without_later_append_only_decision": True,
         }
         # This fixed, run-root-local claim is intentionally created first.  A
@@ -312,8 +416,8 @@ class ExecutionBudget:
             _exclusive_json(paths.claim, claim)
         except FileExistsError as exc:
             raise BudgetExceeded(
-                "the one D-0013/D-0014 foundation execution claim already exists; "
-                "a retry requires a later append-only authorization decision"
+                f"the one execution claim for {decision} already exists; no second invocation "
+                "is authorized"
             ) from exc
 
         state = {
@@ -323,8 +427,8 @@ class ExecutionBudget:
             "claim_sha256": sha256_file(paths.claim),
             "created_at_utc": claim["created_at_utc"],
             "model_load_started_monotonic_ns": time.monotonic_ns(),
-            "caps": caps,
-            "exact_plan": plan,
+            "caps": selected_caps,
+            "exact_plan": selected_plan,
             "official_generate_calls_reserved": 0,
             "generation_slots_reserved": 0,
             "successful_model_calls": 0,
@@ -377,8 +481,13 @@ class ExecutionBudget:
             if not path.is_file():
                 raise BudgetEvidenceError(f"execution-budget evidence is missing: {path}")
         state = _read_object(paths.state)
+        claim = _read_object(paths.claim)
         if state.get("claim_sha256") != sha256_file(paths.claim):
             raise BudgetEvidenceError("execution claim changed after budget initialization")
+        if state.get("caps") != claim.get("caps") or state.get("exact_plan") != claim.get(
+            "exact_plan"
+        ):
+            raise BudgetEvidenceError("budget state policy differs from the immutable claim")
         return cls(paths)
 
     def activate(self) -> None:
@@ -391,13 +500,31 @@ class ExecutionBudget:
             }
         )
 
+    def policy_snapshot(self) -> dict[str, Any]:
+        """Return claim-validated caps and plan while holding the shared lock."""
+
+        with self._locked_state() as state:
+            return {
+                "caps": dict(state["caps"]),
+                "exact_plan": dict(state["exact_plan"]),
+                "model_load_started_monotonic_ns": int(state["model_load_started_monotonic_ns"]),
+                "cumulative_synchronized_gpu_wall_seconds": float(
+                    state["cumulative_synchronized_gpu_wall_seconds"]
+                ),
+            }
+
     @contextmanager
     def _locked_state(self) -> Iterator[dict[str, Any]]:
         with self.paths.lock.open("r+b") as handle:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
             state = _read_object(self.paths.state)
+            claim = _read_object(self.paths.claim)
             if state.get("claim_sha256") != sha256_file(self.paths.claim):
                 raise BudgetEvidenceError("execution claim changed after budget initialization")
+            if state.get("caps") != claim.get("caps") or state.get("exact_plan") != claim.get(
+                "exact_plan"
+            ):
+                raise BudgetEvidenceError("budget state policy differs from the immutable claim")
             try:
                 yield state
             finally:
@@ -416,59 +543,67 @@ class ExecutionBudget:
     ) -> CallReservation:
         """Consume a call/output slot before any official model invocation."""
 
-        _visible_gpu_ids()
-        if smoke not in EXPECTED_CALLS_BY_SMOKE:
-            raise BudgetExceeded(f"unknown or unauthorized smoke context: {smoke!r}")
         if seed_id not in FROZEN_SEEDS or FROZEN_SEEDS[seed_id] != seed:
             raise BudgetExceeded(
                 f"unregistered seed pair rejected: seed_id={seed_id!r}, seed={seed!r}"
             )
-        if seed_id not in EXPECTED_SEED_CALLS[smoke]:
-            raise BudgetExceeded(f"{seed_id} is not authorized for smoke {smoke}")
         if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size <= 0:
             raise BudgetExceeded("batch_size must be a positive integer")
         duration = float(duration_seconds)
-        if not math.isfinite(duration) or not (0.0 < duration <= MAX_CLIP_SECONDS):
-            raise BudgetExceeded(
-                f"clip duration {duration!r} violates MAX_CLIP_SECONDS={MAX_CLIP_SECONDS:g}"
-            )
-        expected_duration, expected_batch = EXPECTED_CALL_SHAPES[seed_id]
-        if duration != expected_duration or batch_size != expected_batch:
-            raise BudgetExceeded(
-                f"{seed_id} call shape must be duration={expected_duration:g}, "
-                f"batch_size={expected_batch}; got duration={duration:g}, batch_size={batch_size}"
-            )
-
         with self._locked_state() as state:
+            caps = state["caps"]
+            plan = state["exact_plan"]
+            calls_by_smoke = plan["calls_by_smoke"]
+            generations_by_smoke = plan["generations_by_smoke"]
+            seed_call_plan = plan["seed_calls"]
+            max_gpu_seconds = float(caps["max_gpu_seconds"])
+            max_clip_seconds = float(caps["max_clip_seconds"])
+            max_generations = int(caps["max_generations"])
+            _visible_gpu_ids(int(caps["max_gpus"]))
+            if smoke not in calls_by_smoke:
+                raise BudgetExceeded(f"unknown or unauthorized smoke context: {smoke!r}")
+            if seed_id not in seed_call_plan[smoke]:
+                raise BudgetExceeded(f"{seed_id} is not authorized for smoke {smoke}")
+            if not math.isfinite(duration) or not (0.0 < duration <= max_clip_seconds):
+                raise BudgetExceeded(
+                    f"clip duration {duration!r} violates MAX_CLIP_SECONDS={max_clip_seconds:g}"
+                )
+            expected_duration, expected_batch = EXPECTED_CALL_SHAPES[seed_id]
+            if duration != expected_duration or batch_size != expected_batch:
+                raise BudgetExceeded(
+                    f"{seed_id} call shape must be duration={expected_duration:g}, "
+                    f"batch_size={expected_batch}; got duration={duration:g}, "
+                    f"batch_size={batch_size}"
+                )
             cumulative = float(state["cumulative_synchronized_gpu_wall_seconds"])
             residency = (time.monotonic_ns() - int(state["model_load_started_monotonic_ns"])) / 1e9
             state["gpu_residency_upper_bound_seconds"] = residency
-            state["residency_cap_reached"] = residency >= MAX_GPU_SECONDS
-            if state["time_cap_reached"] or cumulative >= MAX_GPU_SECONDS:
+            state["residency_cap_reached"] = residency >= max_gpu_seconds
+            if state["time_cap_reached"] or cumulative >= max_gpu_seconds:
                 raise BudgetExceeded(
-                    f"measured GPU wall cap reached ({cumulative:.9f} >= {MAX_GPU_SECONDS:g}); "
+                    f"measured GPU wall cap reached ({cumulative:.9f} >= {max_gpu_seconds:g}); "
                     "no next model call is permitted"
                 )
             if state["residency_cap_reached"]:
                 _replace_json(self.paths.state, state)
                 raise BudgetExceeded(
                     f"one-GPU residency upper bound reached ({residency:.9f} >= "
-                    f"{MAX_GPU_SECONDS:g}); no next model call is permitted"
+                    f"{max_gpu_seconds:g}); no next model call is permitted"
                 )
             smoke_calls = int(state["calls_by_smoke"].get(smoke, 0))
             smoke_generations = int(state["generations_by_smoke"].get(smoke, 0))
             seed_calls = state["seed_calls_by_smoke"].setdefault(smoke, {})
             prior_seed_calls = int(seed_calls.get(seed_id, 0))
-            if smoke_calls + 1 > EXPECTED_CALLS_BY_SMOKE[smoke]:
+            if smoke_calls + 1 > int(calls_by_smoke[smoke]):
                 raise BudgetExceeded(f"smoke {smoke} exact call quota would be exceeded")
-            if smoke_generations + batch_size > EXPECTED_GENERATIONS_BY_SMOKE[smoke]:
+            if smoke_generations + batch_size > int(generations_by_smoke[smoke]):
                 raise BudgetExceeded(f"smoke {smoke} exact output quota would be exceeded")
-            if prior_seed_calls + 1 > EXPECTED_SEED_CALLS[smoke][seed_id]:
+            if prior_seed_calls + 1 > int(seed_call_plan[smoke][seed_id]):
                 raise BudgetExceeded(f"{smoke}/{seed_id} call quota would be exceeded")
             reserved = int(state["generation_slots_reserved"])
-            if reserved + batch_size > MAX_GENERATIONS:
+            if reserved + batch_size > max_generations:
                 raise BudgetExceeded(
-                    f"call would exceed MAX_GENERATIONS={MAX_GENERATIONS}: "
+                    f"call would exceed MAX_GENERATIONS={max_generations}: "
                     f"{reserved} + {batch_size}"
                 )
 
@@ -544,10 +679,11 @@ class ExecutionBudget:
             )
             cumulative = float(state["cumulative_synchronized_gpu_wall_seconds"]) + elapsed
             state["cumulative_synchronized_gpu_wall_seconds"] = cumulative
-            state["time_cap_reached"] = cumulative >= MAX_GPU_SECONDS
+            max_gpu_seconds = float(state["caps"]["max_gpu_seconds"])
+            state["time_cap_reached"] = cumulative >= max_gpu_seconds
             residency = (time.monotonic_ns() - int(state["model_load_started_monotonic_ns"])) / 1e9
             state["gpu_residency_upper_bound_seconds"] = residency
-            state["residency_cap_reached"] = residency >= MAX_GPU_SECONDS
+            state["residency_cap_reached"] = residency >= max_gpu_seconds
             counter = "successful_model_calls" if succeeded else "failed_model_calls"
             state[counter] = int(state[counter]) + 1
             if succeeded:
@@ -596,8 +732,8 @@ class ExecutionBudget:
                 sanity = artifact.get("sanity")
                 if not isinstance(path_value, str) or not isinstance(provenance_value, str):
                     raise BudgetEvidenceError("generated audio lacks path/provenance_path")
-                if not isinstance(sanity, Mapping) or "pass" not in sanity:
-                    raise BudgetEvidenceError("generated audio lacks completed sanity evidence")
+                if not isinstance(sanity, Mapping) or sanity.get("pass") is not True:
+                    raise BudgetEvidenceError("generated audio lacks passing sanity evidence")
                 audio_path = Path(path_value).resolve(strict=True)
                 provenance_path = Path(provenance_value).resolve(strict=True)
                 body = {
@@ -653,7 +789,7 @@ class ExecutionBudget:
         state = _read_object(self.paths.state)
         calls = [dict(row) for row in state["calls"]]
         smoke_measurements: dict[str, dict[str, Any]] = {}
-        for smoke in EXPECTED_CALLS_BY_SMOKE:
+        for smoke in state["exact_plan"]["calls_by_smoke"]:
             rows = [row for row in calls if row["smoke"] == smoke]
             measurements = [
                 row["measurements"] for row in rows if isinstance(row.get("measurements"), Mapping)
@@ -787,10 +923,15 @@ class ExecutionBudget:
                 state["last_ledger_row_sha256"] = previous_hash
 
             residency = (time.monotonic_ns() - int(state["model_load_started_monotonic_ns"])) / 1e9
+            caps = state["caps"]
+            plan = state["exact_plan"]
+            expected_calls = int(plan["official_generate_calls"])
+            expected_generations = int(plan["generated_outputs"])
+            max_gpu_seconds = float(caps["max_gpu_seconds"])
             state["gpu_residency_upper_bound_seconds"] = residency
-            state["residency_cap_reached"] = residency >= MAX_GPU_SECONDS
+            state["residency_cap_reached"] = residency >= max_gpu_seconds
             measurement_evidence_complete = bool(
-                len(state["calls"]) == EXPECTED_CALLS
+                len(state["calls"]) == expected_calls
                 and all(
                     row.get("status") == "GENERATED"
                     and isinstance(row.get("measurements"), Mapping)
@@ -803,18 +944,17 @@ class ExecutionBudget:
             )
             state["measurement_evidence_complete"] = measurement_evidence_complete
             exact = bool(
-                state["official_generate_calls_reserved"] == EXPECTED_CALLS
-                and state["generation_slots_reserved"] == EXPECTED_GENERATIONS
-                and state["successful_model_calls"] == EXPECTED_CALLS
+                state["official_generate_calls_reserved"] == expected_calls
+                and state["generation_slots_reserved"] == expected_generations
+                and state["successful_model_calls"] == expected_calls
                 and state["failed_model_calls"] == 0
-                and state["generated_outputs"] == EXPECTED_GENERATIONS
-                and state["ledgered_outputs"] == EXPECTED_GENERATIONS
-                and state["calls_by_smoke"] == dict(EXPECTED_CALLS_BY_SMOKE)
-                and state["generations_by_smoke"] == dict(EXPECTED_GENERATIONS_BY_SMOKE)
-                and state["seed_calls_by_smoke"]
-                == {key: dict(value) for key, value in EXPECTED_SEED_CALLS.items()}
-                and float(state["cumulative_synchronized_gpu_wall_seconds"]) <= MAX_GPU_SECONDS
-                and residency <= MAX_GPU_SECONDS
+                and state["generated_outputs"] == expected_generations
+                and state["ledgered_outputs"] == expected_generations
+                and state["calls_by_smoke"] == plan["calls_by_smoke"]
+                and state["generations_by_smoke"] == plan["generations_by_smoke"]
+                and state["seed_calls_by_smoke"] == plan["seed_calls"]
+                and float(state["cumulative_synchronized_gpu_wall_seconds"]) <= max_gpu_seconds
+                and residency <= max_gpu_seconds
                 and measurement_evidence_complete
             )
             state["finalized_at_utc"] = _utc_now()
@@ -854,10 +994,11 @@ def remaining_budget_seconds() -> float | None:
     budget = ExecutionBudget.from_environment()
     if budget is None:
         return None
-    state = _read_object(budget.paths.state)
-    measured_remaining = MAX_GPU_SECONDS - float(state["cumulative_synchronized_gpu_wall_seconds"])
-    residency = (time.monotonic_ns() - int(state["model_load_started_monotonic_ns"])) / 1e9
-    return max(0.0, min(measured_remaining, MAX_GPU_SECONDS - residency))
+    state = budget.policy_snapshot()
+    max_gpu_seconds = float(state["caps"]["max_gpu_seconds"])
+    measured_remaining = max_gpu_seconds - state["cumulative_synchronized_gpu_wall_seconds"]
+    residency = (time.monotonic_ns() - state["model_load_started_monotonic_ns"]) / 1e9
+    return max(0.0, min(measured_remaining, max_gpu_seconds - residency))
 
 
 class BudgetedStableAudioModel:
@@ -951,7 +1092,8 @@ class BudgetedStableAudioModel:
             }
 
         try:
-            if not torch.cuda.is_available() or torch.cuda.device_count() != MAX_GPUS:
+            max_gpus = int(budget.policy_snapshot()["caps"]["max_gpus"])
+            if not torch.cuda.is_available() or torch.cuda.device_count() != max_gpus:
                 raise BudgetExceeded("official generation requires exactly one CUDA device")
             device = torch.device(getattr(self, "device", "cuda:0"))
             if device.type != "cuda":

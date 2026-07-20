@@ -387,6 +387,44 @@ def test_resume_preserves_promoted_checkpoint_dtype_when_fresh_noise_is_half(
     assert torch.equal(resumed, uninterrupted)
 
 
+def test_failed_resume_sampler_invocation_cannot_be_retried(tmp_path: Path) -> None:
+    reference = CheckpointingEulerSampler(
+        checkpoint_dir=tmp_path,
+        checkpoint_prefix="once-only",
+        run_id="unit-once-only",
+        conditioning_sha256=CONDITIONING_SHA256,
+        config_sha256=CONFIG_SHA256,
+    )
+    reference(
+        TinyVelocity(),
+        fixture_latent(),
+        fixture_schedule(),
+        gain=GAIN,
+        offset=OFFSET,
+    )
+    assert reference.last_run_result is not None
+    state = load_euler_checkpoint(reference.last_run_result.checkpoints[0].path)
+    sampler = ResumingEulerSampler(state)
+    changed_schedule = fixture_schedule()
+    changed_schedule[25] += 1e-8
+    with pytest.raises(CheckpointValidationError, match="full schedule does not match"):
+        sampler(
+            TinyVelocity(),
+            fixture_latent(),
+            changed_schedule,
+            gain=GAIN,
+            offset=OFFSET,
+        )
+    with pytest.raises(RuntimeError, match="only once"):
+        sampler(
+            TinyVelocity(),
+            fixture_latent(),
+            fixture_schedule(),
+            gain=GAIN,
+            offset=OFFSET,
+        )
+
+
 def test_three_checkpoints_resume_in_three_real_python_processes(tmp_path: Path) -> None:
     checkpoint_dir = tmp_path / "checkpoints"
     reference_sampler = CheckpointingEulerSampler(

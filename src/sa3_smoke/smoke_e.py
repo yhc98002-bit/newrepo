@@ -76,13 +76,14 @@ def _bounded_child_timeout(requested_seconds: float | None) -> float | None:
     remaining = remaining_budget_seconds()
     if remaining is not None and remaining <= 0.0:
         raise RuntimeError("foundation GPU deadline reached before Smoke E child launch")
-    # D-0013 requires a cap reached during a call to stop only after that
-    # call's WAV, provenance, sanity, and ledger writes are atomic.  Turning
-    # the remaining budget into a subprocess timeout could kill that current
-    # subcase before its evidence is retained.  Preserve only an explicitly
-    # requested operational timeout; the shared pre-call guard accounts the
-    # measured and residency clocks in the child itself.
-    return requested_seconds
+    # The original D-0013 run preserved atomic subcases. D-0019 instead binds a
+    # strict outer cap, so its explicit child timeout is also clipped to the
+    # claim-validated remaining residency allowance.
+    if requested_seconds is None:
+        return None
+    if remaining is None:
+        return requested_seconds
+    return max(0.001, min(float(requested_seconds), remaining))
 
 
 @dataclass(frozen=True)
@@ -879,6 +880,7 @@ def run_smoke_e(
         checkpoint_dir = destination / "checkpoints"
 
         def retain_checkpoint_provenance(artifact: CheckpointArtifact) -> None:
+            state_metadata = _read_json_object(artifact.state_metadata_path)
             provenance_path = _write_provenance(
                 artifact.path,
                 label="latent_checkpoint",
@@ -900,6 +902,13 @@ def run_smoke_e(
                     "checkpoint_sha256": artifact.checkpoint_sha256,
                     "latent_sha256": artifact.latent_sha256,
                     "schedule_sha256": artifact.schedule_sha256,
+                    "latent_dtype": state_metadata.get("latent_dtype"),
+                    "latent_shape": state_metadata.get("latent_shape"),
+                    "latent_device_at_export": state_metadata.get("latent_device_at_export"),
+                    "runtime_latent_dtype_recorded_at_export": bool(
+                        isinstance(state_metadata.get("latent_dtype"), str)
+                        and state_metadata.get("latent_dtype")
+                    ),
                     "provenance_valid": bool(validated["label"] == "latent_checkpoint"),
                 }
             )
@@ -1078,6 +1087,11 @@ def run_smoke_e(
                     "runtime_schedule_validated": bool(
                         result_metadata["runtime_schedule_validated"] is True
                     ),
+                    "checkpoint_runtime_latent_dtype_preserved": bool(
+                        result_metadata.get("checkpoint_latent_dtype")
+                        == checkpoint_row["latent_dtype"]
+                        and result_metadata.get("resume_latent_dtype_preserved") is True
+                    ),
                     "official_generate_sampler_injection": bool(
                         result_metadata["execution_mode"] == "official_generate_sampler_injection"
                     ),
@@ -1102,6 +1116,13 @@ def run_smoke_e(
                         "remaining_forward_calls": result_metadata["forward_calls"],
                         "execution_mode": result_metadata["execution_mode"],
                         "runtime_schedule_validated": result_metadata["runtime_schedule_validated"],
+                        "fresh_initial_latent_dtype": result_metadata.get(
+                            "fresh_initial_latent_dtype"
+                        ),
+                        "checkpoint_latent_dtype": result_metadata.get("checkpoint_latent_dtype"),
+                        "resume_latent_dtype_preserved": result_metadata.get(
+                            "resume_latent_dtype_preserved"
+                        ),
                         "child_process": {
                             "args": (
                                 list(launched.process.args)
@@ -1160,8 +1181,17 @@ def run_smoke_e(
             "all_checkpoint_provenance_valid": bool(
                 all(row["provenance_valid"] for row in checkpoint_rows)
             ),
+            "all_checkpoints_record_runtime_dtype_at_export": bool(
+                all(row["runtime_latent_dtype_recorded_at_export"] for row in checkpoint_rows)
+            ),
             "three_children_launched_sequentially": bool(
                 execution_order == list(CHECKPOINT_COMPLETED_STEPS) and len(resume_rows) == 3
+            ),
+            "three_unique_children_distinct_from_parent": bool(
+                len(resume_rows) == 3
+                and all(isinstance(row.get("child_pid"), int) for row in resume_rows)
+                and len({row["child_pid"] for row in resume_rows}) == 3
+                and all(row["child_pid"] != os.getpid() for row in resume_rows)
             ),
             "all_children_terminal_pass": bool(
                 len(resume_rows) == 3 and all(row["status"] == "PASS" for row in resume_rows)

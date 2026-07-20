@@ -22,6 +22,7 @@ from sa3_smoke.budget import (
     ENV_SMOKE,
     ENV_STATE_PATH,
     BudgetedStableAudioModel,
+    BudgetEvidenceError,
     BudgetExceeded,
     ExecutionBudget,
     smoke_context,
@@ -109,11 +110,53 @@ def record_call(
     budget.finalize_latest_audio(artifacts, smoke=smoke)
 
 
-def test_batch_four_consumes_four_generation_slots_and_cap_is_pre_call(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_plan_cannot_exceed_generation_cap_and_batch_four_consumes_four_slots(
+    tmp_path: Path,
 ) -> None:
-    monkeypatch.setattr(budget_module, "MAX_GENERATIONS", 4)
-    budget = initialize(tmp_path)
+    run_root = tmp_path / "runs"
+    bad_run = run_root / "bad-run"
+    bad_run.mkdir(parents=True)
+    with pytest.raises(ValueError, match="exceed max_generations"):
+        ExecutionBudget.initialize(
+            run_dir=bad_run,
+            run_root=run_root,
+            claim_identity={},
+            caps={
+                "max_generations": 4,
+                "max_clip_seconds": 30,
+                "max_gpus": 1,
+                "max_gpu_seconds": 600,
+            },
+            exact_plan={
+                "official_generate_calls": 2,
+                "generated_outputs": 5,
+                "calls_by_smoke": {"A": 1, "D": 1},
+                "generations_by_smoke": {"A": 1, "D": 4},
+                "seed_calls": {"A": {"S-0001": 1}, "D": {"S-0006": 1}},
+            },
+        )
+
+    good_run = run_root / "good-run"
+    good_run.mkdir()
+    budget = ExecutionBudget.initialize(
+        run_dir=good_run,
+        run_root=run_root,
+        claim_identity={},
+        claim_name=".batch-four-claim.json",
+        caps={
+            "max_generations": 4,
+            "max_clip_seconds": 30,
+            "max_gpus": 1,
+            "max_gpu_seconds": 600,
+        },
+        exact_plan={
+            "official_generate_calls": 1,
+            "generated_outputs": 4,
+            "calls_by_smoke": {"D": 1},
+            "generations_by_smoke": {"D": 4},
+            "seed_calls": {"D": {"S-0006": 1}},
+        },
+    )
     reservation = budget.reserve_call(
         smoke="D",
         seed_id="S-0006",
@@ -123,7 +166,7 @@ def test_batch_four_consumes_four_generation_slots_and_cap_is_pre_call(
     )
     assert len(reservation.generation_ids) == 4
     assert budget.summary()["generation_slots_reserved"] == 4
-    with pytest.raises(BudgetExceeded, match="MAX_GENERATIONS"):
+    with pytest.raises(BudgetExceeded, match="unknown or unauthorized smoke"):
         budget.reserve_call(
             smoke="A",
             seed_id="S-0001",
@@ -131,6 +174,71 @@ def test_batch_four_consumes_four_generation_slots_and_cap_is_pre_call(
             duration_seconds=30.0,
             batch_size=1,
         )
+
+
+def test_retry_profile_is_exact_claim_bound_and_single_use(tmp_path: Path) -> None:
+    run_root = tmp_path / "retry-runs"
+    run_dir = run_root / "retry-one"
+    run_dir.mkdir(parents=True)
+    caps = {
+        "max_generations": 8,
+        "max_clip_seconds": 30,
+        "max_gpus": 1,
+        "max_gpu_seconds": 540,
+    }
+    plan = {
+        "official_generate_calls": 4,
+        "generated_outputs": 4,
+        "calls_by_smoke": {"E": 4},
+        "generations_by_smoke": {"E": 4},
+        "seed_calls": {"E": {"S-0007": 4}},
+    }
+    budget = ExecutionBudget.initialize(
+        run_dir=run_dir,
+        run_root=run_root,
+        claim_identity={"configuration_sha256": "a" * 64},
+        decision="D-0019",
+        claim_name=".retry-claim.json",
+        caps=caps,
+        exact_plan=plan,
+    )
+    for _ in range(4):
+        record_call(
+            budget,
+            tmp_path,
+            smoke="E",
+            seed_id="S-0007",
+            seed=73_193_007,
+            duration=30,
+            batch_size=1,
+        )
+    summary = budget.finalize()
+    assert summary["status"] == "PASS"
+    assert summary["caps"] == {**caps, "max_clip_seconds": 30.0, "max_gpu_seconds": 540.0}
+    assert summary["calls_by_smoke"] == {"E": 4}
+    assert summary["generation_slots_reserved"] == 4
+
+    second_run = run_root / "retry-two"
+    second_run.mkdir()
+    with pytest.raises(BudgetExceeded, match="no second invocation"):
+        ExecutionBudget.initialize(
+            run_dir=second_run,
+            run_root=run_root,
+            claim_identity={},
+            decision="D-0019",
+            claim_name=".retry-claim.json",
+            caps=caps,
+            exact_plan=plan,
+        )
+
+
+def test_state_policy_tampering_is_rejected_against_claim(tmp_path: Path) -> None:
+    budget = initialize(tmp_path)
+    state = json.loads(budget.paths.state.read_text(encoding="utf-8"))
+    state["caps"]["max_gpu_seconds"] = 99_999
+    budget.paths.state.write_text(json.dumps(state), encoding="utf-8")
+    with pytest.raises(BudgetEvidenceError, match="policy differs"):
+        ExecutionBudget.from_environment()
 
 
 def test_clip_gpu_and_registered_seed_guards_fail_closed(

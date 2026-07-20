@@ -22,6 +22,7 @@ from sa3_smoke.run_foundation import (
     REQUIRED_T5_MANIFEST_FILES,
     SMOKE_NAMES,
     OrchestrationDependencies,
+    _latest_decision_assignment,
     _run_foundation_for_testing,
     _same_filesystem_object,
     _smoke_e_kwargs,
@@ -42,6 +43,37 @@ SNAPSHOT_FILES = (
     "t5gemma-b-b-ul2/README.md",
     *(f"t5gemma-b-b-ul2/{name}" for name in REQUIRED_T5_MANIFEST_FILES),
 )
+
+
+def test_retry_authorization_caps_are_bound_to_its_decision_section(tmp_path: Path) -> None:
+    decisions = tmp_path / "DECISIONS.md"
+    decisions.write_text(
+        """# Decisions
+
+## D-0019 — retry
+
+MAX_GENERATIONS = 8
+MAX_CLIP_SECONDS = 30
+MAX_GPUS = 1
+MAX_GPU_SECONDS = 540
+SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED = YES
+
+## D-0999 — unrelated future text
+
+MAX_GENERATIONS = 999
+MAX_GPU_SECONDS = 999
+""",
+        encoding="utf-8",
+    )
+    evidence = _latest_decision_assignment(decisions)
+    assert evidence["latest_assignment"] == "SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED"
+    assert evidence["authorized"] is True
+    assert evidence["caps"] == {
+        "MAX_GENERATIONS": 8,
+        "MAX_CLIP_SECONDS": 30,
+        "MAX_GPUS": 1,
+        "MAX_GPU_SECONDS": 540,
+    }
 
 
 def test_live_entrypoint_hardcodes_authorization_guards(

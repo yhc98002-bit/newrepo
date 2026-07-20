@@ -652,6 +652,7 @@ class ResumingEulerSampler:
     def __init__(self, checkpoint: EulerCheckpointState) -> None:
         self.checkpoint = checkpoint
         self.last_run_result: EulerRunResult | None = None
+        self.invocation_started = False
         self.runtime_schedule_validated = False
         self.fresh_initial_latent_dtype: str | None = None
         self.checkpoint_latent_dtype = str(checkpoint.latent.dtype)
@@ -667,8 +668,9 @@ class ResumingEulerSampler:
         **extra_args: Any,
     ) -> torch.Tensor:
         del disable_tqdm
-        if self.last_run_result is not None:
+        if self.invocation_started:
             raise RuntimeError("a ResumingEulerSampler instance may be invoked only once")
+        self.invocation_started = True
         _validate_latent_and_schedule(x, sigmas)
         expected_shape = tuple(self.checkpoint.metadata["latent_shape"])
         expected_dtype = self.checkpoint.metadata["latent_dtype"]

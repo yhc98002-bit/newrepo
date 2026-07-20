@@ -365,8 +365,8 @@ def _latest_decision_assignment(path: Path) -> dict[str, Any]:
     except (OSError, UnicodeDecodeError) as exc:
         raise ValueError(f"could not read append-only decisions file {path}: {exc}") from exc
     pattern = re.compile(
-        r"\b(SA3_FOUNDATION_SMOKE_AUTHORIZED|FOUNDATION_COST_SMOKE_AUTHORIZED)"
-        r"\s*=\s*([A-Za-z_]+)"
+        r"\b(SA3_FOUNDATION_SMOKE_AUTHORIZED|FOUNDATION_COST_SMOKE_AUTHORIZED|"
+        r"SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED)\s*=\s*([A-Za-z_]+)"
     )
     matches = list(pattern.finditer(text))
     if not matches:
@@ -375,9 +375,14 @@ def _latest_decision_assignment(path: Path) -> dict[str, Any]:
     assignment_name = latest.group(1)
     state = latest.group(2).upper()
     line_number = text.count("\n", 0, latest.start()) + 1
+    section_start = text.rfind("\n## ", 0, latest.start())
+    section_start = 0 if section_start < 0 else section_start + 1
+    section_end = text.find("\n## ", latest.end())
+    section_end = len(text) if section_end < 0 else section_end
+    decision_section = text[section_start:section_end]
     caps: dict[str, int | None] = {}
     for name in ("MAX_GENERATIONS", "MAX_CLIP_SECONDS", "MAX_GPUS", "MAX_GPU_SECONDS"):
-        cap_matches = list(re.finditer(rf"\b{name}\s*=\s*(\d+)", text))
+        cap_matches = list(re.finditer(rf"\b{name}\s*=\s*(\d+)", decision_section))
         caps[name] = int(cap_matches[-1].group(1)) if cap_matches else None
     return {
         "path": str(path.resolve()),
@@ -386,6 +391,7 @@ def _latest_decision_assignment(path: Path) -> dict[str, Any]:
         "latest_assignment": assignment_name,
         "latest_state": state,
         "latest_line_number": line_number,
+        "decision_section_sha256": hashlib.sha256(decision_section.encode("utf-8")).hexdigest(),
         "authorized": state == "YES",
         "caps": caps,
     }
@@ -559,6 +565,7 @@ def validate_preflight(
     dependencies: OrchestrationDependencies,
     process_context: Mapping[str, Any],
     require_clean_git: bool,
+    authorization_profile: str = "foundation",
 ) -> PreflightReport:
     """Validate frozen bytes, schema, placement, Git state, and live model files."""
 
@@ -772,20 +779,30 @@ def validate_preflight(
     try:
         decisions_evidence = _latest_decision_assignment(decisions_path)
         if not decisions_evidence["authorized"]:
-            failures.append("latest foundation authorization assignment is not YES")
-        if expected_config_sha256 == EXPECTED_CONFIG_SHA256:
-            if decisions_evidence.get("latest_assignment") != "FOUNDATION_COST_SMOKE_AUTHORIZED":
-                failures.append(
-                    "latest production authorization is not the bounded cost-smoke amendment"
-                )
-            expected_caps = {
-                "MAX_GENERATIONS": 20,
-                "MAX_CLIP_SECONDS": 30,
-                "MAX_GPUS": 1,
-                "MAX_GPU_SECONDS": 1800,
-            }
+            failures.append("latest selected authorization assignment is not YES")
+        if authorization_profile not in {"foundation", "smoke_e_retry"}:
+            failures.append(f"unknown authorization profile: {authorization_profile!r}")
+        elif expected_config_sha256 == EXPECTED_CONFIG_SHA256:
+            if authorization_profile == "foundation":
+                expected_assignment = "FOUNDATION_COST_SMOKE_AUTHORIZED"
+                expected_caps = {
+                    "MAX_GENERATIONS": 20,
+                    "MAX_CLIP_SECONDS": 30,
+                    "MAX_GPUS": 1,
+                    "MAX_GPU_SECONDS": 1800,
+                }
+            else:
+                expected_assignment = "SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED"
+                expected_caps = {
+                    "MAX_GENERATIONS": 8,
+                    "MAX_CLIP_SECONDS": 30,
+                    "MAX_GPUS": 1,
+                    "MAX_GPU_SECONDS": 540,
+                }
+            if decisions_evidence.get("latest_assignment") != expected_assignment:
+                failures.append(f"latest authorization assignment is not {expected_assignment}")
             if decisions_evidence.get("caps") != expected_caps:
-                failures.append("bounded cost-smoke hard caps differ from D-0013")
+                failures.append(f"hard caps differ from the {authorization_profile} decision")
     except ValueError as exc:
         failures.append(str(exc))
         decisions_evidence = {

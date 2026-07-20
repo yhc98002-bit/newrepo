@@ -23,12 +23,12 @@ ROOT = Path(__file__).resolve().parents[1]
 FROZEN_CONFIG = ROOT / "configs" / "foundation_v1.json"
 
 
-def test_child_timeout_never_uses_remaining_budget_to_interrupt_atomic_output(
+def test_explicit_child_timeout_is_clipped_to_claim_validated_remaining_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(smoke_e_module, "remaining_budget_seconds", lambda: 0.25)
     assert smoke_e_module._bounded_child_timeout(None) is None
-    assert smoke_e_module._bounded_child_timeout(90.0) == 90.0
+    assert smoke_e_module._bounded_child_timeout(90.0) == 0.25
 
     monkeypatch.setattr(smoke_e_module, "remaining_budget_seconds", lambda: 0.0)
     with pytest.raises(RuntimeError, match="deadline reached before Smoke E child"):
