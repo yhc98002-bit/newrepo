@@ -1,0 +1,88 @@
+{
+  "benchmark_endpoints_scored": 0,
+  "created_at_utc": "2026-07-20T17:26:00Z",
+  "generated_outputs_total": 1,
+  "model_generation_calls_total": 1,
+  "models": {
+    "ACE-Step/ACE-Step-v1-3.5B": {
+      "build_status": "FAIL_ESCALATED",
+      "cost_status": "MEASURED_FAILURE_ROW_NOT_QUEUE_ELIGIBLE",
+      "failed_call_cost": {
+        "actual_nfe": 45,
+        "cost_status": "MEASURED",
+        "duration_normalized_wall_seconds": 27.25068249553442,
+        "load_wall_seconds": 182.45191994681954,
+        "peak_allocated_bytes": 8371735040,
+        "peak_reserved_bytes": 10085203968,
+        "requested_duration_seconds": 30.0,
+        "requested_steps": 30,
+        "wall_seconds": 27.25068249553442
+      },
+      "failure": {
+        "audio_sanity_status": "FAIL",
+        "check": "sample_count",
+        "decoded_duration_seconds": 29.9073125,
+        "expected_sample_count": 1440000,
+        "observed_sample_count": 1435551,
+        "sample_rate": 48000,
+        "status": "AUDIO_SANITY_FAILED"
+      },
+      "generated_outputs": 1,
+      "model_calls": 1,
+      "no_retry": true,
+      "queue_status": "BLOCKED_ON_ENGINEERING_FAILURE",
+      "retained_audio": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/audio/call-00.wav",
+        "provenance_sha256": "881f09abeb1b4aa103db37125dc3017aa289f6a8b0e6d493b5f15568eaa70f4b",
+        "sha256": "1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458"
+      },
+      "run": {
+        "authorization_sha256": "504b91ebdee19a2f3203f45a1d6d3079ad12492bea8131db4edbfa969b9c183d",
+        "call_claim_sha256": "93fc96218ef13524237f3a67d2313fed6e18e6dd55c9a919cabcc63198ae0123",
+        "generation_ledger_sha256": "d6b9aa821f8a4031b370ec267c864a3bbe5d68f8fb8fed26efad4cdc58b9c627",
+        "global_claim_sha256": "deb9d1c3bff85f96fe162f624a52e54b3b9cc94f84e620efd58d65152a545084",
+        "manifest_sha256": "466b56249594724e0241cf6fe0f447fa71012bac23bd3a63cde4a38cdd8470e2",
+        "node": "an12",
+        "physical_gpu_id": 4,
+        "result_sha256": "66c4aafd3dc1d7c8da774d539f003fe03c94ae276e248d85386411461a693df0",
+        "run_id": "b2-ace-v1-mini-smoke-v2-001",
+        "terminal_log_sha256": "7faccba0587237d653e355cc9555c83c5d9a23f0c0ab559f9e11f4124fb9028d",
+        "terminal_runner_result_sha256": "012a6ebb57c2273cf4cea5d4a678bc4285acc92a20d199d481baceb2fd120f36"
+      }
+    },
+    "stabilityai/stable-audio-3-medium-base": {
+      "build_status": "MEASURED_READY",
+      "cold_plus_first_seconds": 116.34399104863405,
+      "cost_evidence": {
+        "decision": "D-0020",
+        "measurement_scope": "FOUNDATION_SINGLETON",
+        "p95_status": "INSUFFICIENT_REPETITIONS",
+        "run_id": "sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24",
+        "terminal_result_sha256": "10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117"
+      },
+      "cost_status": "MEASURED",
+      "queue_status": "READY",
+      "resident_unit_seconds": 25.023961771279573,
+      "state_capability": "PASS"
+    },
+    "stabilityai/stable-audio-open-1.0": {
+      "build_status": "BLOCKED_ON_LICENSE",
+      "cost_status": "NOT_MEASURED_BLOCKED_ON_LICENSE",
+      "human_steps_path": "configs/backbones/stable_audio_open_1_0.json",
+      "license_blocker_path": "provenance/b2/stable_audio_open_license_block.json",
+      "queue_status": "BLOCKED_ON_LICENSE"
+    }
+  },
+  "preclaim_refusal": {
+    "authorization_sha256": "4fd2016a2ec5342e2cd09dec56e30040b7381755180c220c305846a6a8a7dcec",
+    "generated_outputs": 0,
+    "global_claim_consumed": false,
+    "model_calls": 0,
+    "node": "an29",
+    "reason": "NODE_LOCAL_TMP_FULL_BEFORE_DEVICE_LOCK",
+    "record_sha256": "2b6315e08152e3f4f414ee854aeebbd6bb2dcf9dd645a2f5156285b5dbf933be",
+    "status": "REFUSED_PREFLIGHT"
+  },
+  "schema_version": 1,
+  "status": "TERMINAL"
+}

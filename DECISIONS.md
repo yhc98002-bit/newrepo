@@ -809,3 +809,145 @@ authorization assignments are:
 `BENCHMARK_CORE_GENERATION_STATUS = NOT_LAUNCHED`
 
 `HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
+
+## D-0022 — Terminal B2 adapter receipt and ACE-Step v1 queue closure
+
+- Date: 2026-07-21
+- Status: accepted terminal engineering evidence; B2 one-shot consumed
+- Authority: D-0021 exact two-call package and its frozen fail-closed rules
+- Supersedes: D-0021 only for the now-consumed B2 execution authority
+
+The first placement submission on `an29`, physical GPU 4, was
+`REFUSED_PREFLIGHT` before the device lock because that node's local `/tmp`
+filesystem was full. It created no global or per-call claim, made zero model
+calls, and produced zero outputs. The immutable refusal record SHA-256 is
+`2b6315e08152e3f4f414ee854aeebbd6bb2dcf9dd645a2f5156285b5dbf933be`;
+its external authorization SHA-256 is
+`4fd2016a2ec5342e2cd09dec56e30040b7381755180c220c305846a6a8a7dcec`.
+Because the global one-shot claim was still absent, the same unconsumed plan
+was submitted on `an12`, physical GPU 4, under authorization SHA-256
+`504b91ebdee19a2f3203f45a1d6d3079ad12492bea8131db4edbfa969b9c183d`.
+That node had 17 GiB free in `/tmp`, and the selected A800 had 81,226 MiB free,
+zero compute processes, and 0% utilization before the runner acquired its
+lock. No neighboring process was changed.
+
+The durable global-claim SHA-256 is
+`deb9d1c3bff85f96fe162f624a52e54b3b9cc94f84e620efd58d65152a545084`.
+Call 0, seed `S-0008 = 73193008`, was claimed once under SHA-256
+`93fc96218ef13524237f3a67d2313fed6e18e6dd55c9a919cabcc63198ae0123`
+and made one official model call. Its retained WAV SHA-256 is
+`1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458`;
+adjacent provenance SHA-256 is
+`881f09abeb1b4aa103db37125dc3017aa289f6a8b0e6d493b5f15568eaa70f4b`.
+The decoded audio was finite, non-silent stereo at 48 kHz, but contained
+1,435,551 frames (`29.9073125 s`) rather than the frozen exact 1,440,000-frame
+30-second requirement. Sanity therefore failed and call 1 was not made.
+
+The one retained ledger row has `cost_status = MEASURED`: actual NFE 45,
+CUDA-synchronized wall `27.25068249553442 s`, load wall
+`182.45191994681954 s`, and peak allocated/reserved VRAM
+`8,371,735,040 / 10,085,203,968 B`. It remains a factual failed-call cost row,
+not a launch calibration. The generation ledger, terminal runner result,
+outer terminal result, manifest, and terminal log SHA-256s are respectively
+`d6b9aa821f8a4031b370ec267c864a3bbe5d68f8fb8fed26efad4cdc58b9c627`,
+`012a6ebb57c2273cf4cea5d4a678bc4285acc92a20d199d481baceb2fd120f36`,
+`66c4aafd3dc1d7c8da774d539f003fe03c94ae276e248d85386411461a693df0`,
+`466b56249594724e0241cf6fe0f447fa71012bac23bd3a63cde4a38cdd8470e2`,
+and `7faccba0587237d653e355cc9555c83c5d9a23f0c0ab559f9e11f4124fb9028d`.
+No benchmark instrument or human rater scored this output.
+
+The terminal Phase-B receipt is
+`provenance/b2/build_status_terminal_v2.json`, SHA-256
+`d31c45f80f2397ee7dc9456d543da0bced560de8b299db1b10d495c4162efe72`.
+SA3 is `MEASURED_READY`; Stable Audio Open 1.0 remains
+`BLOCKED_ON_LICENSE`; ACE-Step v1 is `FAIL_ESCALATED` and
+`BLOCKED_ON_ENGINEERING_FAILURE`. All B2 statuses are terminal. Only SA3 may
+enter the ordinary core queue.
+
+`B2_MINI_SMOKE_V2_AUTHORIZATION_STATUS = CONSUMED`
+
+`B2_MINI_SMOKE_V2_AUTHORIZED = NO`
+
+`B2_MINI_SMOKE_V2_STATUS = FAIL_ESCALATED`
+
+`ACE_STEP_V1_QUEUE_STATUS = BLOCKED_ON_ENGINEERING_FAILURE`
+
+`STABLE_AUDIO_OPEN_1_0_QUEUE_STATUS = BLOCKED_ON_LICENSE`
+
+`STABLE_AUDIO_3_MEDIUM_BASE_QUEUE_STATUS = READY`
+
+`PHASE_B_STATUS = TERMINAL`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = NO`
+
+## D-0023 — Benchmark v2 ordinary-core launch authorization
+
+- Date: 2026-07-21
+- Status: accepted prospectively; ordinary SA3 core queue open
+- Authority: Chief Scientist / PI consolidated benchmark-v2 launch task
+- Supersedes: D-0022 only for the ordinary ready-backbone core queue
+
+The frozen v2 design and every Phase-B model row are terminal. The ordinary
+core may launch only the `READY` SA3 backbone: 1,536 registered 30-second
+requests, shard size four, one `an12` A800, physical GPU 4, TP1, and one
+replica. Stable Audio Open 1.0 and ACE-Step v1 receive no queue rows. The SA3
+GPU-seconds cap is exactly `76939.90662887692` (`21.372196285799145 GPU-h`),
+from `c_m = 116.34399104863405`, `u_m = 25.023961771279573`, and `n_m = 1536`.
+No automatic retry, prompt replacement, shorter clip, extra seed, evaluator,
+or human-packet assembly is authorized.
+
+The initial 432-row and supplemental 432-row state manifests may be
+materialized but both remain closed. Ordinary workers cannot consume them.
+The supplemental state queue is locked unless a later initial gate is
+`INCONCLUSIVE_UNDERPOWERED` and another decision opens the sole doubling.
+Human-audit packet assembly remains blocked on timing-pilot ingestion.
+
+The exact launch inputs are:
+
+| Path | SHA-256 |
+| --- | --- |
+| `configs/benchmark_core_v2.json` | `d45e9c6c2ab6326b6dc4cf4c23b55845db59417f3553d00832b33cb8b29e8b61` |
+| `BENCHMARK_PREREG_v2.md` | `77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa` |
+| `BENCHMARK_CORE_PROTOCOL_v2.md` | `869856603666c9d5b8a0ffbcb7e286a20f35bb3ca03955279b2777cc3e0ab685` |
+| `provenance/b2/build_status_terminal_v2.json` | `d31c45f80f2397ee7dc9456d543da0bced560de8b299db1b10d495c4162efe72` |
+| `src/benchmark_core/adapter_bridge.py` | `894e5873c705ee1a8877adc62efffd977a08d6c5c2941175bda89236cbf2d83b` |
+| `src/benchmark_core/artifacts.py` | `269845c6a497189cd3eba029007fd22ffb7ffed3027fd5e7ec9f08fd4a8ba83a` |
+| `src/benchmark_core/claims.py` | `76f3adacaf9ee65884bafa3c53ba11dd3921d5378a79f116107f33c854e92b2c` |
+| `src/benchmark_core/config.py` | `a48ee85c7c7a2cb2fa9616a5456b4b058e9e8de7d52e6adc27ceecbd91f1f39c` |
+| `src/benchmark_core/heartbeat.py` | `dfd77b90541d0099d6495280d7f7dad4e88c2b9703b91e09617195285bbd8480` |
+| `src/benchmark_core/launcher.py` | `8a57fbcb990e7306b3a6389273041519f1f245ed5c5c27f83db25807fb8170f3` |
+| `src/benchmark_core/ledger.py` | `6953bab158fc494b133ddaf8dde76597e1b9515e5c1ae8d3c5fc82a2ec95540f` |
+| `src/benchmark_core/placement.py` | `961193d3ab08ded1decc5f7f9086495362948ad296b9dbdba77877881b2b4902` |
+| `src/benchmark_core/queue.py` | `494333df2429af497a38a62cdd1150403b246f8d2ead7256cdefc08873b1582a` |
+| `src/benchmark_core/state_queue.py` | `fafdbed02820fde1bbf8945d3c2d6679b66bdabbe59ed86200d3f9f08ef619ef` |
+| `src/benchmark_core/supervisor.py` | `3e24f8b9d0de58f3b5a204e330e39d6857a4dcaea83e9a7374bbe22dbb032e4c` |
+| `src/benchmark_core/worker.py` | `d81befde9e813a295bafa1676d8944aa4e1bcad674206ce6cc2eec152fed9284` |
+| `scripts/prepare_benchmark_core_run.py` | `b363f44dedf79c839c173c46904ac6f4ea2ed8c3a973ccd9dba502fd6b47e391` |
+| `scripts/run_benchmark_core_worker.py` | `40170a3b8be805314164c954923a328debb9783f935647f4b339d41e97f5b12d` |
+| `prompts/v2/manifest.json` | `171d6c757ff3ecec1918d2f032206c2b570b3302dc5ed0100da0db5d22708089` |
+| `prompts/v2/vocal_instrumental.json` | `602c4e0fb419d7a300116eb5fb76c30a8e19364aaef566aec05425caffed9f90` |
+| `prompts/v2/tempo.json` | `16e31c155e1d535f2211fcd85c8d666c9ba7a6636e4487fd43ea2fd5fa0e36ab` |
+| `prompts/v2/integrity.json` | `be0e7c65fa8dfad8c7fdbf4456b2c1ad7e6f4fe0bbeb67eba2fcbf96b5f16d03` |
+| `prompts/v2/structure_exploratory.json` | `6e9ca89c20ebb43313d9b492140970d876a5cfc657cf123cfe44b7d89e974af8` |
+| `prompts/v2/seed_registry.json` | `2115d7e70a6c3f4dd19f38503861b8aeb3595a8f64dd1fc839d7a209e80724eb` |
+| `configs/statistics_v2.json` | `d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d` |
+| `provenance/b1/integrity_synthetic_validation.json` | `4e1b124ad2247eced85d21f049ad5b3849a4e1dd1a395689c235ec3d998a4dab` |
+| `configs/backbones/stable_audio_3_medium_base.json` | `e1bcc0d03e6929b8fd2b655f8fc8c182a2be0eb6316549a94f48c4b040a98f75` |
+
+`BENCHMARK_PREREG_V2_FROZEN = YES`
+
+`PHASE_B_STATUS = TERMINAL`
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = YES`
+
+`BENCHMARK_CORE_GENERATION_STATUS = LAUNCH_AUTHORIZED`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_INITIAL_QUEUE_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`

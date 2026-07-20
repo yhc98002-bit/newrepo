@@ -336,3 +336,59 @@ manifest and artifacts are named here with SHA-256 digests.
   no model call or immutable run artifact was retried or changed
 - Supersedes: L-0009 only for latest foundation/preflight state-capability
   evidence; the original failure and five-smoke `FAIL_ESCALATED` run remain
+
+## L-0011 — B2 ACE-Step v1 an29 preclaim placement refusal
+
+- Time: 2026-07-21T01:17:07+08:00
+- Kind: completed preflight refusal; no model result
+- Authority: D-0021 bounded B2 engineering package
+- Git: `d70a66959eed819dbfb3808ec59767bd5c096b26`, clean and equal to
+  `origin/main`
+- Node: `an29`; intended physical GPU ID: `4`; TP: 1; replicas: 1
+- Placement evidence: GPU 4 was an idle A800 with 81,226 MiB free and 0%
+  utilization, but node-local `/tmp` had only 20 KiB and 348 inodes free
+- Result: `REFUSED_PREFLIGHT` before device lock; zero global claims, zero
+  per-call claims, zero model calls, and zero outputs
+- Authorization SHA-256:
+  `4fd2016a2ec5342e2cd09dec56e30040b7381755180c220c305846a6a8a7dcec`
+- Refusal record SHA-256:
+  `2b6315e08152e3f4f414ee854aeebbd6bb2dcf9dd645a2f5156285b5dbf933be`
+- Deviations: the same still-unconsumed plan was relocated to `an12`; no
+  generation, call retry, or artifact replacement occurred in this row
+- Supersedes: none
+
+## L-0012 — B2 ACE-Step v1 terminal failed-sanity cost row
+
+- Time: 2026-07-21T01:24:12+08:00
+- Kind: completed terminal engineering mini-smoke result; not a benchmark
+- Authority: D-0021; global one-shot claim consumed, no retry
+- Git: `d70a66959eed819dbfb3808ec59767bd5c096b26`, clean and equal to
+  `origin/main` at execution
+- Node: `an12`; physical GPU ID: `4`; TP: 1; replicas: 1
+- Placement: one idle A800 with 81,226 MiB free and 0% utilization before
+  lock/claim; neighboring GPU 0–3 processes were not changed
+- Seed: S-0008 = `73193008`; call 1 / S-0009 was not reached
+- Run: `b2-ace-v1-mini-smoke-v2-001`
+- Global/call claim SHA-256s:
+  `deb9d1c3bff85f96fe162f624a52e54b3b9cc94f84e620efd58d65152a545084` /
+  `93fc96218ef13524237f3a67d2313fed6e18e6dd55c9a919cabcc63198ae0123`
+- Artifact: retained `call-00.wav` SHA-256
+  `1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458`;
+  adjacent provenance SHA-256
+  `881f09abeb1b4aa103db37125dc3017aa289f6a8b0e6d493b5f15568eaa70f4b`
+- Result: `FAIL_ESCALATED` — finite, non-silent 48-kHz stereo audio had
+  1,435,551 frames (`29.9073125 s`) instead of the exact 1,440,000-frame
+  requirement; no automatic evaluator or human label was run
+- Measured failed-call cost: actual NFE 45; CUDA-synchronized wall
+  `27.25068249553442 s`; load wall `182.45191994681954 s`; peak
+  allocated/reserved VRAM `8,371,735,040 / 10,085,203,968 B`;
+  ledger `cost_status = MEASURED`, excluded from launch calibration
+- Generation ledger / terminal result SHA-256s:
+  `d6b9aa821f8a4031b370ec267c864a3bbe5d68f8fb8fed26efad4cdc58b9c627` /
+  `66c4aafd3dc1d7c8da774d539f003fe03c94ae276e248d85386411461a693df0`
+- Budget: one of at most two calls, one of at most two outputs, one GPU,
+  30-second request, no retry; all D-0021 caps respected
+- Placement justification: ACE-Step v1 fits one A800 and the serial
+  engineering smoke uses TP1/R1; no wider placement was needed
+- Supersedes: the pre-generation ACE cost status only; terminal queue status
+  is `BLOCKED_ON_ENGINEERING_FAILURE`
