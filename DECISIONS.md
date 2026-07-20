@@ -951,3 +951,94 @@ The exact launch inputs are:
 `BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
 
 `HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
+
+## D-0024 — Ordinary-core pre-call recovery and exact relaunch authorization
+
+- Date: 2026-07-21
+- Status: accepted after a fail-closed pre-call stop; one fresh run authorized
+- Authority: Chief Scientist / PI consolidated benchmark-v2 launch task
+- Supersedes: D-0023 only for the retained failed run and its launch artifact
+
+Run `benchmark-core-v2-20260720t173000z` stopped before adapter load, request
+claim, model call, audio creation, or ledger append. Its terminal heartbeat is
+`FAILED_STOPPED`; there are zero request claims, zero WAV files, and the
+shared ledger is zero bytes. The retained launch claim, run manifest,
+heartbeat, worker log, launcher output, and load reservation have SHA-256s
+`f10484ff52460ba53e808f97d8cfa3ef67dba09367e2c2e21cea7c083fa18652`,
+`d8ca94d445326a87b1bf07813438b8a24ea5088649f242616e6f10e19d2ea0cb`,
+`dcd1b7160aa163e7f3ffb57a74770ef17ec33c661cd3d2839f92c784c7185915`,
+`2d12fbf3aa01e27edaf1c4c9639dc76a73611ceaa2dd64058987509b242f8404`,
+`77271ed10cb60666dc38480a856536aafa32b426263e063e319fd8b19bba9061`,
+and `f9b1ee5e39bbd506b03d420dbde57c8e7e0b4b2d324979e5d707c5806fe515b8`.
+That run is immutable terminal evidence and cannot be reused.
+
+The stop exposed an identity-representation defect in the benchmark adapter:
+the frozen CUDA wheel build was compared directly with the wheel's public
+PEP 440 distribution metadata. Live evidence shows distribution metadata
+`torch = 2.7.1` and `torchaudio = 2.7.1`, imported-module versions
+`torch = 2.7.1+cu126` and `torchaudio = 2.7.1+cu126`, and CUDA build `12.6`.
+The reviewed correction now requires both layers exactly. It does not change
+the model, prompts, seeds, NFE, duration, queue, budget, placement, evaluator,
+or retry policy. Regression tests prove that public metadata passes only with
+the exact imported local-build identity, and that module-build, public
+metadata, or flash-attention distribution drift each fails closed.
+
+The launch freezer now also binds the production SA3 adapter, its config, and
+every project-local runtime dependency used by it. One fresh run with exact ID
+`benchmark-core-v2-20260720t174500z` may consume the unchanged ordinary SA3
+queue under the D-0023 caps. The earlier run consumed no generation call and
+therefore does not reduce the 1,536-call ordinary queue or its GPU-seconds cap.
+There is no automatic retry after any request claim. Both state queues and
+human-audit packet assembly remain closed.
+
+The exact relaunch inputs are:
+
+| Path | SHA-256 |
+| --- | --- |
+| `configs/benchmark_core_v2.json` | `d45e9c6c2ab6326b6dc4cf4c23b55845db59417f3553d00832b33cb8b29e8b61` |
+| `BENCHMARK_PREREG_v2.md` | `77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa` |
+| `BENCHMARK_CORE_PROTOCOL_v2.md` | `869856603666c9d5b8a0ffbcb7e286a20f35bb3ca03955279b2777cc3e0ab685` |
+| `provenance/b2/build_status_terminal_v2.json` | `d31c45f80f2397ee7dc9456d543da0bced560de8b299db1b10d495c4162efe72` |
+| `configs/backbones/stable_audio_3_medium_base.json` | `e1bcc0d03e6929b8fd2b655f8fc8c182a2be0eb6316549a94f48c4b040a98f75` |
+| `src/backbones/__init__.py` | `e42845b1df342a56a55aca378f6994a2b56fe50c08cc11cac87296826e7248f0` |
+| `src/backbones/contracts.py` | `9368e2044380000e74bbefcd528d2f09fc22ef2b484b6f3b8bf298617b09f2d2` |
+| `src/backbones/io.py` | `fe3e4d101ef34c846b7b86a2cba9e44f36b839364c99487de209406e7254aa3a` |
+| `src/backbones/runtime.py` | `d2e42754a4599e64d43d9ce43db8cfe057034581db2b5099ca6886d1eeedfeed` |
+| `src/backbones/stable_audio_3.py` | `909f3efceb296caca59667ae4d0a4aa777d74d37a9e86b5170bdaba23ae2aa6b` |
+| `src/benchmark_core/__init__.py` | `5fe552169fdb0ed47cb4f92cac51ab982d72ceff67a028c88dd8a461fb9d602c` |
+| `src/benchmark_core/adapter_bridge.py` | `894e5873c705ee1a8877adc62efffd977a08d6c5c2941175bda89236cbf2d83b` |
+| `src/benchmark_core/artifacts.py` | `269845c6a497189cd3eba029007fd22ffb7ffed3027fd5e7ec9f08fd4a8ba83a` |
+| `src/benchmark_core/claims.py` | `76f3adacaf9ee65884bafa3c53ba11dd3921d5378a79f116107f33c854e92b2c` |
+| `src/benchmark_core/config.py` | `a48ee85c7c7a2cb2fa9616a5456b4b058e9e8de7d52e6adc27ceecbd91f1f39c` |
+| `src/benchmark_core/heartbeat.py` | `dfd77b90541d0099d6495280d7f7dad4e88c2b9703b91e09617195285bbd8480` |
+| `src/benchmark_core/launcher.py` | `8a57fbcb990e7306b3a6389273041519f1f245ed5c5c27f83db25807fb8170f3` |
+| `src/benchmark_core/ledger.py` | `6953bab158fc494b133ddaf8dde76597e1b9515e5c1ae8d3c5fc82a2ec95540f` |
+| `src/benchmark_core/placement.py` | `961193d3ab08ded1decc5f7f9086495362948ad296b9dbdba77877881b2b4902` |
+| `src/benchmark_core/queue.py` | `494333df2429af497a38a62cdd1150403b246f8d2ead7256cdefc08873b1582a` |
+| `src/benchmark_core/state_queue.py` | `fafdbed02820fde1bbf8945d3c2d6679b66bdabbe59ed86200d3f9f08ef619ef` |
+| `src/benchmark_core/supervisor.py` | `3e24f8b9d0de58f3b5a204e330e39d6857a4dcaea83e9a7374bbe22dbb032e4c` |
+| `src/benchmark_core/worker.py` | `d81befde9e813a295bafa1676d8944aa4e1bcad674206ce6cc2eec152fed9284` |
+| `src/sa3_smoke/__init__.py` | `18704985ac543674c1b8a1ac78764fba1b6f2fa3bf7748efa3fb26f40173af60` |
+| `src/sa3_smoke/artifacts.py` | `c51f2417577927180fa86b4282562a4781446a15d32cd466eda9213c7d679df3` |
+| `src/sa3_smoke/audio.py` | `c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24` |
+| `src/sa3_smoke/budget.py` | `dc1b5ecfdb193e1defd90e48f6fe7a7fb05ce38b9191ea9a1271c0e39a91c332` |
+| `src/sa3_smoke/environment_validation.py` | `684e736671055ffc5ad5e14ffe160aef9816ccc3317b080d7beef56dc38cc6fa` |
+| `src/sa3_smoke/model_runtime.py` | `614fc7e6d016e1dc07971a028653749318edac2c3c980a40d73aaf8be709fde4` |
+| `scripts/prepare_benchmark_core_run.py` | `a5ed0f741e6c4dbae6549f5de07df55997f4956669d9701c1b089133e5420046` |
+| `scripts/run_benchmark_core_worker.py` | `40170a3b8be805314164c954923a328debb9783f935647f4b339d41e97f5b12d` |
+
+`BENCHMARK_PREREG_V2_FROZEN = YES`
+
+`PHASE_B_STATUS = TERMINAL`
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = YES`
+
+`BENCHMARK_CORE_GENERATION_STATUS = RELAUNCH_AUTHORIZED`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_INITIAL_QUEUE_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`

@@ -137,11 +137,14 @@ class StableAudio3MediumBaseAdapter:
             failures.append(f"environment prefix drift: {observed_prefix} != {expected_prefix}")
 
         module_locations: dict[str, str | None] = {}
+        module_versions: dict[str, str | None] = {}
         modules = probe.get("modules", {})
         for name in ("torch", "torchaudio", "flash_attn", "stable_audio_3", "stable_audio_tools"):
             record = modules.get(name, {}) if isinstance(modules, dict) else {}
             location = record.get("file") if isinstance(record, dict) else None
+            version = record.get("version") if isinstance(record, dict) else None
             module_locations[name] = location
+            module_versions[name] = version
             try:
                 Path(str(location)).resolve().relative_to(expected_prefix)
             except ValueError:
@@ -161,8 +164,24 @@ class StableAudio3MediumBaseAdapter:
             except importlib.metadata.PackageNotFoundError:
                 observed = None
             distributions[name] = observed
-            if observed != expected:
-                failures.append(f"{name} drift: {observed} != {expected}")
+            if name in {"torch", "torchaudio"}:
+                # PyTorch wheel metadata records the public PEP 440 version,
+                # while the imported module records the CUDA local-build tag.
+                # Pin both identities instead of comparing the metadata value
+                # directly to the richer module-build identity.
+                expected_public = expected.partition("+")[0]
+                if observed != expected_public:
+                    failures.append(
+                        f"{name} distribution metadata drift: "
+                        f"{observed} != {expected_public}"
+                    )
+                if module_versions.get(name) != expected:
+                    failures.append(
+                        f"{name} module build drift: "
+                        f"{module_versions.get(name)} != {expected}"
+                    )
+            elif observed != expected:
+                failures.append(f"{name} distribution metadata drift: {observed} != {expected}")
         if failures:
             raise BackboneConfigurationError("SA3 benchmark runtime drift: " + "; ".join(failures))
         return {
@@ -172,6 +191,7 @@ class StableAudio3MediumBaseAdapter:
             "torch_cuda_version": probe["torch_cuda_version"],
             "environment_prefix": str(observed_prefix),
             "module_locations": module_locations,
+            "module_versions": module_versions,
             "distributions": distributions,
             "source_packaging_boundary": runtime["source_packaging_boundary"],
         }

@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 import pytest
 
+import backbones.stable_audio_3 as stable_audio_3_module
 from backbones.ace_step_v1 import AceStepV1Adapter, _canonical_manifest_sha256
 from backbones.contracts import (
     DEFAULT_ACE_CONFIG,
@@ -23,6 +24,7 @@ from backbones.factory import create_adapter
 from backbones.stable_audio_3 import DEFAULT_SA3_CONFIG, StableAudio3MediumBaseAdapter
 from backbones.stable_audio_open import StableAudioOpenAdapter
 from sa3_smoke.audio import save_float_wav_exclusive
+from scripts.prepare_benchmark_core_run import DEFAULT_FROZEN_FILES
 
 
 @pytest.mark.parametrize(
@@ -76,6 +78,94 @@ def test_sa3_config_pins_current_project_local_foundation_records() -> None:
     for key in ("package_freeze", "runtime_record", "licenses"):
         record = config["runtime"][key]
         assert sha256_file(REPOSITORY_ROOT / record["path"]) == record["sha256"]
+
+
+def test_sa3_runtime_pins_public_metadata_and_local_module_build(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = StableAudio3MediumBaseAdapter(validate_environment=False)
+    runtime = adapter.config["runtime"]
+    environment_root = Path(runtime["environment_path"])
+    module_root = environment_root / "lib/python3.10/site-packages"
+    probe = {
+        "python_version": runtime["python"],
+        "sys_prefix": str(environment_root),
+        "torch_cuda_version": runtime["cuda_build"],
+        "modules": {
+            "torch": {
+                "file": str(module_root / "torch/__init__.py"),
+                "version": runtime["distributions"]["torch"],
+            },
+            "torchaudio": {
+                "file": str(module_root / "torchaudio/__init__.py"),
+                "version": runtime["distributions"]["torchaudio"],
+            },
+            "flash_attn": {
+                "file": str(module_root / "flash_attn/__init__.py"),
+                "version": "2.6.3",
+            },
+            "stable_audio_3": {
+                "file": str(module_root / "stable_audio_3/__init__.py"),
+                "version": None,
+            },
+            "stable_audio_tools": {
+                "file": str(module_root / "stable_audio_tools/__init__.py"),
+                "version": None,
+            },
+            "sa3_smoke": {
+                "file": str(REPOSITORY_ROOT / "src/sa3_smoke/__init__.py"),
+                "version": None,
+            },
+        },
+    }
+    metadata_versions = {
+        name: expected.partition("+")[0] if name in {"torch", "torchaudio"} else expected
+        for name, expected in runtime["distributions"].items()
+    }
+    monkeypatch.setattr(stable_audio_3_module, "collect_runtime_probe", lambda: probe)
+    monkeypatch.setattr(
+        stable_audio_3_module.importlib.metadata,
+        "version",
+        metadata_versions.__getitem__,
+    )
+
+    result = adapter._validate_benchmark_runtime()
+    assert result["distributions"]["torch"] == "2.7.1"
+    assert result["module_versions"]["torch"] == "2.7.1+cu126"
+
+    probe["modules"]["torch"]["version"] = "2.7.1+cu128"
+    with pytest.raises(BackboneConfigurationError, match="torch module build drift"):
+        adapter._validate_benchmark_runtime()
+
+    probe["modules"]["torch"]["version"] = runtime["distributions"]["torch"]
+    metadata_versions["torch"] = "2.7.2"
+    with pytest.raises(BackboneConfigurationError, match="torch distribution metadata drift"):
+        adapter._validate_benchmark_runtime()
+
+    metadata_versions["torch"] = "2.7.1"
+    metadata_versions["flash-attn"] = "2.6.3"
+    with pytest.raises(BackboneConfigurationError, match="flash-attn distribution metadata drift"):
+        adapter._validate_benchmark_runtime()
+
+
+def test_core_launch_directly_freezes_the_sa3_project_runtime_closure() -> None:
+    frozen = {path.resolve() for path in DEFAULT_FROZEN_FILES}
+    required = {
+        REPOSITORY_ROOT / "configs/backbones/stable_audio_3_medium_base.json",
+        REPOSITORY_ROOT / "src/benchmark_core/__init__.py",
+        REPOSITORY_ROOT / "src/backbones/__init__.py",
+        REPOSITORY_ROOT / "src/backbones/contracts.py",
+        REPOSITORY_ROOT / "src/backbones/io.py",
+        REPOSITORY_ROOT / "src/backbones/runtime.py",
+        REPOSITORY_ROOT / "src/backbones/stable_audio_3.py",
+        REPOSITORY_ROOT / "src/sa3_smoke/__init__.py",
+        REPOSITORY_ROOT / "src/sa3_smoke/artifacts.py",
+        REPOSITORY_ROOT / "src/sa3_smoke/audio.py",
+        REPOSITORY_ROOT / "src/sa3_smoke/budget.py",
+        REPOSITORY_ROOT / "src/sa3_smoke/environment_validation.py",
+        REPOSITORY_ROOT / "src/sa3_smoke/model_runtime.py",
+    }
+    assert {path.resolve() for path in required} <= frozen
 
 
 def test_pre_generation_status_binds_all_three_config_hashes() -> None:
