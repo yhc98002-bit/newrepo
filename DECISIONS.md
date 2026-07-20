@@ -504,3 +504,92 @@ five-smoke `FAIL_ESCALATED` classification.
 `BENCHMARK_EXECUTION_AUTHORIZED = NO`
 
 `SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED = YES`
+
+## D-0020 — Terminal Smoke E retry PASS and authority closure
+
+- Date: 2026-07-20
+- Status: accepted terminal engineering evidence; D-0019 claim consumed
+- Authority: D-0019 terminal rule and immutable run evidence
+- Supersedes: D-0017 only for latest Smoke E foundation/preflight capability;
+  the original five-smoke run remains `FAIL_ESCALATED`
+
+The single D-0019 execution used clean Git
+`dd65740782f268e0df21a2a22efe9faa3ab12962`, exact retry config SHA-256
+`39553c595659e29e3c0fa691c0d47f344421548ca3ac12157c01fac32a716c84`,
+protocol SHA-256
+`1a2892b70029bea1e36722145dceea32a814e5a00d917a98c0cb17d4582cd0a0`,
+and foundation-call config SHA-256
+`d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f`.
+The immutable run is
+`sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24` on `an12`, physical
+GPU 4, TP1, one replica. The device lock was held; the immediate pre-claim
+probe found one visible A800, no compute process, 81,223 MiB free, and 0%
+utilization. No neighboring process was changed.
+
+Claim SHA-256 is
+`32bd53e6e6421acede70f2f01e07e50c55abb4a918ee5ef6c2b50b6c3a6fc092`.
+Result, Smoke E manifest, generation-ledger, budget-state, and live-placement
+SHA-256s are, respectively,
+`10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117`,
+`27978939dbdef2276f5892f222eeaf9263122c4850cfe21a8f72baffc1da070f`,
+`b9c70678a6198530d2c913d873b3033ebc5ca88dbcc79f11b4961c28695a3024`,
+`3b80d6e27fa6baed9cc6628c2483a0c7f324a9ad5c1c91d315ac624d128960e7`,
+and `a72bf9c0e996a2d8b856d0b3ffb315755732e6bbc163a279db2f5969c849a1b0`.
+
+The reference exported FP32 runtime latents at 15/30/40 steps. Checkpoint
+SHA-256s are
+`066c6a4673fa0a37751c5de115c31fb43149dcfc2c335c65b33da4fcfda78582`,
+`25e11b2770b568f5e1d7187667581eaf96989a7cd28245b5d422ddbbe5b4b011`,
+and `64564ee934755a131d33ca56e0725b361167f3d3ec4c90d1cc4a853fdb429ffc`.
+Three distinct child PIDs preserved FP32 checkpoint state across fresh FP16
+official noise and measured exact remaining NFE 35/20/10. All three decoded
+resumes exactly equal the reference: maximum/RMS error zero and infinite SNR,
+stricter than the frozen `1e-5`/80 dB gate. Reference and resume WAV SHA-256s
+are
+`6bda5c51ee57c952badce63827c5c11e2be2edded1ce92c984ba240b9aa3dd0f`,
+`60680081e5efda91b12e25505e0ed16c81a5234d28982d523c96d20d4dc7e859`,
+`1cff775d63c9d69d4f526ae3d208ce7c17b12c878d64fb35b7b7ecd4fff3c663`,
+and `725c9881394a602580d8b53b1a83f8fc08377e79d7b9428c3e1dd73b85a31dc5`.
+Every output passed finite, non-silent, 30-second, 44.1-kHz, stereo, and
+adjacent-provenance checks.
+
+Exactly four calls and four outputs succeeded with zero failure: actual NFE
+50/35/20/10 (115 total), synchronized call wall
+`33.31213849410415 s`, model-load wall `91.32002927735448 s`, peak allocated /
+reserved VRAM `5,438,810,112 / 9,839,837,184 B`, and conservative one-GPU
+residency `249.481707109 s`. The 8-generation, 30-second, one-GPU, and
+540-GPU-second caps all passed. The run and claim are read-only; no artifact
+was overwritten.
+
+After the Python runner wrote PASS and released the GPU, the outer wrapper
+returned 1 while attempting an optional operational-log sidecar with a missing
+timestamp and unsupported non-data label. The read-only log SHA-256 is
+`0054143ae79877097c890c5e3df11bf001c5bc08e614f3a152cef887152b6579`.
+This packaging deviation made no model call and is not a frozen Smoke E PASS
+condition; it is retained rather than hidden, and no retry occurred.
+
+The terminal report, factual preregistration amendment, and append-only ledger
+SHA-256s before this decision append are
+`b7e42c07c3a288df49dc63feafe18b05992fbc835a5ddb5b2aa5d0b164bd2c03`,
+`02c141f8e62da5fd37df8767b884a833b52d151b0403cfd9fb1bfe13640fbe20`,
+and `c5ff486be3016ebe8d0a98e83ce1ecf16475b2889bd190e8de65cab8120303ed`.
+The preregistration's formal per-axis 25/50/75 captures, cost calibration, and
+benchmark execution remain unexecuted and closed.
+
+`SA3_SMOKE_E_RETRY_STATUS = PASS`
+
+`SMOKE_E = PASS`
+
+`SA3_STATE_CAPABILITY = PASS`
+
+`SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZATION_STATUS = CONSUMED`
+
+`FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO`
+
+`FOUNDATION_COST_SMOKE_AUTHORIZED = NO`
+
+`BENCHMARK_PREREG_V1_FROZEN = NO`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED = NO`

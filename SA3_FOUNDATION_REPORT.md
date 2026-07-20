@@ -501,3 +501,143 @@ All five requested smoke statuses are terminal. No detector, constraint, or
 policy execution occurred in the foundation run, and no scientific result was
 imported. The terminal status is `FAIL_ESCALATED` solely because the required
 separate-process reload-and-continue path did not produce equivalence evidence.
+
+## 14. D-0019 Smoke E retry addendum — PASS
+
+This append-only-style addendum supersedes Sections 10–13 only for the latest
+Smoke E engineering capability evidence. It does not rewrite the original
+five-smoke run: `SA3_FOUNDATION_RUN_STATUS = FAIL_ESCALATED` and its Smoke E
+FAIL remain the historical D-0017 outcome.
+
+`SA3_SMOKE_E_RETRY_STATUS = PASS`
+
+`SMOKE_E = PASS`
+
+`SA3_STATE_CAPABILITY = PASS`
+
+### 14.1 Retry identity and frozen boundary
+
+| Field | Obtained value |
+|---|---|
+| Run ID | `sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24` |
+| Result / exit | PASS / `0` from the E-only Python runner |
+| Started / ended | `2026-07-20T14:01:53.979437Z` / `2026-07-20T14:06:22.169536Z` |
+| Immutable run directory | `/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/smoke-e-retry-runs/sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24` |
+| Git | clean `dd65740782f268e0df21a2a22efe9faa3ab12962`, equal to `origin/main` at execution |
+| Node / placement | `an12`, physical GPU 4, one visible A800, TP1, one replica |
+| Live placement | lock held; zero compute processes; 81,223 MiB free; 0% utilization immediately before claim |
+| Seed | S-0007 = `73193007` for reference and all resumes |
+| Retry config | `39553c595659e29e3c0fa691c0d47f344421548ca3ac12157c01fac32a716c84` |
+| Retry protocol | `1a2892b70029bea1e36722145dceea32a814e5a00d917a98c0cb17d4582cd0a0` |
+| Foundation call config | `d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f` |
+| Fixed claim | `32bd53e6e6421acede70f2f01e07e50c55abb4a918ee5ef6c2b50b6c3a6fc092`; consumed, mode `0400` |
+
+The targeted fix used the runtime-state path, not a tolerance cast. The
+official reference began with disposable FP16 noise, while each evolved latent
+exported at 15/30/40 steps was FP32. Each child ignored the disposable fresh
+noise values, moved the verified checkpoint latent to the runtime device
+without changing FP32, and continued from that state. Casting the saved latent
+to FP16 was rejected prospectively because it would lose precision and change
+the path.
+
+The exact authorized plan was reached with no other smoke: four official
+Smoke-E/S-0007 calls and four generated outputs. The hard cap allowed at most
+eight generations, 30 seconds per clip, one GPU, and 540 seconds of claim-bound
+GPU residency (stricter than the PI's 600-second limit). No detector,
+constraint, policy, benchmark, or formal Section 11 generation ran.
+
+### 14.2 Checkpoints, separate processes, and equivalence
+
+All checkpoints have shape `[1, 256, 388]`, dtype `torch.float32`, and schedule
+SHA-256
+`f54e6d1e2964d2a81db05216a4181ade6c1355fbf3572a682f4b01bff79ea21f`.
+Their latent hashes equal the corresponding valid D-0017 exports, while their
+serialized file hashes differ because run IDs and creation metadata are new.
+
+| Fraction / step | Checkpoint SHA-256 | Latent SHA-256 | State / provenance SHA-256 |
+|---|---|---|---|
+| 30% / 15 | `066c6a4673fa0a37751c5de115c31fb43149dcfc2c335c65b33da4fcfda78582` | `9793f784ce92d6f8dd08418c6540d72681b8857db5b2685fb990c290a97849cf` | `f54791630203d5d99656adb41855fabbffd577cffed6d38de9122ff33037f736` / `3c8c57b57db22ad2bdc21de7be108e304057ffb4823f7d8961eeda1d3fb0d3a0` |
+| 60% / 30 | `25e11b2770b568f5e1d7187667581eaf96989a7cd28245b5d422ddbbe5b4b011` | `f3ac60f71460ae423307343c0877d31db2286e7ba9786f549ec89a899b77ae1e` | `3740ed899871fe34d46597ed226a3ee323e45851f959253a683e3b4c2c6b86b4` / `a5750c360817d863ee73c80cf714045778bc91ad2e5c39cac256e0568130a6df` |
+| 80% / 40 | `64564ee934755a131d33ca56e0725b361167f3d3ec4c90d1cc4a853fdb429ffc` | `a8376c1c28dc5ddab4533bcdb587dce6ef7fc2382704713487246d005e3dad45` | `ca25d99685ee7f12a48a02469d8f430a2b4c98f97aafce857c6d706185344236` / `da55cda13a7f765e26a095bc2e84f02de9e6d8a6c3c8b310e5fe907bd4e2d4e3` |
+
+The reference parent PID was `904512`; fresh child PIDs were `910089`,
+`911878`, and `913671`. Every child validated the full rebuilt schedule and
+conditioning/config hashes, recorded fresh dtype FP16 and checkpoint/resume
+dtype FP32, used official sampler injection, and measured exactly 35, 20, and
+10 remaining actual DiT calls.
+
+The frozen decoded-waveform gate was maximum absolute error `<= 1e-5` and SNR
+`>= 80 dB`. All three resumes were stricter than required: each decoded array
+was exactly equal to the uninterrupted reference, with maximum and RMS error
+zero and infinite SNR under the registered zero-error interpretation. The
+common decoded-waveform SHA-256 was
+`536b203214fed0e49a52d2debf09f8f84ab7b8a16509dbb2b2786aa9c23ee00d`.
+
+| Output | WAV SHA-256 | Sanity / provenance |
+|---|---|---|
+| reference | `6bda5c51ee57c952badce63827c5c11e2be2edded1ce92c984ba240b9aa3dd0f` | PASS / valid |
+| resume 15 | `60680081e5efda91b12e25505e0ed16c81a5234d28982d523c96d20d4dc7e859` | PASS / valid |
+| resume 30 | `1cff775d63c9d69d4f526ae3d208ce7c17b12c878d64fb35b7b7ecd4fff3c663` | PASS / valid |
+| resume 40 | `725c9881394a602580d8b53b1a83f8fc08377e79d7b9428c3e1dd73b85a31dc5` | PASS / valid |
+
+Every output is finite, non-silent, stereo, 44.1 kHz, and exactly 30 seconds.
+All four WAVs, all three checkpoints, and all three resume-result tensors have
+valid adjacent provenance. All audio remains outside Git in the immutable run.
+
+### 14.3 Measured cost and immutable evidence
+
+| Call | Path | Actual DiT NFE | Synchronized wall | Peak allocated / reserved VRAM |
+|---|---|---:|---:|---:|
+| 01 | uninterrupted reference | 50 | `25.023961771279573 s` | `5,438,810,112 / 9,839,837,184 B` |
+| 02 | resume from 15 | 35 | `3.7141848169267178 s` | `5,437,499,392 / 9,839,837,184 B` |
+| 03 | resume from 30 | 20 | `2.7067666836082935 s` | `5,437,499,392 / 9,839,837,184 B` |
+| 04 | resume from 40 | 10 | `1.8672252222895622 s` | `5,437,499,392 / 9,839,837,184 B` |
+| **Retry** | **four calls** | **115** | **`33.31213849410415 s`** | **`5,438,810,112 / 9,839,837,184 B` maximum** |
+
+Model-load wall was `91.32002927735448 s`. Conservative one-GPU residency was
+`249.481707109 s`, below both 540 and 600 seconds. The exact plan,
+measurement-evidence, call/output, sanity, and ledger gates all terminated
+PASS; failed calls = 0. These remain singleton engineering observations and do
+not satisfy the benchmark appendix's repetition requirements.
+
+| Root evidence | SHA-256 |
+|---|---|
+| `result.json` | `10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117` |
+| Smoke E manifest | `27978939dbdef2276f5892f222eeaf9263122c4850cfe21a8f72baffc1da070f` |
+| generation ledger | `b9c70678a6198530d2c913d873b3033ebc5ca88dbcc79f11b4961c28695a3024` |
+| budget state | `3b80d6e27fa6baed9cc6628c2483a0c7f324a9ad5c1c91d315ac624d128960e7` |
+| live placement | `a72bf9c0e996a2d8b856d0b3ffb315755732e6bbc163a279db2f5969c849a1b0` |
+| operational log | `0054143ae79877097c890c5e3df11bf001c5bc08e614f3a152cef887152b6579` |
+
+The four-row generation ledger's terminal row hash is
+`b8cb48dafad6006e4f5a472608500ea26abd54aedae450cc799966e32f0333b9`.
+A read-only audit recomputed every row/predecessor hash, artifact hash, passing
+sanity record, checkpoint state hash, and ten adjacent data-provenance records.
+The run has 51 files, zero writable entries, directory mode `0555`, file mode
+`0444`, and claim mode `0400`.
+
+The outer shell returned 1 only after the E-only Python runner had written its
+PASS result and released the GPU: its optional operational-log sidecar used an
+unsupported `operational_log` label and omitted `created_at_utc`. The log
+itself is retained read-only and hashed above. This packaging defect made no
+model call, changed no run artifact, and is not one of the frozen Smoke E PASS
+conditions; it is recorded as a deviation rather than hidden or retried.
+
+### 14.4 Terminal scope
+
+This PASS establishes the PI-authorized SA3 foundation/preflight technical
+state-capability classification. It does not retroactively make the original
+five-smoke run PASS and does not execute Section 11's formal per-axis 25/50/75
+captures. Benchmark cost calibration remains insufficiently replicated.
+
+`SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZATION_STATUS = CONSUMED`
+
+`SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED = NO`
+
+`FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO`
+
+`FOUNDATION_COST_SMOKE_AUTHORIZED = NO`
+
+`BENCHMARK_PREREG_V1_FROZEN = NO`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`

@@ -134,6 +134,9 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
                 ("SAO_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION"),
                 ("ACE_STEP_V1_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION"),
                 "MULTI_BACKBONE_BENCHMARK_GPU_BUDGET_STATUS = INCOMPLETE",
+                "SA3_STATE_CAPABILITY = PASS",
+                "C_SA3 = 1",
+                "sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24",
             ),
         )
         self.assertNotIn("GPU_BUDGET_STATUS = UNMEASURED", PREREG)
@@ -161,6 +164,12 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
                 "Synchronized official-call wall time",
                 "Peak VRAM",
                 "FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO",
+                "SA3_SMOKE_E_RETRY_STATUS = PASS",
+                "SA3_STATE_CAPABILITY = PASS",
+                "sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24",
+                "10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117",
+                "33.31213849410415 s",
+                "All three resumes were stricter than required",
             ),
         )
 
@@ -188,6 +197,10 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
                 "physical GPUs on `an12` or `an29`",
                 "must not be terminated, evicted, migrated, reconfigured, or",
                 "placed at OOM risk",
+                "D-0019 — One-shot Smoke E dtype-boundary retry",
+                "D-0020 — Terminal Smoke E retry PASS and authority closure",
+                "SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZATION_STATUS = CONSUMED",
+                "SA3_STATE_CAPABILITY = PASS",
                 "BENCHMARK_PREREG_V1_FROZEN = NO",
                 "BENCHMARK_EXECUTION_AUTHORIZED = NO",
             ),

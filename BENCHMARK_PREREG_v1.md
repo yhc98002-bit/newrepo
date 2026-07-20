@@ -61,7 +61,7 @@ similarly named checkpoint is never a substitute.
 
 | Logical backbone | Canonical artifact | Status in this draft | Required evidence before full execution |
 | --- | --- | --- | --- |
-| `stable-audio-3-medium-base` | `stabilityai/stable-audio-3-medium-base` | Mandatory. This is pre-trained **Base**, not post-trained `stabilityai/stable-audio-3-medium`. D-0017: foundation A–D PASS, E FAIL, overall `FAIL_ESCALATED`. | Exact snapshot; adequate successful generation/NFE/cost calibration; native-config hash; reviewed capability preflight reaching a valid terminal PASS or `NOT_IDENTIFIABLE` classification. |
+| `stable-audio-3-medium-base` | `stabilityai/stable-audio-3-medium-base` | Mandatory. This is pre-trained **Base**, not post-trained `stabilityai/stable-audio-3-medium`. D-0017 remains historical: A–D PASS, E FAIL, overall `FAIL_ESCALATED`. D-0020: the bounded E-only repair retry passed, with `SA3_STATE_CAPABILITY = PASS` for the foundation/preflight technical classification. | Exact snapshot; adequate successful generation/NFE/cost calibration; native-config hash; reviewed capability preflight reaching a valid terminal PASS or `NOT_IDENTIFIABLE` classification. D-0020 does not execute Section 11's formal per-axis captures. |
 | `stable-audio-open-1.0` | `stabilityai/stable-audio-open-1.0` | Mandatory. | License/access without bypass; exact snapshot; successful generation/NFE/cost smoke; state capability recorded as PASS or `NOT_IDENTIFIABLE`. |
 | `ACE-Step v1` | `ACE-Step/ACE-Step-v1-3.5B` | Mandatory. | Exact snapshot; successful generation/NFE/cost smoke; native-config hash; state capability recorded as PASS or `NOT_IDENTIFIABLE`. |
 | `ACE-Step v1.5` | Gate-0 candidate `ACE-Step/acestep-v15-xl-sft@d1ca0bc96e29cd46435219ceb4f8e3a13a8eaf50`, non-Turbo | **Inactive and excluded. Latest merged retry status: `V15_GATE0_STATUS = FAIL_ESCALATED`.** | After design freeze, a specifically authorized continuation fix and fresh bounded Gate-0 must PASS before a prospective amendment may seek inclusion. |
@@ -427,6 +427,13 @@ and final-output hashes follow the frozen state contract; saving/decoding and
 resuming must work. An independent low-step generation is not state. Failure
 sets the screen to `NOT_IDENTIFIABLE` but does not block the output benchmark.
 
+Obtained foundation/preflight evidence under D-0020 sets
+`SA3_STATE_CAPABILITY = PASS` for SA3 Medium Base: a fresh official 50-step
+reference exported FP32 runtime state at 30/60/80%, and distinct processes
+resumed with exact decoded-waveform equivalence. This is technical capability
+evidence only. It did not execute this section's formal per-axis 25/50/75
+captures, which remain closed pending separate benchmark authorization.
+
 ### 11.2 Equal-draw replicated actions and compute cap
 
 Twelve prompt rows per confirmatory axis are hash-stratified before output. For
@@ -648,6 +655,10 @@ state captures and preview decodes
 not terminal generations. For `NOT_IDENTIFIABLE`, both counts are zero. Let
 `C_m=1` for a capable model and `0` otherwise.
 
+For prospective cost accounting, D-0020 establishes `C_SA3 = 1`; the 432
+formal state captures and preview decodes remain planned counts, not obtained
+artifacts. No value is assigned for the other mandatory models here.
+
 ## A.2 Measured coefficients and GPU-hour equation
 
 The bounded project-local cost smoke caps terminal outputs at
@@ -733,12 +744,40 @@ hash-chained ledger rows: 11 PASS rows plus three `MODEL_CALL_FAILED` rows. The
 derived 10-second continuation source was also retained, for 12 retained audio
 files total.
 
+### A.3.1 D-0020 bounded Smoke E retry evidence
+
+The one D-0019 claim produced run
+`sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24` from clean Git
+`dd65740782f268e0df21a2a22efe9faa3ab12962`, on the same one-GPU TP1
+placement. Result SHA-256 is
+`10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117`,
+manifest SHA-256 is
+`27978939dbdef2276f5892f222eeaf9263122c4850cfe21a8f72baffc1da070f`,
+and four-row ledger SHA-256 is
+`b9c70678a6198530d2c913d873b3033ebc5ca88dbcc79f11b4961c28695a3024`.
+
+The fresh uninterrupted call and the 15/30/40-step resumes measured actual
+NFE 50/35/20/10 and CUDA-synchronized wall 25.023962/3.714185/2.706767/
+1.867225 seconds. Total NFE was 115, total synchronized call wall was
+33.312138 seconds, conservative one-GPU residency was 249.481707 seconds, and
+peak allocated/reserved VRAM was 5,438,810,112/9,839,837,184 bytes. All four
+WAVs passed 30-second, 44.1-kHz, stereo, finite, non-silence, and provenance
+checks. All three resume arrays exactly equaled the reference (zero error,
+infinite SNR), so `SA3_STATE_CAPABILITY = PASS`.
+
+These are four additional singleton engineering calls. They neither supply
+20 warmed batch-one observations nor five warmed batch-four observations, and
+they include no formal state-preview/evaluator timing. They do not change
+`SA3_BENCHMARK_COST_CALIBRATION_STATUS = INSUFFICIENT_REPETITIONS` or open any
+benchmark gate.
+
 Cost evidence is therefore reason-coded as follows:
 
 | Model/scope | Status | Consequence for the registered GPU budget |
 | --- | --- | --- |
 | SA3 Medium Base raw cost observation | `SA3_COST_OBSERVATION_STATUS = MEASURED_SINGLETON` | Raw singleton values above are obtained engineering evidence despite the terminal Smoke E failure. |
-| SA3 Medium Base formal calibration | `SA3_BENCHMARK_COST_CALIBRATION_STATUS = INSUFFICIENT_REPETITIONS` | No registered p95 coefficient, `H_m`, or 25% cap can be calculated; formal state/evaluator timing is absent and state-resume equivalence failed. |
+| SA3 Medium Base state capability | `SA3_STATE_CAPABILITY = PASS`; `C_SA3 = 1` | D-0020 establishes technical checkpoint/resume capability; formal Section 11 per-axis captures were not executed. |
+| SA3 Medium Base formal calibration | `SA3_BENCHMARK_COST_CALIBRATION_STATUS = INSUFFICIENT_REPETITIONS` | No registered p95 coefficient, `H_m`, or 25% cap can be calculated; required cost repetitions and formal state/evaluator timing remain absent. |
 | Stable Audio Open 1.0 | `SAO_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION` | No project-local cost coefficient, `H_m`, or cap. |
 | ACE-Step v1 | `ACE_STEP_V1_COST_STATUS = NOT_MEASURED_BY_THIS_SA3_ONLY_AUTHORIZATION` | No project-local cost coefficient, `H_m`, or cap. |
 | ACE-Step v1.5 | Inactive; `V15_GATE0_STATUS = FAIL_ESCALATED` | Excluded from v1; no cost row is applicable. |
@@ -761,10 +800,9 @@ logged; “gold” remains explicitly solo-PI gold.
 
 ## A.5 Cost approval rule
 
-This draft retains the obtained raw rows and the reason-coded gaps above. It
-does not authorize another foundation call, a repair of Smoke E, or any
-benchmark generation. A later explicit decision would have to name a reviewed
-fix, new immutable claim/config, and fresh hard caps before any repair run.
+This draft retains the obtained raw rows and the reason-coded gaps above. The
+single D-0019 repair claim is consumed; this text does not authorize another
+foundation call, a second Smoke E retry, or any benchmark generation.
 
 Before full benchmark execution, a separately authorized, versioned
 measured-cost amendment must contain every eligible model’s smoke hashes,

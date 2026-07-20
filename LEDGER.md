@@ -273,3 +273,66 @@ manifest and artifacts are named here with SHA-256 digests.
   all three nested errors and terminal ledger rows are retained; no retry or
   overwrite occurred
 - Supersedes: none; aggregate status is `FAIL_ESCALATED`
+
+## L-0010 — Smoke E bounded dtype-boundary retry PASS
+
+- Time: 2026-07-20T22:06:22+08:00
+- Kind: completed terminal engineering repair smoke; not a benchmark result
+- Authority: D-0019; fixed claim consumed, no second retry
+- Git: `dd65740782f268e0df21a2a22efe9faa3ab12962`, clean and equal to
+  `origin/main` at execution
+- Node: `an12`; physical GPU IDs: `4`; TP: 1; replicas: 1
+- Placement: device lock held; immediately before claim, one visible A800 had
+  zero compute processes, 81,223 MiB free, and 0% utilization
+- Seed: S-0007 = `73193007` for the fresh reference and all three children
+- Command: `scripts/run_smoke_e_retry_d0019.sh`; inner recorded command is
+  `/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m
+  sa3_smoke.run_smoke_e_retry --config
+  /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo/configs/smoke_e_retry_v1.json
+  --repository-root
+  /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo`
+- Config: retry control SHA-256
+  `39553c595659e29e3c0fa691c0d47f344421548ca3ac12157c01fac32a716c84`;
+  retry protocol SHA-256
+  `1a2892b70029bea1e36722145dceea32a814e5a00d917a98c0cb17d4582cd0a0`;
+  generation config SHA-256
+  `d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f`
+- Run: `sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24`
+- Claim SHA-256:
+  `32bd53e6e6421acede70f2f01e07e50c55abb4a918ee5ef6c2b50b6c3a6fc092`
+- Result / manifest SHA-256:
+  `10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117` /
+  `27978939dbdef2276f5892f222eeaf9263122c4850cfe21a8f72baffc1da070f`
+- Checkpoints: fresh exports at 15/30/40 steps, FP32 shape `[1,256,388]`,
+  SHA-256s
+  `066c6a4673fa0a37751c5de115c31fb43149dcfc2c335c65b33da4fcfda78582`,
+  `25e11b2770b568f5e1d7187667581eaf96989a7cd28245b5d422ddbbe5b4b011`,
+  and `64564ee934755a131d33ca56e0725b361167f3d3ec4c90d1cc4a853fdb429ffc`;
+  latent hashes match the corresponding D-0017 checkpoint states
+- Outputs: reference plus step-15/30/40 resumes have WAV SHA-256s
+  `6bda5c51ee57c952badce63827c5c11e2be2edded1ce92c984ba240b9aa3dd0f`,
+  `60680081e5efda91b12e25505e0ed16c81a5234d28982d523c96d20d4dc7e859`,
+  `1cff775d63c9d69d4f526ae3d208ce7c17b12c878d64fb35b7b7ecd4fff3c663`,
+  and `725c9881394a602580d8b53b1a83f8fc08377e79d7b9428c3e1dd73b85a31dc5`
+- Result: PASS — fresh initial dtype FP16, checkpoint/resume dtype FP32
+  preserved without cast, distinct child PIDs, exact remaining NFE 35/20/10,
+  and exact decoded-array equality for all three resumes (zero error, infinite
+  SNR); every WAV is finite, non-silent, stereo, 44.1 kHz, 30 seconds, and
+  provenance-valid
+- Measured cost: actual NFE `50/35/20/10` = 115 total; synchronized call wall
+  `25.023961771279573/3.7141848169267178/2.7067666836082935/
+  1.8672252222895622 s` = `33.31213849410415 s`; peak allocated/reserved VRAM
+  `5,438,810,112 / 9,839,837,184 B`; model load `91.32002927735448 s`;
+  conservative one-GPU residency `249.481707109 s`
+- Budget: exactly four E calls and four outputs, zero failures, four PASS
+  hash-chained ledger rows; ledger SHA-256
+  `b9c70678a6198530d2c913d873b3033ebc5ca88dbcc79f11b4961c28695a3024`;
+  caps 8 generations, 30 seconds, one GPU, 540 GPU-seconds all respected
+- Deviations: after the Python runner wrote PASS and released the GPU, the
+  outer wrapper returned 1 because its optional operational-log provenance
+  record omitted a timestamp and used a non-policy label. The read-only log is
+  retained at SHA-256
+  `0054143ae79877097c890c5e3df11bf001c5bc08e614f3a152cef887152b6579`;
+  no model call or immutable run artifact was retried or changed
+- Supersedes: L-0009 only for latest foundation/preflight state-capability
+  evidence; the original failure and five-smoke `FAIL_ESCALATED` run remain
