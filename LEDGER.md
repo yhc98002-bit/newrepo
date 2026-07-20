@@ -392,3 +392,87 @@ manifest and artifacts are named here with SHA-256 digests.
   engineering smoke uses TP1/R1; no wider placement was needed
 - Supersedes: the pre-generation ACE cost status only; terminal queue status
   is `BLOCKED_ON_ENGINEERING_FAILURE`
+
+## L-0013 — Ordinary-core pre-call runtime-validation stop
+
+- Time: 2026-07-21T01:35:32+08:00
+- Kind: completed fail-closed diagnostic execution; no model result
+- Authority: D-0023 ordinary SA3 core launch
+- Git: `c537c124ecd77fc34a20a21df64f2de159ff23b9`, clean and equal to
+  `origin/main` at launch
+- Node: `an12`; physical GPU ID: `4`; TP: 1; replicas: 1
+- Placement: the worker held only the selected idle-GPU lease; no neighboring
+  process was changed
+- Seed: none claimed
+- Command: `/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python
+  -B scripts/run_benchmark_core_worker.py --config
+  configs/benchmark_core_v2.json --model-id
+  stabilityai/stable-audio-3-medium-base --run-dir
+  /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/
+  benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t173000z`
+- Config SHA-256:
+  `d45e9c6c2ab6326b6dc4cf4c23b55845db59417f3553d00832b33cb8b29e8b61`
+- Launch claim / run manifest SHA-256s:
+  `f10484ff52460ba53e808f97d8cfa3ef67dba09367e2c2e21cea7c083fa18652` /
+  `d8ca94d445326a87b1bf07813438b8a24ea5088649f242616e6f10e19d2ea0cb`
+- Terminal heartbeat / worker log SHA-256s:
+  `dcd1b7160aa163e7f3ffb57a74770ef17ec33c661cd3d2839f92c784c7185915` /
+  `2d12fbf3aa01e27edaf1c4c9639dc76a73611ceaa2dd64058987509b242f8404`
+- Result: `FAILED_STOPPED` before adapter load because public torch and
+  torchaudio distribution metadata was incorrectly compared to each imported
+  module's CUDA local-build identity
+- Budget: zero request claims, zero model calls, zero outputs, zero-byte
+  shared ledger, and zero synchronized call wall
+- Deviations: validator representation defect corrected and reviewed under
+  D-0024; this retained run is never reused
+- Supersedes: none
+
+## L-0014 — Benchmark v2 ordinary core first ledgered batch
+
+- Time: 2026-07-21T01:51:56+08:00
+- Kind: completed launch milestone with retained benchmark audio; no endpoint
+  has been scored and the resident run continues
+- Authority: D-0024 exact fresh-run recovery package
+- Git: `f8a44fedf4a466d8dea43c81f58bc6fdb2f8bae1`, clean and equal to
+  `origin/main` at launch
+- Node: `an12`; physical GPU ID: `4` exposed as logical GPU `0`; TP: 1;
+  replicas: 1
+- Placement: one A800 is sufficient for SA3. Before launch the selected card
+  had 81,226 MiB free, no compute PID, and 0% utilization; GPU 0–3 neighbors
+  were not changed
+- Seeds: roots 0–3 = `378480600`, `964092279`, `2141492646`, `1908270312`,
+  derived from frozen `prompts/v2/seed_registry.json`
+- Command: `/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python
+  -B scripts/run_benchmark_core_worker.py --config
+  configs/benchmark_core_v2.json --model-id
+  stabilityai/stable-audio-3-medium-base --run-dir
+  /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/
+  benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z`
+- Config / launch claim / run manifest SHA-256s:
+  `d45e9c6c2ab6326b6dc4cf4c23b55845db59417f3553d00832b33cb8b29e8b61` /
+  `b03e25ec7ab098d3c563169626c5b1888c7c0aad619e978575b28090cba096fa` /
+  `e3d6e8a11bc4a0dd47cd454823463cb699c76b79671ec4aadc09b4799428f56c`
+- Queue: 1,536 ordinary rows, SHA-256
+  `afedee0bb422c27c2cad64e7be9dc960384f706f8f9201bbea95e8f2418c7bf4`;
+  the 432-row initial and 432-row supplemental state queues remain closed
+- First-shard snapshot SHA-256:
+  `e0cbcec63a1c400b6798ec0e14b747c65f1c73f51944315a07dc591deb30bea3`
+- Result: `LAUNCHED_FIRST_LEDGERED_BATCH` — four completed, zero failed;
+  each output is an exact 30-second, 44.1-kHz stereo WAV with sanity,
+  provenance, and commit records
+- Output WAV SHA-256s:
+  `7ebab84222e3498d18e194fed6422ac990550a7b05b691c0921b3c38d3617e88`,
+  `d250377495c13ad9bc1b5fdb4399d4cb84b740df9fca93559fbe5f9d7d4ac46e`,
+  `a9d6a65e96e48416c721b3dce0684e4518e5299f062bd87658f46593d0d8d3a7`,
+  and `4334ed0f55a9b78cc87e613206a56cc95a6715991445ec8db91e1127e86fea43`
+- Measured cost at the boundary: load `72.65626287087798 s`; synchronized
+  calls `29.783272966742516 s`; NFE 200; peak allocated/reserved VRAM
+  `5,437,102,080 / 9,839,837,184 B`
+- Budget: one GPU, TP1/R1, four of 1,536 calls completed; full-run cap
+  `76,939.90662887692 GPU-s`; no retry or replacement
+- Deviations: an initial SSH submission lost its shell variables and was
+  rejected before worker creation. The same unconsumed run was started with
+  absolute paths; the rejected submission created no request claim, model
+  call, ledger row, or audio
+- Supersedes: L-0013 only as the latest ordinary-core operational status; the
+  failed run and its evidence remain retained

@@ -1042,3 +1042,62 @@ The exact relaunch inputs are:
 `BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
 
 `HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
+
+## D-0025 — Benchmark v2 ordinary core launched and first batch ledgered
+
+- Date: 2026-07-21
+- Status: accepted execution milestone; resident worker continues
+- Authority: D-0024 exact recovery launch package
+- Supersedes: D-0024 only for ordinary-core launch status
+
+Fresh run `benchmark-core-v2-20260720t174500z` was prepared with zero model
+calls from clean Git `f8a44fedf4a466d8dea43c81f58bc6fdb2f8bae1`, equal to
+`origin/main`. Its config, launch claim, run manifest, and generation queue
+SHA-256s are respectively
+`d45e9c6c2ab6326b6dc4cf4c23b55845db59417f3553d00832b33cb8b29e8b61`,
+`b03e25ec7ab098d3c563169626c5b1888c7c0aad619e978575b28090cba096fa`,
+`e3d6e8a11bc4a0dd47cd454823463cb699c76b79671ec4aadc09b4799428f56c`,
+and `afedee0bb422c27c2cad64e7be9dc960384f706f8f9201bbea95e8f2418c7bf4`.
+
+The worker runs on `an12`, physical GPU 4 exposed as logical GPU 0, TP1,
+one replica. Immediately before launch that A800 had 81,226 MiB free, no
+compute PID, and 0% utilization. Neighboring processes on GPUs 0–3 were not
+changed. Model-load wall was measured as `72.65626287087798 s`.
+
+Immutable heartbeat snapshot
+`shard-000000-e0cbcec63a1c400b6798ec0e14b747c65f1c73f51944315a07dc591deb30bea3.json`
+has the same SHA-256 as its embedded suffix. It records the first complete
+four-row shard: four completed, zero failed, `RUNNING`, synchronized call wall
+`29.783272966742516 s`, peak allocated/reserved VRAM
+`5,437,102,080 / 9,839,837,184 B`, and final shard ledger-row SHA-256
+`6d54f1ce9508b5f89329525a4339d2ae69fb5d2385f686917e040614636be904`.
+The four retained WAV SHA-256s are
+`7ebab84222e3498d18e194fed6422ac990550a7b05b691c0921b3c38d3617e88`,
+`d250377495c13ad9bc1b5fdb4399d4cb84b740df9fca93559fbe5f9d7d4ac46e`,
+`a9d6a65e96e48416c721b3dce0684e4518e5299f062bd87658f46593d0d8d3a7`,
+and `4334ed0f55a9b78cc87e613206a56cc95a6715991445ec8db91e1127e86fea43`.
+All four passed exact retained-audio sanity and have adjacent provenance and
+commit records.
+
+The worker continues after this milestone under the frozen cap and no-retry
+rules. No benchmark endpoint has been scored. Both state queues remain closed,
+the timing-pilot response has not been ingested, and human-audit packet
+assembly remains blocked.
+
+`BENCHMARK_PREREG_V2_FROZEN = YES`
+
+`PHASE_B_STATUS = TERMINAL`
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = YES`
+
+`BENCHMARK_CORE_GENERATION_STATUS = LAUNCHED_FIRST_LEDGERED_BATCH`
+
+`BENCHMARK_CORE_ACTIVE_RUN_ID = benchmark-core-v2-20260720t174500z`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_INITIAL_QUEUE_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
