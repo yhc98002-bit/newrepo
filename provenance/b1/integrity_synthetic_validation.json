@@ -1,0 +1,158 @@
+{
+  "schema": "benchmark.b1.integrity-synthetic-validation.v1",
+  "status": "PASS",
+  "completed_at_utc": "2026-07-20T16:51:25Z",
+  "pre_generation_gate": true,
+  "bindings": {
+    "fixture_manifest": "provenance/b1/integrity_synthetic_fixture.json",
+    "fixture_manifest_sha256": "ec1fe4292dea823a4cfca29b83302b04c8a31151c9e5218157982c1fc342aaad",
+    "fixture_source": "tests/fixtures/integrity_injections.py",
+    "fixture_source_sha256": "90c613ee9bc4ca12c4177bf9be4871f1e48f29be5ab1a5eaa1b29d92a64a295a",
+    "integrity_implementation": "src/instruments/integrity.py",
+    "integrity_implementation_sha256": "b8d7f22d9b958c5a08a345ccbfba8d7fac09b8b77e51bb762f0f3bedc9a9da5d"
+  },
+  "defect_order": ["clipping", "dropout", "silence", "crackle"],
+  "results": [
+    {
+      "fixture": "clipping_injection",
+      "expected_defects": ["clipping"],
+      "observed_defects": ["clipping"],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "dropout_injection",
+      "expected_defects": ["dropout"],
+      "observed_defects": ["dropout"],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "silence_injection",
+      "expected_defects": ["silence"],
+      "observed_defects": ["silence"],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "crackle_injection",
+      "expected_defects": ["crackle"],
+      "observed_defects": ["crackle"],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "clean_side_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "clipping_clean_side_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "dropout_clean_side_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "dropout_boundary_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "silence_clean_side_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "crackle_clean_side_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "sharp_percussive_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "true_peak_edge_control_constant_0p90",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "stereo_any_channel_crackle",
+      "expected_defects": ["crackle"],
+      "observed_defects": ["crackle"],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "partial_final_frame_padding_control",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": [],
+      "observed_validity_failures": [],
+      "status": "PASS"
+    },
+    {
+      "fixture": "duration_mismatch_validity",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": ["SAMPLE_COUNT_MISMATCH"],
+      "observed_validity_failures": ["SAMPLE_COUNT_MISMATCH"],
+      "status": "PASS"
+    },
+    {
+      "fixture": "nan_inf_validity",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": ["NONFINITE_AUDIO"],
+      "observed_validity_failures": ["NONFINITE_AUDIO"],
+      "status": "PASS"
+    },
+    {
+      "fixture": "unexpected_channels_validity",
+      "expected_defects": [],
+      "observed_defects": [],
+      "expected_validity_failures": ["CHANNEL_COUNT_MISMATCH"],
+      "observed_validity_failures": ["CHANNEL_COUNT_MISMATCH"],
+      "status": "PASS"
+    }
+  ],
+  "verification_command": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m pytest -q tests/instruments",
+  "model_generation_calls": 0,
+  "benchmark_endpoints_scored": 0,
+  "audio_files_written": 0,
+  "deviations": []
+}

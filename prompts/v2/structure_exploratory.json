@@ -1,0 +1,168 @@
+{
+  "confirmatory": false,
+  "rows": [
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an indie-rock instrumental with guitars, bass, and drums following intro, verse, chorus, second verse, chorus, and outro.",
+      "cluster_id": "structure-verse_chorus_return-indie_rock",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "verse_chorus_return",
+      "genre": "indie_rock",
+      "prompt_id": "structure-verse_chorus_return-indie_rock"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an electronic instrumental with synthesizers, bass, and drums following intro, verse, chorus, second verse, chorus, and outro.",
+      "cluster_id": "structure-verse_chorus_return-electronic",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "verse_chorus_return",
+      "genre": "electronic",
+      "prompt_id": "structure-verse_chorus_return-electronic"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an orchestral instrumental with strings, woodwinds, brass, and percussion following intro, verse, chorus, second verse, chorus, and outro.",
+      "cluster_id": "structure-verse_chorus_return-orchestral",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "verse_chorus_return",
+      "genre": "orchestral",
+      "prompt_id": "structure-verse_chorus_return-orchestral"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an indie-rock instrumental with guitars, bass, and drums following A, A, contrasting B, and returning A sections.",
+      "cluster_id": "structure-aaba-indie_rock",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "aaba",
+      "genre": "indie_rock",
+      "prompt_id": "structure-aaba-indie_rock"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an electronic instrumental with synthesizers, bass, and drums following A, A, contrasting B, and returning A sections.",
+      "cluster_id": "structure-aaba-electronic",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "aaba",
+      "genre": "electronic",
+      "prompt_id": "structure-aaba-electronic"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an orchestral instrumental with strings, woodwinds, brass, and percussion following A, A, contrasting B, and returning A sections.",
+      "cluster_id": "structure-aaba-orchestral",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "aaba",
+      "genre": "orchestral",
+      "prompt_id": "structure-aaba-orchestral"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an indie-rock instrumental with guitars, bass, and drums following intro, gradual build, drop, short breakdown, and returning drop.",
+      "cluster_id": "structure-build_drop_return-indie_rock",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "build_drop_return",
+      "genre": "indie_rock",
+      "prompt_id": "structure-build_drop_return-indie_rock"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an electronic instrumental with synthesizers, bass, and drums following intro, gradual build, drop, short breakdown, and returning drop.",
+      "cluster_id": "structure-build_drop_return-electronic",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "build_drop_return",
+      "genre": "electronic",
+      "prompt_id": "structure-build_drop_return-electronic"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an orchestral instrumental with strings, woodwinds, brass, and percussion following intro, gradual build, drop, short breakdown, and returning drop.",
+      "cluster_id": "structure-build_drop_return-orchestral",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "build_drop_return",
+      "genre": "orchestral",
+      "prompt_id": "structure-build_drop_return-orchestral"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an indie-rock instrumental with guitars, bass, and drums following theme, development, contrasting episode, and theme return.",
+      "cluster_id": "structure-theme_development_return-indie_rock",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "theme_development_return",
+      "genre": "indie_rock",
+      "prompt_id": "structure-theme_development_return-indie_rock"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an electronic instrumental with synthesizers, bass, and drums following theme, development, contrasting episode, and theme return.",
+      "cluster_id": "structure-theme_development_return-electronic",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "theme_development_return",
+      "genre": "electronic",
+      "prompt_id": "structure-theme_development_return-electronic"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an orchestral instrumental with strings, woodwinds, brass, and percussion following theme, development, contrasting episode, and theme return.",
+      "cluster_id": "structure-theme_development_return-orchestral",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "theme_development_return",
+      "genre": "orchestral",
+      "prompt_id": "structure-theme_development_return-orchestral"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an indie-rock instrumental with guitars, bass, and drums following A, B, A, C, and returning A sections.",
+      "cluster_id": "structure-rondo_abaca-indie_rock",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "rondo_abaca",
+      "genre": "indie_rock",
+      "prompt_id": "structure-rondo_abaca-indie_rock"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an electronic instrumental with synthesizers, bass, and drums following A, B, A, C, and returning A sections.",
+      "cluster_id": "structure-rondo_abaca-electronic",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "rondo_abaca",
+      "genre": "electronic",
+      "prompt_id": "structure-rondo_abaca-electronic"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an orchestral instrumental with strings, woodwinds, brass, and percussion following A, B, A, C, and returning A sections.",
+      "cluster_id": "structure-rondo_abaca-orchestral",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "rondo_abaca",
+      "genre": "orchestral",
+      "prompt_id": "structure-rondo_abaca-orchestral"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an indie-rock instrumental with guitars, bass, and drums following four clearly distinct sections A, B, C, and D in order.",
+      "cluster_id": "structure-through_composed_abcd-indie_rock",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "through_composed_abcd",
+      "genre": "indie_rock",
+      "prompt_id": "structure-through_composed_abcd-indie_rock"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an electronic instrumental with synthesizers, bass, and drums following four clearly distinct sections A, B, C, and D in order.",
+      "cluster_id": "structure-through_composed_abcd-electronic",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "through_composed_abcd",
+      "genre": "electronic",
+      "prompt_id": "structure-through_composed_abcd-electronic"
+    },
+    {
+      "axis": "structure_exploratory",
+      "base_prompt": "Create an orchestral instrumental with strings, woodwinds, brass, and percussion following four clearly distinct sections A, B, C, and D in order.",
+      "cluster_id": "structure-through_composed_abcd-orchestral",
+      "fixed_suffix": "Follow the requested section order and make recurring sections recognizably recurrent.",
+      "form": "through_composed_abcd",
+      "genre": "orchestral",
+      "prompt_id": "structure-through_composed_abcd-orchestral"
+    }
+  ],
+  "schema_version": 2
+}

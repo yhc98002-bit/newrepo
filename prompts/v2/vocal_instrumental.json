@@ -1,0 +1,210 @@
+{
+  "primary_instrumental_intervention": "positive_only",
+  "rows": [
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A indie rock piece at 120 BPM featuring electric guitar, bass, and live drums, following verse-chorus form.",
+      "cluster_id": "voice-frame-01",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-01-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A indie rock piece at 120 BPM featuring electric guitar, bass, and live drums, following verse-chorus form.",
+      "cluster_id": "voice-frame-01",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by electric guitar, bass, and live drums.",
+      "prompt_id": "voice-frame-01-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A acoustic folk piece at 96 BPM featuring fingerpicked guitar, mandolin, and cajon, following verse-refrain form.",
+      "cluster_id": "voice-frame-02",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-02-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A acoustic folk piece at 96 BPM featuring fingerpicked guitar, mandolin, and cajon, following verse-refrain form.",
+      "cluster_id": "voice-frame-02",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by fingerpicked guitar, mandolin, and cajon.",
+      "prompt_id": "voice-frame-02-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A synth-pop piece at 128 BPM featuring analog synthesizers, synth bass, and drum machine, following verse-chorus form.",
+      "cluster_id": "voice-frame-03",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-03-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A synth-pop piece at 128 BPM featuring analog synthesizers, synth bass, and drum machine, following verse-chorus form.",
+      "cluster_id": "voice-frame-03",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by analog synthesizers, synth bass, and drum machine.",
+      "prompt_id": "voice-frame-03-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A classic soul piece at 84 BPM featuring Rhodes piano, electric bass, drums, and brass, following verse-chorus form.",
+      "cluster_id": "voice-frame-04",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-04-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A classic soul piece at 84 BPM featuring Rhodes piano, electric bass, drums, and brass, following verse-chorus form.",
+      "cluster_id": "voice-frame-04",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by Rhodes piano, electric bass, drums, and brass.",
+      "prompt_id": "voice-frame-04-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A jazz waltz piece at 132 BPM featuring piano, upright bass, and brushed drums, following head-solo-head form.",
+      "cluster_id": "voice-frame-05",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-05-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A jazz waltz piece at 132 BPM featuring piano, upright bass, and brushed drums, following head-solo-head form.",
+      "cluster_id": "voice-frame-05",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by piano, upright bass, and brushed drums.",
+      "prompt_id": "voice-frame-05-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A heavy metal piece at 156 BPM featuring distorted guitars, electric bass, and double-kick drums, following intro-verse-chorus form.",
+      "cluster_id": "voice-frame-06",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-06-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A heavy metal piece at 156 BPM featuring distorted guitars, electric bass, and double-kick drums, following intro-verse-chorus form.",
+      "cluster_id": "voice-frame-06",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by distorted guitars, electric bass, and double-kick drums.",
+      "prompt_id": "voice-frame-06-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A bossa nova piece at 120 BPM featuring nylon-string guitar, acoustic bass, and shaker, following AABA form.",
+      "cluster_id": "voice-frame-07",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-07-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A bossa nova piece at 120 BPM featuring nylon-string guitar, acoustic bass, and shaker, following AABA form.",
+      "cluster_id": "voice-frame-07",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by nylon-string guitar, acoustic bass, and shaker.",
+      "prompt_id": "voice-frame-07-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A ambient electronic piece at 72 BPM featuring synth pads, sequenced synthesizer, and soft percussion, following two-section evolving form.",
+      "cluster_id": "voice-frame-08",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-08-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A ambient electronic piece at 72 BPM featuring synth pads, sequenced synthesizer, and soft percussion, following two-section evolving form.",
+      "cluster_id": "voice-frame-08",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by synth pads, sequenced synthesizer, and soft percussion.",
+      "prompt_id": "voice-frame-08-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A modern country piece at 108 BPM featuring steel guitar, acoustic guitar, bass, and drums, following verse-chorus form.",
+      "cluster_id": "voice-frame-09",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-09-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A modern country piece at 108 BPM featuring steel guitar, acoustic guitar, bass, and drums, following verse-chorus form.",
+      "cluster_id": "voice-frame-09",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by steel guitar, acoustic guitar, bass, and drums.",
+      "prompt_id": "voice-frame-09-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A funk piece at 112 BPM featuring clavinet, electric bass, rhythm guitar, and drums, following groove-break-groove form.",
+      "cluster_id": "voice-frame-10",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-10-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A funk piece at 112 BPM featuring clavinet, electric bass, rhythm guitar, and drums, following groove-break-groove form.",
+      "cluster_id": "voice-frame-10",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by clavinet, electric bass, rhythm guitar, and drums.",
+      "prompt_id": "voice-frame-10-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A cinematic orchestral piece at 84 BPM featuring strings, horns, and timpani, following theme-development-return form.",
+      "cluster_id": "voice-frame-11",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-11-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A cinematic orchestral piece at 84 BPM featuring strings, horns, and timpani, following theme-development-return form.",
+      "cluster_id": "voice-frame-11",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by strings, horns, and timpani.",
+      "prompt_id": "voice-frame-11-instrumental",
+      "request": "instrumental"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A roots reggae piece at 76 BPM featuring skank guitar, electric bass, organ, and drums, following verse-chorus form.",
+      "cluster_id": "voice-frame-12",
+      "fixed_suffix": "Clearly audible lead human singing is central throughout.",
+      "prompt_id": "voice-frame-12-vocal",
+      "request": "vocal"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "base_prompt": "A roots reggae piece at 76 BPM featuring skank guitar, electric bass, organ, and drums, following verse-chorus form.",
+      "cluster_id": "voice-frame-12",
+      "diagnostic_negation_suffix": "Instrumental only; no singing, speech, rap, choir, or other functioning human voice.",
+      "fixed_suffix": "A purely instrumental arrangement led throughout by skank guitar, electric bass, organ, and drums.",
+      "prompt_id": "voice-frame-12-instrumental",
+      "request": "instrumental"
+    }
+  ],
+  "schema_version": 2
+}

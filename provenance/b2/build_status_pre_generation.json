@@ -1,0 +1,61 @@
+{
+  "adapters": {
+    "ACE-Step v1": {
+      "config_path": "configs/backbones/ace_step_v1.json",
+      "config_sha256": "b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879",
+      "cost_status": "NOT_MEASURED_NO_GENERATION_AUTHORIZED_DURING_BUILD",
+      "generation_calls": 0,
+      "offline_preflight": {
+        "checkpoint_dir": "/HOME/paratera_xy/pxy1289/.cache/modelscope/hub/models/ACE-Step/ACE-Step-v1-3___5B",
+        "checkpoint_exact_file_count": 17,
+        "checkpoint_manifest_exclusions": [],
+        "checkpoint_tree_sha256": "124f8267d6c19f992e8b79880cc59e1ec1104439e6150312ebc94d7563d260fc",
+        "network_access": false,
+        "source_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/source/ACE-Step",
+        "source_revision": "1bee4c9f5b43e30995f8d4d33b3919197ce1bd68",
+        "source_tree": "a526413e5791e8b3bca32c0246701adaf7626f2b",
+        "source_worktree": "clean_including_untracked",
+        "source_generated_cache_exception_count": 25,
+        "source_generated_cache_exception": "only CPython-3.10 __pycache__ files; production -B plus absent alternate pycache prefix prevents reads",
+        "status": "PASS"
+      },
+      "status": "READY_FOR_AUTHORIZED_MINI_SMOKE"
+    },
+    "stable-audio-3-medium-base": {
+      "config_path": "configs/backbones/stable_audio_3_medium_base.json",
+      "config_sha256": "e1bcc0d03e6929b8fd2b655f8fc8c182a2be0eb6316549a94f48c4b040a98f75",
+      "cost_status": "FOUNDATION_SINGLETON_MEASURED_BENCHMARK_MINI_SMOKE_NOT_RUN",
+      "generation_calls": 0,
+      "identity_basis": "project-local verified foundation_v2 snapshot and runtime",
+      "state_capability": "PASS",
+      "status": "READY_FOR_AUTHORIZED_BENCHMARK_CALL"
+    },
+    "stable-audio-open-1.0": {
+      "config_path": "configs/backbones/stable_audio_open_1_0.json",
+      "config_sha256": "fd3c77b1aa6b07f63d9ca207d795dbfc9c82c103358a2aabff3a6bb48e282e2b",
+      "cost_status": "NOT_MEASURED_BLOCKED_ON_LICENSE",
+      "generation_calls": 0,
+      "human_steps_path": "configs/backbones/stable_audio_open_1_0.json",
+      "status": "BLOCKED_ON_LICENSE"
+    }
+  },
+  "build_generated_audio": false,
+  "created_at_utc": "2026-07-20T15:35:04Z",
+  "hardened_identity_preflight_at_utc": "2026-07-20T16:45:31Z",
+  "factory": "backbones.factory.create_adapter(config_path, evidence_dir=..., **runtime_overrides)",
+  "mini_smoke_runner": "backbones.mini_smoke.run_mini_smoke",
+  "production_adapter_constructor": "backbones.ace_step_v1.AceStepV1Adapter (direct; unrelated adapters not imported)",
+  "model_generation_calls_total": 0,
+  "phase": "B2_PRE_GENERATION_BUILD",
+  "shared_hard_caps": {
+    "max_clip_seconds": 30.0,
+    "max_generations": 10,
+    "max_gpus_per_job": 1
+  },
+  "status": "BUILD_COMPLETE_EXECUTION_PENDING_PHASE_A_FREEZE",
+  "tests": {
+    "cpu_fake_tests": 37,
+    "result": "PASS",
+    "ruff": "PASS"
+  }
+}

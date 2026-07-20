@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "access_receipt_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "backbone_config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "decision_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "max_clip_seconds": {
+      "exclusiveMinimum": 0,
+      "maximum": 30,
+      "type": "number"
+    },
+    "max_generations": {
+      "maximum": 10,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_gpus": {
+      "const": 1
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "const": "ACCESS_RECEIPT_VERIFIED_AND_GENERATION_AUTHORIZED"
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "decision_id",
+    "backbone_config_sha256",
+    "access_receipt_sha256",
+    "max_generations",
+    "max_clip_seconds",
+    "max_gpus"
+  ],
+  "title": "Stable Audio Open 1.0 runtime gate record",
+  "type": "object"
+}

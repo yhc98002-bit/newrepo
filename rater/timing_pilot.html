@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blinded listening packet</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    button { margin: .3rem; padding: .65rem 1rem; }
+    .hidden { display: none; }
+    .panel { border: 1px solid #bbb; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    #tap { font-size: 1.3rem; min-width: 10rem; }
+    label { display: block; margin: .5rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Blinded listening packet</h1>
+  <p>This page runs locally; it does not fetch data or send responses.</p>
+  <p id="progress">Loading…</p>
+  <div class="panel">
+    <audio id="audio" controls preload="auto"></audio>
+    <p id="instruction"></p>
+    <div id="tempo" class="hidden">
+      <p>Play the full clip. Tap the button or space bar on each perceived beat in windows 2–14 s and 16–28 s.</p>
+      <button id="tap" type="button">Tap beat</button>
+      <p id="tapcount"></p>
+      <button id="tempo-submit" type="button">Submit tempo taps</button>
+    </div>
+    <div id="voice" class="hidden">
+      <p>Is intentional functioning human singing, speech, rap, or choir present?</p>
+      <button data-choice="present" type="button">Present</button>
+      <button data-choice="absent" type="button">Absent</button>
+      <button data-choice="unsure" type="button">Unsure</button>
+    </div>
+    <div id="integrity" class="hidden">
+      <p>Mark every audible unintended defect, or clean/unsure.</p>
+      <label><input type="checkbox" value="clipping"> clipping</label>
+      <label><input type="checkbox" value="dropout"> dropout</label>
+      <label><input type="checkbox" value="silence"> unintended silence</label>
+      <label><input type="checkbox" value="crackle"> digital crackle</label>
+      <label><input type="checkbox" value="clean"> none / clean</label>
+      <label><input type="checkbox" value="unsure"> unsure</label>
+      <label><input id="intentional-content" type="checkbox"> one or more audible events appear to be intentional musical content</label>
+      <button id="integrity-submit" type="button">Submit integrity response</button>
+    </div>
+  </div>
+  <button id="next" class="hidden" type="button">Next item</button>
+  <button id="export" class="hidden" type="button">Export response JSON</button>
+  <button id="stop" type="button">Stop and export partial response</button>
+<script>
+"use strict";
+const bundle = __EMBEDDED_PUBLIC_BUNDLE_JSON__;
+const sessionStarted = performance.now();
+let index = 0;
+let started = 0;
+let responses = [];
+let taps = [];
+let playEvents = 0;
+let endedNormally = false;
+let finishedCurrent = false;
+const audio = document.getElementById("audio");
+
+audio.addEventListener("play", () => { playEvents += 1; });
+audio.addEventListener("ended", () => { endedNormally = true; });
+audio.addEventListener("ratechange", () => {
+  if (audio.playbackRate !== 1) audio.playbackRate = 1;
+});
+
+function playedCoverageSeconds() {
+  let total = 0;
+  for (let i = 0; i < audio.played.length; i += 1) {
+    total += audio.played.end(i) - audio.played.start(i);
+  }
+  return total;
+}
+
+function hideAll() {
+  for (const id of ["tempo", "voice", "integrity"]) {
+    document.getElementById(id).classList.add("hidden");
+  }
+}
+
+function showItem() {
+  if (
+    Number.isFinite(bundle.session_limit_seconds) &&
+    Number.isFinite(bundle.item_allowance_seconds) &&
+    (performance.now() - sessionStarted) / 1000 + bundle.item_allowance_seconds > bundle.session_limit_seconds
+  ) {
+    hideAll();
+    document.getElementById("progress").textContent = "Frozen time cap reached before the next item";
+    document.getElementById("export").classList.remove("hidden");
+    window.alert("The next full item would cross the frozen session cap. Export the partial response.");
+    return;
+  }
+  const item = bundle.items[index];
+  started = performance.now();
+  taps = [];
+  playEvents = 0;
+  endedNormally = false;
+  finishedCurrent = false;
+  hideAll();
+  document.getElementById("next").classList.add("hidden");
+  document.getElementById("progress").textContent = `Item ${index + 1} of ${bundle.items.length}`;
+  audio.src = new URL(item.audio, window.location.href).href;
+  audio.load();
+  document.getElementById("instruction").textContent = `Task: ${item.task.replaceAll("_", " ")}`;
+  const panel = item.task === "tempo_tap" ? "tempo" : item.task === "voice_stress" ? "voice" : "integrity";
+  document.getElementById(panel).classList.remove("hidden");
+  document.getElementById("tapcount").textContent = "";
+  document.querySelectorAll("#integrity input").forEach(element => { element.checked = false; });
+}
+
+function finish(value) {
+  if (finishedCurrent) return;
+  const coverage = playedCoverageSeconds();
+  if (!endedNormally || coverage < 29.5) {
+    window.alert("Play the complete clip before submitting.");
+    return;
+  }
+  finishedCurrent = true;
+  const item = bundle.items[index];
+  responses.push({
+    completed_full_playback: true,
+    elapsed_seconds: (performance.now() - started) / 1000,
+    item_id: item.item_id,
+    play_events: playEvents,
+    playback_coverage_seconds: coverage,
+    response: value,
+    taps_seconds: taps,
+    task: item.task
+  });
+  audio.pause();
+  hideAll();
+  document.getElementById("next").classList.remove("hidden");
+}
+
+function tap() {
+  if (bundle.items[index].task !== "tempo_tap" || audio.paused) return;
+  const seconds = audio.currentTime;
+  const inWindow = (seconds >= 2 && seconds <= 14) || (seconds >= 16 && seconds <= 28);
+  if (!inWindow) {
+    document.getElementById("tapcount").textContent = "Tap ignored: outside the two rating windows";
+    return;
+  }
+  taps.push(seconds);
+  document.getElementById("tapcount").textContent = `${taps.length} taps recorded`;
+}
+
+document.getElementById("tap").onclick = tap;
+document.addEventListener("keydown", event => {
+  if (event.code === "Space" && !document.getElementById("tempo").classList.contains("hidden")) {
+    event.preventDefault();
+    tap();
+  }
+});
+document.getElementById("tempo-submit").onclick = () => {
+  const first = taps.filter(value => value >= 2 && value <= 14).length;
+  const second = taps.filter(value => value >= 16 && value <= 28).length;
+  if (first < 8 || second < 8) {
+    window.alert("Record at least eight taps in each frozen window.");
+    return;
+  }
+  finish({first_window_tap_count: first, second_window_tap_count: second});
+};
+document.querySelectorAll("#voice button").forEach(button => {
+  button.onclick = () => finish(button.dataset.choice);
+});
+document.getElementById("integrity-submit").onclick = () => {
+  const choices = [...document.querySelectorAll("#integrity input[value]:checked")].map(element => element.value);
+  const exclusive = choices.includes("clean") || choices.includes("unsure");
+  if (choices.length === 0 || (exclusive && choices.length !== 1)) {
+    window.alert("Choose one of clean/unsure, or one or more defect labels.");
+    return;
+  }
+  finish({
+    defect_labels: choices,
+    intentional_musical_content: document.getElementById("intentional-content").checked
+  });
+};
+document.getElementById("next").onclick = () => {
+  index += 1;
+  if (index < bundle.items.length) {
+    showItem();
+  } else {
+    document.getElementById("next").classList.add("hidden");
+    document.getElementById("export").classList.remove("hidden");
+    document.getElementById("progress").textContent = "Packet complete";
+  }
+};
+
+function exportResponse(status) {
+  const value = {
+    build_identity_sha256: bundle.build_identity_sha256,
+    bundle_id: bundle.bundle_id,
+    completed_at_utc: new Date().toISOString(),
+    responses,
+    schema_version: bundle.response_schema_version,
+    session_elapsed_seconds: (performance.now() - sessionStarted) / 1000,
+    status,
+    user_agent: navigator.userAgent
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2) + "\n"], {type: "application/json"}));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${bundle.bundle_id}-response.json`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+document.getElementById("export").onclick = () => exportResponse("COMPLETE");
+document.getElementById("stop").onclick = () => exportResponse("STOPPED_EARLY");
+showItem();
+</script>
+</body>
+</html>

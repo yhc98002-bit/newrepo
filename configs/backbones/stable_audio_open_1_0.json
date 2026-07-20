@@ -1,0 +1,48 @@
+{
+  "adapter": {
+    "class": "backbones.stable_audio_open.StableAudioOpenAdapter",
+    "local_snapshot_environment_variable": "STABLE_AUDIO_OPEN_1_0_SNAPSHOT_DIR",
+    "network_downloads_allowed": false
+  },
+  "entry_status": "BLOCKED_ON_LICENSE",
+  "generation": {
+    "benchmark_duration_seconds": 30.0,
+    "cfg_scale": 7.0,
+    "configuration_status": "PROVISIONAL_PUBLIC_EXAMPLE_REQUIRES_LATER_RUNTIME_DECISION",
+    "inference_steps": 100,
+    "sample_rate": 44100,
+    "sampler_type": "dpmpp-3m-sde"
+  },
+  "license_gate": {
+    "blocker": "The exact stabilityai/stable-audio-open-1.0 Hugging Face snapshot requires interactive account access and license acceptance; this build has neither authority nor credentials to accept it.",
+    "human_steps": [
+      "Sign in to the PI-controlled Hugging Face account in a browser; do not send credentials or tokens to Codex.",
+      "Open https://huggingface.co/stabilityai/stable-audio-open-1.0, read the displayed model terms and Stability AI Community License, complete any required access fields, and explicitly accept only if the PI agrees.",
+      "Wait until that same account can access the Files and versions page for stabilityai/stable-audio-open-1.0.",
+      "Create a least-privilege read token for that account and keep it outside Git, logs, shell history, chat, and committed configuration.",
+      "Using the project proxy wrapper, download the exact repository revision to a new no-clobber persistent directory; do not substitute stabilityai/stable-audio-3-medium or any mirror with a different identity.",
+      "Record the resolved 40-hex revision, every downloaded file path/size/SHA-256, the displayed license identifier, and non-secret acceptance metadata in a new access receipt matching provenance/b2/sao_access_receipt.schema.json.",
+      "Unset the token, verify the local snapshot and receipt offline, then request a new project decision that changes only the runtime gate; never edit this frozen blocker record in place."
+    ],
+    "receipt_schema": "provenance/b2/sao_access_receipt.schema.json",
+    "required_terminal_state_before_generation": "ACCESS_RECEIPT_VERIFIED"
+  },
+  "license_identifier": "Stability AI Community License (human review required at access time)",
+  "logical_name": "stable-audio-open-1.0",
+  "mini_smoke_caps": {
+    "max_clip_seconds": 30.0,
+    "max_generations_shared_across_b2": 10,
+    "max_gpus_per_job": 1
+  },
+  "model_id": "stabilityai/stable-audio-open-1.0",
+  "provenance": {
+    "status_basis": "PI-adjudicated Phase-B2 instruction dated 2026-07-20",
+    "unresolved_fields": [
+      "resolved_provider_revision",
+      "snapshot_file_manifest",
+      "access_receipt",
+      "license_text_hash_at_acceptance"
+    ]
+  },
+  "schema_version": 1
+}

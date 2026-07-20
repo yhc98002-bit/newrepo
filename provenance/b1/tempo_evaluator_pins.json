@@ -1,0 +1,39 @@
+{
+  "schema": "benchmark.b1.tempo-evaluator-pins.v1",
+  "recorded_at_utc": "2026-07-20T15:14:30Z",
+  "beat_this": {
+    "repository": "https://github.com/CPJKU/beat_this",
+    "tag": "v1.1.0",
+    "version": "1.1.0",
+    "commit": "ad7974846029835307ba19a3d5cefbf40b243041",
+    "checkpoint": {
+      "name": "final0",
+      "url": "https://cloud.cp.jku.at/public.php/dav/files/7ik4RrBKTS273gp/final0.ckpt",
+      "sha256": "8c328b45f59d8dd3dff219253ff6a8d6482be57d0133a29140e2febbf8eb8331",
+      "size_bytes": 81058141,
+      "retained_in_repository": false
+    },
+    "postprocessor": "minimal",
+    "dbn": false,
+    "license": "MIT",
+    "license_sha256": "909ab6549794a18e9bb243aacfadda4a5f308436fc2846f350755c53c4f06ae1"
+  },
+  "librosa": {
+    "repository": "https://github.com/librosa/librosa",
+    "tag": "0.11.0",
+    "version": "0.11.0",
+    "commit": "af8c839fb15317fa2712ea66e7a22da6a9267b32",
+    "license": "ISC",
+    "license_sha256": "1746ca32b53fa31941c38b63a986e4126ab998e81a2f73a566000847a588e2a3"
+  },
+  "frozen_rules": {
+    "minimum_events": 8,
+    "bpm_range_inclusive": [30, 300],
+    "maximum_interval_iqr_fraction": 0.25,
+    "estimator_disagreement_fraction": 0.08,
+    "primary_target_tolerance_fraction": 0.05,
+    "sensitivity_target_tolerance_fraction": 0.10,
+    "window_drift_replay_fraction": 0.08
+  },
+  "benchmark_endpoint_scores_obtained": 0
+}

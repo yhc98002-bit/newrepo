@@ -1,0 +1,24 @@
+{
+  "audio_generation_calls": 0,
+  "build_identity_sha256": "51ebc904242e54241564a73459f969bbce346dd39b228445cd8de7eafc7b80dd",
+  "bundle_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-04-51ebc904242e",
+  "bundle_id": "benchmark-v2-blinded-timing-pilot-04",
+  "bundle_json_sha256": "a25454b31672a435ffeb5cdb10593f0ae99dfbe4426e2ae409f71f2dcd2da537",
+  "created_at_utc": "2026-07-20T16:55:29.541725+00:00",
+  "expected_minutes": 15,
+  "index_html_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-04-51ebc904242e/index.html",
+  "index_html_sha256": "d5adb747f1439735b863a3f3102d31e2ec14252661e58d379405ab581604649c",
+  "item_count": 9,
+  "manifest_sha256": "715a2ac5024965a57525f836b690fe21fb0fd5bb1aac25ba35e94fed44ad3a80",
+  "packet_assembly_status": "BLOCKED_ON_TIMING_PILOT_INGESTION",
+  "public_tree_sha256": "73f32e19e6ddecad7cc1e400b73341235e628bde0195427e73a9fb7d33a0ca4f",
+  "source_config_sha256": "1328c48f8a10b524cf5fc78e04e415e4c4a86713a9b74a3a9742570981be3d70",
+  "status": "TIMING_PILOT_OFFERED_AWAITING_PI_RESPONSE",
+  "supersedes": {
+    "bundle_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-03-fd1ff72f73f5",
+    "bundle_id": "benchmark-v2-blinded-timing-pilot-03",
+    "bundle_json_sha256": "fb3106da2625644a58c7dc7ec8d66b3afc0a70394cdc492822a904088eef35c0",
+    "manifest_sha256": "75f780b627ef595f01d5f879accfe659e09addb920e401d622552d8dec5e5f7d",
+    "status": "SUPERSEDED_RETAINED_DO_NOT_USE"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "external_bundle": {
+    "build_identity_sha256": "51ebc904242e54241564a73459f969bbce346dd39b228445cd8de7eafc7b80dd",
+    "bundle_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-04-51ebc904242e",
+    "bundle_json_sha256": "a25454b31672a435ffeb5cdb10593f0ae99dfbe4426e2ae409f71f2dcd2da537",
+    "index_html_sha256": "d5adb747f1439735b863a3f3102d31e2ec14252661e58d379405ab581604649c",
+    "item_count": 9,
+    "manifest_sha256": "715a2ac5024965a57525f836b690fe21fb0fd5bb1aac25ba35e94fed44ad3a80",
+    "public_tree_sha256": "73f32e19e6ddecad7cc1e400b73341235e628bde0195427e73a9fb7d33a0ca4f",
+    "status": "TIMING_PILOT_OFFERED_AWAITING_PI_RESPONSE"
+  },
+  "files": {
+    "README.md": "9d51a1f9478d7c3b81632ccf926b69607451985f2cc18b0538118e6678d6f6a9",
+    "build_human_packet.py": "b3e0954f5c99a4ede07c1f7943285993b2ab09e8b464df8f0c6590819195bf55",
+    "build_timing_pilot.py": "a41c4d815e38bbc49264da650d5cc898a39462323256d96377ce92b4d1d7a19f",
+    "bundle_common.py": "1a9919f99ccce507e058a94305cab1a9beb1a46e414c62711f17549623adadd8",
+    "ingest_timing_pilot.py": "71ddfa4f6e27d61b234b0dd2ceedfc6857d9f0b6493b165916fc0e88612eec21",
+    "schema_v2.json": "0edb492fbf00355aec3e9f059d3b17557814f58b203c963f1c420f0c92ccde76",
+    "timing_pilot.html": "78bba8a189b7f281888a7607bb8197ac457196501134e9dec8a3996e724e2708",
+    "timing_pilot_offer_v2.json": "645cca46a001b42aace2f20a95d35921c6e26d7c56665cb7c457b30cf57227cb",
+    "timing_pilot_v2.source.json": "1328c48f8a10b524cf5fc78e04e415e4c4a86713a9b74a3a9742570981be3d70"
+  },
+  "generation_calls": 0,
+  "human_audit_packet": {
+    "assembly_status": "BLOCKED_ON_TIMING_PILOT_INGESTION",
+    "budget_cap_minutes": 180.0,
+    "future_assembler_status": "IMPLEMENTED_AND_TESTED_FAIL_CLOSED",
+    "planned_presentations": 171,
+    "selector_input": "AUTOMATIC_ONLY_STRICT_CANDIDATE_INDEX",
+    "selector_status": "IMPLEMENTED_AND_TESTED_DETERMINISTIC"
+  },
+  "private_admin": {
+    "admin_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-admin/benchmark-v2-blinded-timing-pilot-04-51ebc904242e",
+    "admin_map_sha256": "f69b7ff15a720f3ea29568148b170703c7ed8afc35ed21b35dbebdcb94181d32",
+    "public_bundle_contains_admin_artifacts": false,
+    "status": "PRIVATE_IMMUTABLE"
+  },
+  "schema_version": 2,
+  "superseded_retained_bundle": {
+    "bundle_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-03-fd1ff72f73f5",
+    "bundle_json_sha256": "fb3106da2625644a58c7dc7ec8d66b3afc0a70394cdc492822a904088eef35c0",
+    "manifest_sha256": "75f780b627ef595f01d5f879accfe659e09addb920e401d622552d8dec5e5f7d",
+    "status": "SUPERSEDED_RETAINED_DO_NOT_USE"
+  },
+  "tests": {
+    "test_rater_timing_pilot.py": "4ec76e15b4fa49a170e5d459c62ee67255f15d298c588ab1fcf5708f54ab81f4",
+    "test_statistics_and_rater_schema.py": "75f57ace3e7ff53077b7836a1c81e237e6504667b63c1a68ea3c111933c1518d"
+  }
+}

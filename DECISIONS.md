@@ -593,3 +593,219 @@ benchmark execution remain unexecuted and closed.
 `BENCHMARK_EXECUTION_AUTHORIZED = NO`
 
 `SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED = NO`
+
+## D-0021 — Benchmark preregistration v2 freeze and one-shot ACE-Step v1 B2 engineering authorization
+
+- Date: 2026-07-21
+- Status: accepted prospectively; v2 design frozen, one exact non-benchmark
+  two-call claim open, benchmark core closed
+- Authority: Chief Scientist / PI, consolidated benchmark-v2 task and an12/an29
+  placement amendment
+- Supersedes: D-0007 “Benchmark preregistration and execution gates” and
+  D-0009 “Decision-identifier collision resolution and benchmark gate” only
+  for the v2 design freeze and this bounded B2 exception; D-0020 remains
+  terminal evidence
+
+`BENCHMARK_PREREG_v2.md`, SHA-256
+`77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa`,
+is frozen as the prospective v2 design. It supersedes v1 as the active
+benchmark design without modifying the historical v1 file.
+
+The freeze adopts the eight adjudicated amendments exactly:
+
+1. The primary instrumental fixed intervention is positive-only — “A purely
+   instrumental arrangement led throughout by the named instruments” — while
+   negation is an estimate-only diagnostic.
+2. The vocal packet is a `TARGETED_HUMAN_STRESS_AUDIT`; model-level voice and
+   instrumental results are automatic-instrument outcomes.
+3. Tempo uses 5% primary tolerance and a preregistered 10% sensitivity, with
+   first- and second-window results and drift reported separately.
+4. Integrity human auditing samples only integrity-axis outputs using
+   defect-separated clipping, dropout, silence, and crackle strata, clean-side
+   rows, and sharp/percussive controls. The synthetic-injection DSP suite
+   passed before model generation, and defect-specific rates are mandatory.
+5. Exactly three backbones occupy the primary human-audited tier. A fourth
+   requires a prospective amendment or a separately reported automatic-only
+   tier.
+6. The eligibility unit is `(prompt, root, checkpoint)`; state features use
+   only that root's preview, folds are prompt-grouped, and restart outcomes
+   come from the frozen prompt-level replicated pool rather than a single-draw
+   oracle.
+7. The gate is verbatim `ELIGIBLE / REPLICATION_ONLY /
+   INCONCLUSIVE_UNDERPOWERED / STOP_AXIS`. Only
+   `INCONCLUSIVE_UNDERPOWERED` permits one preregistered root doubling followed
+   by one re-gate. `ELIGIBLE` requires a positive one-sided 95% lower bound and
+   cross-fitted deviation share at least 0.10. The baseline is renamed
+   `PROMPT_PLUS_TIME_BUDGET`.
+8. ACE-Step v1.5 is deferred for scope and solo-PI budget. Its future path is
+   a generation-only amendment and does not require a Gate-0 state-resume
+   retry.
+
+Phase B1 is terminal `PASS`. Stable Audio Open 1.0 is terminal
+`BLOCKED_ON_LICENSE` with exact human remediation steps. ACE-Step v1 passed
+offline identity preflight and only the exact two-call B2 engineering
+mini-smoke below is opened. Phase B3 built and offered the single nine-item
+blinded timing pilot. Human-audit packet assembly remains closed until its
+strict PI receipt is ingested. D-0020 supplies
+`SA3_STATE_CAPABILITY = PASS` as technical foundation evidence only.
+
+The complete Section-3 freeze package is bound here:
+
+| Path/artifact | SHA-256 |
+| --- | --- |
+| `prompts/v2/vocal_instrumental.json` | `602c4e0fb419d7a300116eb5fb76c30a8e19364aaef566aec05425caffed9f90` |
+| `prompts/v2/tempo.json` | `16e31c155e1d535f2211fcd85c8d666c9ba7a6636e4487fd43ea2fd5fa0e36ab` |
+| `prompts/v2/integrity.json` | `be0e7c65fa8dfad8c7fdbf4456b2c1ad7e6f4fe0bbeb67eba2fcbf96b5f16d03` |
+| `prompts/v2/structure_exploratory.json` | `6e9ca89c20ebb43313d9b492140970d876a5cfc657cf123cfe44b7d89e974af8` |
+| `prompts/v2/manifest.json` | `171d6c757ff3ecec1918d2f032206c2b570b3302dc5ed0100da0db5d22708089` |
+| `prompts/v2/seed_registry.json` | `2115d7e70a6c3f4dd19f38503861b8aeb3595a8f64dd1fc839d7a209e80724eb` |
+| `SEED_REGISTRY.md` | `d9b175296a97e8acca72d124a950c4e2fcd08c2d4287587c5e70c149f24deb97` |
+| `provenance/b1/T6_PROMOTION_RESULT.json` | `2ec9f12fd9008dae0e32675fcdaaf9e7a22fe0ed7006dd310b665b1e82be2ff2` |
+| `provenance/b1/voice_source_manifest.json` | `422f5509b12ae101c4bfa96db96254717c3a454f350e1907d05fc6e72eab8df0` |
+| `provenance/b1/tempo_evaluator_pins.json` | `375df3abe0daf13cc50741db16db8d0347ba3074b874c3434402d54593476447` |
+| `provenance/b1/integrity_synthetic_fixture.json` | `ec1fe4292dea823a4cfca29b83302b04c8a31151c9e5218157982c1fc342aaad` |
+| `provenance/b1/integrity_synthetic_validation.json` | `4e1b124ad2247eced85d21f049ad5b3849a4e1dd1a395689c235ec3d998a4dab` |
+| `provenance/b1/B1_VALIDATION_REPORT.json` | `656c8f960538ac0e35ea85786d1025d2350b581a0adb510a9879b2917506d448` |
+| `configs/backbones/stable_audio_3_medium_base.json` | `e1bcc0d03e6929b8fd2b655f8fc8c182a2be0eb6316549a94f48c4b040a98f75` |
+| `configs/backbones/stable_audio_open_1_0.json` | `fd3c77b1aa6b07f63d9ca207d795dbfc9c82c103358a2aabff3a6bb48e282e2b` |
+| `configs/backbones/ace_step_v1.json` | `b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879` |
+| `provenance/b2/build_status_pre_generation.json` | `16a13a6275be01b6ba45544b58e37798b93b30ac03ebfe5b99def07f87a0718e` |
+| `provenance/b2/stable_audio_3_adapter.json` | `b6add6d47b608930b02de340db52bb3eaf5a36ca10aa19805ae99ba6562b677c` |
+| `provenance/b2/stable_audio_open_license_block.json` | `1f5d314c2b01622bdaeb9575404753ea4b4b295ea364765942bde3f2812474ef` |
+| `provenance/b2/ace_step_v1_port.json` | `e57705caedab66d8c4b5ac138ed24fcff79527016e71e3a964f1321080d4d923` |
+| `configs/b2_mini_smoke_v2.json` | `01a1bd650dbe3f23eeb60c07c46c4a9d66750f4d8070f5e872604c7c4142f632` |
+| `B2_MINI_SMOKE_PROTOCOL_v2.md` | `2338cc92b1be99ce011902f9f7429976657ccb8ce2a791634d965096ce9c6118` |
+| `scripts/run_b2_mini_smoke_v2.py` | `040d0f75280c7adfbe614f74dab4a236b70068325ea4f85fe20b4b98ad56baff` |
+| `scripts/run_b2_mini_smoke_v2_with_timeout.py` | `1ba0dcd7f35e4f56a0f836da10491f440eed12689ca83cca47fbd56aeb47400f` |
+| `provenance/b2/b2_mini_smoke_authorization.template.json` | `3d0aaa08408ba394d827a578a8a231a39d3a965af325a4afbb019c2c34506ff1` |
+| `src/backbones/__init__.py` | `e42845b1df342a56a55aca378f6994a2b56fe50c08cc11cac87296826e7248f0` |
+| `src/backbones/ace_step_v1.py` | `a18aeb11d199656b46a18793e1e75bf03a54d0c135894db46738da0f18d8b0d7` |
+| `src/backbones/contracts.py` | `9368e2044380000e74bbefcd528d2f09fc22ef2b484b6f3b8bf298617b09f2d2` |
+| `src/backbones/factory.py` | `7774236d732d0262cbc412b4c516c0484ce20867ec48bc370821d037f09f60e3` |
+| `src/backbones/io.py` | `fe3e4d101ef34c846b7b86a2cba9e44f36b839364c99487de209406e7254aa3a` |
+| `src/backbones/mini_smoke.py` | `d7b810a1f1e35a7193ea2bf3ac34a5071c017c415407b90cf203737f9fed20e5` |
+| `src/backbones/runtime.py` | `d2e42754a4599e64d43d9ce43db8cfe057034581db2b5099ca6886d1eeedfeed` |
+| `src/sa3_smoke/artifacts.py` | `c51f2417577927180fa86b4282562a4781446a15d32cd466eda9213c7d679df3` |
+| `src/sa3_smoke/audio.py` | `c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24` |
+| `configs/statistics_v2.json` | `d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d` |
+| `rater/schema_v2.json` | `0edb492fbf00355aec3e9f059d3b17557814f58b203c963f1c420f0c92ccde76` |
+| `rater/freeze_manifest_v2.json` | `3fc506db647b4b1690866abe39f23f786c256376de3f304845a3fae294edc232` |
+| `rater/timing_pilot_v2.source.json` | `1328c48f8a10b524cf5fc78e04e415e4c4a86713a9b74a3a9742570981be3d70` |
+| `rater/timing_pilot.html` | `78bba8a189b7f281888a7607bb8197ac457196501134e9dec8a3996e724e2708` |
+| `rater/timing_pilot_offer_v2.json` | `645cca46a001b42aace2f20a95d35921c6e26d7c56665cb7c457b30cf57227cb` |
+| `/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-04-51ebc904242e/bundle.json` | `a25454b31672a435ffeb5cdb10593f0ae99dfbe4426e2ae409f71f2dcd2da537` |
+| `/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-04-51ebc904242e/manifest.json` | `715a2ac5024965a57525f836b690fe21fb0fd5bb1aac25ba35e94fed44ad3a80` |
+| `provenance/citation_audit_v2.json` | `f6fadd8b36dfc05b55ba48211c1440de26af10da93f5b8306e4d5d44a5d43311` |
+| `BENCHMARK_CORE_PROTOCOL_v2.md` | `869856603666c9d5b8a0ffbcb7e286a20f35bb3ca03955279b2777cc3e0ab685` |
+
+The additional frozen construction, evaluator, run/ledger, license, and
+environment identities are:
+
+| Path | SHA-256 |
+| --- | --- |
+| `prompts/build_v2_prompts.py` | `5754489fee944a7f03b1f967ca6245f015710af306a47c33576da4d3e24b1ba3` |
+| `src/instruments/__init__.py` | `8123ca64673bad026182d590ff35337929dfd5ecc488b01c624daee75c0365a0` |
+| `src/instruments/voice.py` | `b952580ec06e8b88cde704a1ad6f8597fd2d15c2f1c4b6e37c90a3a2c2378469` |
+| `src/instruments/tempo.py` | `c6cadcb3d65225bccd32ae34c4f5fd9f4881269e738336d3892f0ff7fb614f22` |
+| `src/instruments/integrity.py` | `b8d7f22d9b958c5a08a345ccbfba8d7fac09b8b77e51bb762f0f3bedc9a9da5d` |
+| `src/benchmark_core/__init__.py` | `5fe552169fdb0ed47cb4f92cac51ab982d72ceff67a028c88dd8a461fb9d602c` |
+| `src/benchmark_core/adapter_bridge.py` | `894e5873c705ee1a8877adc62efffd977a08d6c5c2941175bda89236cbf2d83b` |
+| `src/benchmark_core/artifacts.py` | `269845c6a497189cd3eba029007fd22ffb7ffed3027fd5e7ec9f08fd4a8ba83a` |
+| `src/benchmark_core/claims.py` | `76f3adacaf9ee65884bafa3c53ba11dd3921d5378a79f116107f33c854e92b2c` |
+| `src/benchmark_core/config.py` | `a48ee85c7c7a2cb2fa9616a5456b4b058e9e8de7d52e6adc27ceecbd91f1f39c` |
+| `src/benchmark_core/heartbeat.py` | `dfd77b90541d0099d6495280d7f7dad4e88c2b9703b91e09617195285bbd8480` |
+| `src/benchmark_core/launcher.py` | `8a57fbcb990e7306b3a6389273041519f1f245ed5c5c27f83db25807fb8170f3` |
+| `src/benchmark_core/ledger.py` | `6953bab158fc494b133ddaf8dde76597e1b9515e5c1ae8d3c5fc82a2ec95540f` |
+| `src/benchmark_core/placement.py` | `961193d3ab08ded1decc5f7f9086495362948ad296b9dbdba77877881b2b4902` |
+| `src/benchmark_core/queue.py` | `494333df2429af497a38a62cdd1150403b246f8d2ead7256cdefc08873b1582a` |
+| `src/benchmark_core/state_queue.py` | `fafdbed02820fde1bbf8945d3c2d6679b66bdabbe59ed86200d3f9f08ef619ef` |
+| `src/benchmark_core/supervisor.py` | `3e24f8b9d0de58f3b5a204e330e39d6857a4dcaea83e9a7374bbe22dbb032e4c` |
+| `src/benchmark_core/worker.py` | `d81befde9e813a295bafa1676d8944aa4e1bcad674206ce6cc2eec152fed9284` |
+| `scripts/prepare_benchmark_core_run.py` | `b363f44dedf79c839c173c46904ac6f4ea2ed8c3a973ccd9dba502fd6b47e391` |
+| `scripts/run_benchmark_core_worker.py` | `40170a3b8be805314164c954923a328debb9783f935647f4b339d41e97f5b12d` |
+| `environment/licenses.json` | `10f99624b8438c1dbc385ca2cec9bebac73ecb96cfe1098af32f4b9be8bd3294` |
+| `environment/package-freeze.txt` | `da6aae61a6189ee8fc3842fa76652359ff802c6252ce191a199bad5953f98eab` |
+| `environment/runtime.json` | `b0e3c4d2dcb9023d862f80518a0bbb1a32f9541ab7c430e0ba7be8fd41fbec70` |
+| `LICENSE` | `8bf2f14cad39ed6241ca31c7ee275de9fa3a7695980d52a8fc3cd3812a796987` |
+
+The two B2 calls are non-benchmark engineering measurements. They cannot be
+scored by an instrument or human rater, cannot enter a benchmark prompt pool
+or human packet, and have zero retries. All other generation, including the
+benchmark core and both state-screen queues, remains closed. The exact
+authorization assignments are:
+
+`BENCHMARK_PREREG_V2_FROZEN = YES`
+
+`BENCHMARK_PREREG_V2_SHA256 = 77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa`
+
+`B2_MINI_SMOKE_V2_AUTHORIZED = YES`
+
+`B2_MINI_SMOKE_V2_SCOPE = ACE_STEP_V1_ENGINEERING_COST_ONLY_NON_BENCHMARK`
+
+`B2_MINI_SMOKE_V2_CONFIG_SHA256 = 01a1bd650dbe3f23eeb60c07c46c4a9d66750f4d8070f5e872604c7c4142f632`
+
+`B2_MINI_SMOKE_V2_PROTOCOL_SHA256 = 2338cc92b1be99ce011902f9f7429976657ccb8ce2a791634d965096ce9c6118`
+
+`B2_MINI_SMOKE_V2_RUNNER_SHA256 = 040d0f75280c7adfbe614f74dab4a236b70068325ea4f85fe20b4b98ad56baff`
+
+`B2_MINI_SMOKE_V2_WRAPPER_SHA256 = 1ba0dcd7f35e4f56a0f836da10491f440eed12689ca83cca47fbd56aeb47400f`
+
+`B2_MINI_SMOKE_V2_AUTH_TEMPLATE_SHA256 = 3d0aaa08408ba394d827a578a8a231a39d3a965af325a4afbb019c2c34506ff1`
+
+`B2_MINI_SMOKE_V2_SEED_REGISTRY_SHA256 = d9b175296a97e8acca72d124a950c4e2fcd08c2d4287587c5e70c149f24deb97`
+
+`B2_MINI_SMOKE_V2_ACE_CONFIG_SHA256 = b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879`
+
+`B2_MINI_SMOKE_V2_ACE_ADAPTER_SHA256 = a18aeb11d199656b46a18793e1e75bf03a54d0c135894db46738da0f18d8b0d7`
+
+`B2_MINI_SMOKE_V2_COMMON_FACTORY_SHA256 = 7774236d732d0262cbc412b4c516c0484ce20867ec48bc370821d037f09f60e3`
+
+`B2_MINI_SMOKE_V2_COMMON_RUNNER_SHA256 = d7b810a1f1e35a7193ea2bf3ac34a5071c017c415407b90cf203737f9fed20e5`
+
+`B2_MINI_SMOKE_V2_BACKBONES_INIT_SHA256 = e42845b1df342a56a55aca378f6994a2b56fe50c08cc11cac87296826e7248f0`
+
+`B2_MINI_SMOKE_V2_COMMON_CONTRACTS_SHA256 = 9368e2044380000e74bbefcd528d2f09fc22ef2b484b6f3b8bf298617b09f2d2`
+
+`B2_MINI_SMOKE_V2_COMMON_IO_SHA256 = fe3e4d101ef34c846b7b86a2cba9e44f36b839364c99487de209406e7254aa3a`
+
+`B2_MINI_SMOKE_V2_COMMON_RUNTIME_SHA256 = d2e42754a4599e64d43d9ce43db8cfe057034581db2b5099ca6886d1eeedfeed`
+
+`B2_MINI_SMOKE_V2_SA3_ARTIFACTS_SHA256 = c51f2417577927180fa86b4282562a4781446a15d32cd466eda9213c7d679df3`
+
+`B2_MINI_SMOKE_V2_SA3_AUDIO_SHA256 = c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24`
+
+`B2_MINI_SMOKE_V2_ACE_CHECKPOINT_TREE_SHA256 = 124f8267d6c19f992e8b79880cc59e1ec1104439e6150312ebc94d7563d260fc`
+
+`B2_MINI_SMOKE_V2_ACE_SOURCE_TREE = a526413e5791e8b3bca32c0246701adaf7626f2b`
+
+`B2_MINI_SMOKE_V2_RUNTIME_CONDA_META_SHA256 = d95ae86c3d6c832777b8f571554388fd664044a79e7b8d62138453f58a991845`
+
+`B2_MINI_SMOKE_V2_RUNTIME_PIP_FREEZE_SHA256 = c11b37406749e4ae2abc030bb7ae2c6bb12206a46321af4c45535465086be680`
+
+`B2_MINI_SMOKE_V2_MAX_MODEL_CALLS = 2`
+
+`B2_MINI_SMOKE_V2_MAX_GENERATED_OUTPUTS = 2`
+
+`B2_MINI_SMOKE_V2_MAX_CLIP_SECONDS = 30`
+
+`B2_MINI_SMOKE_V2_MAX_GPUS = 1`
+
+`B2_MINI_SMOKE_V2_MAX_GPU_SECONDS = 1800`
+
+`B2_MINI_SMOKE_V2_RETRIES = 0`
+
+`B2_MINI_SMOKE_V2_PROMPT_IDS = b2-mini-smoke-engineering-ace-01,b2-mini-smoke-engineering-ace-02`
+
+`B2_MINI_SMOKE_V2_RESERVED_NON_BENCHMARK_SEEDS = S-0008:73193008,S-0009:73193009`
+
+`SA3_STATE_CAPABILITY = PASS`
+
+`BENCHMARK_PREREG_V1_FROZEN = NO`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = NO`
+
+`BENCHMARK_CORE_GENERATION_STATUS = NOT_LAUNCHED`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`

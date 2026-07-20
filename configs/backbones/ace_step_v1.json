@@ -1,0 +1,146 @@
+{
+  "adapter": {
+    "class": "backbones.ace_step_v1.AceStepV1Adapter",
+    "local_checkpoint_environment_variable": "ACE_STEP_V1_CHECKPOINT_DIR",
+    "local_source_environment_variable": "ACE_STEP_V1_SOURCE_DIR",
+    "network_downloads_allowed": false
+  },
+  "checkpoint": {
+    "content_identity": "exact_full_tree_sha256_no_exclusions",
+    "exact_tree_sha256": "124f8267d6c19f992e8b79880cc59e1ec1104439e6150312ebc94d7563d260fc",
+    "provider_snapshot_revision": "NOT_RECORDED_IN_PORT_SOURCE",
+    "required_files": [
+      {
+        "path": ".mdl",
+        "sha256": "2b9b2ca3ba663534353a912d7d0b0a8cf2bb447c51ad545e27616a2dd295668e",
+        "size_bytes": 50
+      },
+      {
+        "path": ".msc",
+        "sha256": "b1a31a97432919b1e6f89f362f9cadb13b9ab27852b1f610d8510d37fa7ba02d",
+        "size_bytes": 1214
+      },
+      {
+        "path": ".mv",
+        "sha256": "c504a8a1776d9725c5eea3f5a848b83691ed66ed0d02ad06f27934bcaddcf6a4",
+        "size_bytes": 36
+      },
+      {
+        "path": "README.md",
+        "sha256": "b5674b0c01f5b8e6e38291f1d36baa749a60f5cd5c450b70d23e247a772d930f",
+        "size_bytes": 3513
+      },
+      {
+        "path": "ace_step_transformer/config.json",
+        "sha256": "4d78beb6afb4c7f3705256b44faaf60f3e1e2d78f4015ca87740f3695d7f5447",
+        "size_bytes": 639
+      },
+      {
+        "path": "ace_step_transformer/diffusion_pytorch_model.safetensors",
+        "sha256": "e810f16728d8a2e0d1b9c3a907aac8c9a427ce38edbd890cb3dce5ff92da5aad",
+        "size_bytes": 6611422728
+      },
+      {
+        "path": "config.json",
+        "sha256": "4d78beb6afb4c7f3705256b44faaf60f3e1e2d78f4015ca87740f3695d7f5447",
+        "size_bytes": 639
+      },
+      {
+        "path": "configuration.json",
+        "sha256": "3eefed50f26939655a89fcb85efb21acbe4b0fe470f9f61146092fdd83c8d894",
+        "size_bytes": 71
+      },
+      {
+        "path": "music_dcae_f8c8/config.json",
+        "sha256": "b14a49a8c52a52c2c8050098af1a946810a8a1a0b6e50abc75ba81371383cf04",
+        "size_bytes": 1034
+      },
+      {
+        "path": "music_dcae_f8c8/diffusion_pytorch_model.safetensors",
+        "sha256": "2b0cb469307ac50659d1880db2a99bae47d0df335cbb36853964662d4b80e8ee",
+        "size_bytes": 313646516
+      },
+      {
+        "path": "music_vocoder/config.json",
+        "sha256": "39ddc4c417e01dc3be1862fcf315887358dd61b7f91c3cc8227f65072984bb55",
+        "size_bytes": 940
+      },
+      {
+        "path": "music_vocoder/diffusion_pytorch_model.safetensors",
+        "sha256": "c92c9b46e28ab7b37b777780cf4308ad7ddac869636bb77aa61599358c4bc1c0",
+        "size_bytes": 206350988
+      },
+      {
+        "path": "umt5-base/config.json",
+        "sha256": "afae5da9a35e2b293cee66536f03fc2581cfc3f3d5707d3a262b552748de1572",
+        "size_bytes": 848
+      },
+      {
+        "path": "umt5-base/model.safetensors",
+        "sha256": "779cec0d210b2123e21d0a9cd8128f02b4d412627355028965a8be0b241cc3b6",
+        "size_bytes": 1127460248
+      },
+      {
+        "path": "umt5-base/special_tokens_map.json",
+        "sha256": "456b58fd240a06c743a7c2cf8008bec501240d68ebd1fc4018ea569505fea270",
+        "size_bytes": 7079
+      },
+      {
+        "path": "umt5-base/tokenizer.json",
+        "sha256": "20a46ac256746594ed7e1e3ef733b83fbc5a6f0922aa7480eda961743de080ef",
+        "size_bytes": 16837459
+      },
+      {
+        "path": "umt5-base/tokenizer_config.json",
+        "sha256": "ed9a3a8b0faa71a70a32847e0435fe036e6e112d4df4edb7bb48a921e344dc05",
+        "size_bytes": 61728
+      }
+    ]
+  },
+  "entry_status": "READY_FOR_MINI_SMOKE",
+  "generation": {
+    "benchmark_duration_seconds": 30.0,
+    "cfg_type": "cfg",
+    "dtype": "bfloat16",
+    "format": "wav",
+    "guidance_interval": 0.5,
+    "guidance_scale": 5.0,
+    "inference_steps": 30,
+    "sample_rate": 48000,
+    "scheduler_shift": 3.0,
+    "scheduler_type": "euler",
+    "use_erg_diffusion": false,
+    "use_erg_lyric": false,
+    "use_erg_tag": false
+  },
+  "license_identifier": "Apache-2.0",
+  "logical_name": "ACE-Step v1",
+  "mini_smoke_caps": {
+    "max_clip_seconds": 30.0,
+    "max_generations_shared_across_b2": 10,
+    "max_gpus_per_job": 1
+  },
+  "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+  "provenance": {
+    "adapter_source": {
+      "git_commit": "99c88de3762d05d6c4a1fd8a57254d9c0df38ef9",
+      "path": "src/mprm/inference/ace_step.py",
+      "sha256": "35c6bfdff06d16b6a7d8a56717f826ed8244caca5cdb4c74782cdb3cdd44c30d"
+    },
+    "frozen_config_source": {
+      "git_commit": "7f63ab79948736c5bb6bd0d733c3eb570a1a2ac6",
+      "path": "orbit-research/adsr_phase2_20260604/paper_prep/w2_execution_20260712/spine_reconstruction_torch251_recovery/SPINE_TORCH251_FULL_REPLAY_PROTOCOL.md",
+      "sha256": "e20e0fbeff2cd98acd7df765ad042336a56cbe910547c64e53cf87be65a15176"
+    },
+    "identity_audit_source": {
+      "git_commit": "03c132592d54baac0feee8be7c5f49c39b910d5a",
+      "path": "orbit-research/adsr_phase2_20260604/paper_prep/model_identity/MODEL_IDENTITY_AUDIT_20260709.md",
+      "sha256": "594cc0206310a8164d37599b88cc2908cada01f39b9fde2f5eec20015b0ad0e2"
+    },
+    "old_repository": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/AudioDiffusion",
+    "port_scope": "operational adapter shape and frozen native sampler settings only; no old results, prompts, seeds, or decisions",
+    "upstream_code_revision": "1bee4c9f5b43e30995f8d4d33b3919197ce1bd68",
+    "upstream_code_tree": "a526413e5791e8b3bca32c0246701adaf7626f2b"
+  },
+  "schema_version": 1
+}

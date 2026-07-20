@@ -1,0 +1,46 @@
+{
+  "created_date": "2026-07-20",
+  "logical_model": "ACE-Step v1",
+  "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+  "port_mapping": {
+    "cfg_type": "cfg",
+    "dtype": "bfloat16",
+    "guidance_interval": 0.5,
+    "guidance_scale": 5.0,
+    "inference_steps": 30,
+    "no_erg": true,
+    "sample_rate_from_adapter": 48000,
+    "scheduler_shift": 3.0,
+    "scheduler_type": "euler"
+  },
+  "source_artifacts": [
+    {
+      "git_commit": "7f63ab79948736c5bb6bd0d733c3eb570a1a2ac6",
+      "path": "orbit-research/adsr_phase2_20260604/paper_prep/w2_execution_20260712/spine_reconstruction_torch251_recovery/SPINE_TORCH251_FULL_REPLAY_PROTOCOL.md",
+      "role": "frozen native sampler configuration",
+      "sha256": "e20e0fbeff2cd98acd7df765ad042336a56cbe910547c64e53cf87be65a15176"
+    },
+    {
+      "git_commit": "99c88de3762d05d6c4a1fd8a57254d9c0df38ef9",
+      "path": "src/mprm/inference/ace_step.py",
+      "role": "adapter API and 48-kHz decode binding",
+      "sha256": "35c6bfdff06d16b6a7d8a56717f826ed8244caca5cdb4c74782cdb3cdd44c30d"
+    },
+    {
+      "git_commit": "03c132592d54baac0feee8be7c5f49c39b910d5a",
+      "path": "orbit-research/adsr_phase2_20260604/paper_prep/model_identity/MODEL_IDENTITY_AUDIT_20260709.md",
+      "role": "model/source/weight identity only",
+      "sha256": "594cc0206310a8164d37599b88cc2908cada01f39b9fde2f5eec20015b0ad0e2"
+    }
+  ],
+  "source_repository": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/AudioDiffusion",
+  "status": "PORTED_CONFIG_READY_FOR_MINI_SMOKE",
+  "upstream_code_revision": "1bee4c9f5b43e30995f8d4d33b3919197ce1bd68",
+  "what_was_not_imported": [
+    "domain results",
+    "old prompts or seeds",
+    "old benchmark decisions",
+    "old cost measurements",
+    "old generated media"
+  ]
+}

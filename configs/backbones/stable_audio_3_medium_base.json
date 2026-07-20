@@ -1,0 +1,131 @@
+{
+  "adapter": {
+    "class": "backbones.stable_audio_3.StableAudio3MediumBaseAdapter",
+    "frozen_default_snapshot": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/models/stable-audio-3-medium-base-ms-a9c479f5",
+    "local_snapshot_environment_variable": "SA3_MEDIUM_BASE_SNAPSHOT_DIR",
+    "network_downloads_allowed": false
+  },
+  "checkpoint": {
+    "required_files": [
+      {
+        "path": "model.safetensors",
+        "sha256": "c443fcc4d491475064cd0ff3eb92459b1e5f5060e86d96d016f048e528e24195",
+        "size_bytes": 9222116660
+      },
+      {
+        "path": "model_config.json",
+        "sha256": "27e2a299f0bda6ff742d3387398f929299575642f2c6a4d4c4f94830928fd0d5",
+        "size_bytes": 7842
+      },
+      {
+        "path": "t5gemma-b-b-ul2/config.json",
+        "sha256": "575334409716886ac2952f5a275ed92868deef8a0ea560258d9970a431c6fb3a",
+        "size_bytes": 2540
+      },
+      {
+        "path": "t5gemma-b-b-ul2/generation_config.json",
+        "sha256": "1068b94599a94ceea097dd3936819f108c2e70806d7c6cc5ec425610af347625",
+        "size_bytes": 156
+      },
+      {
+        "path": "t5gemma-b-b-ul2/model.safetensors",
+        "sha256": "9b05ea5a4f211d023832f706fb2c0e83e4fc721b6da35ab69ceb0b55eb7800d3",
+        "size_bytes": 1183022944
+      },
+      {
+        "path": "t5gemma-b-b-ul2/special_tokens_map.json",
+        "sha256": "baec30ea10906f16adb8c18af7a34023002c1746542612b8b41c9f09e1351351",
+        "size_bytes": 636
+      },
+      {
+        "path": "t5gemma-b-b-ul2/tokenizer.json",
+        "sha256": "7794135caa3ea73918949c902a781cc61dab674a4b59c17d85931c77c1114cbd",
+        "size_bytes": 34362429
+      },
+      {
+        "path": "t5gemma-b-b-ul2/tokenizer.model",
+        "sha256": "61a7b147390c64585d6c3543dd6fc636906c9af3865a5548f27f31aee1d4c8e2",
+        "size_bytes": 4241003
+      },
+      {
+        "path": "t5gemma-b-b-ul2/tokenizer_config.json",
+        "sha256": "9546baec0dfefec0e29873edea9488ecde153f846e18c06ea48cb44587bf408f",
+        "size_bytes": 46437
+      }
+    ]
+  },
+  "entry_status": "READY_FOR_MINI_SMOKE",
+  "generation": {
+    "benchmark_duration_seconds": 30.0,
+    "cfg_scale": 7.0,
+    "chunked_decode": true,
+    "disable_tqdm": true,
+    "duration_padding_sec": 6.0,
+    "inference_steps": 50,
+    "model_half": true,
+    "negative_prompt": "low quality, clipping, silence",
+    "sample_rate": 44100,
+    "sampler_type": "euler",
+    "truncate_output_to_duration": true
+  },
+  "license_identifier": "Stability AI Community License Agreement; Gemma Terms of Use and Prohibited Use Policy",
+  "logical_name": "stable-audio-3-medium-base",
+  "mini_smoke_caps": {
+    "max_clip_seconds": 30.0,
+    "max_generations_shared_across_b2": 10,
+    "max_gpus_per_job": 1
+  },
+  "model_id": "stabilityai/stable-audio-3-medium-base",
+  "runtime": {
+    "cuda_build": "12.6",
+    "distributions": {
+      "flash-attn": "2.6.3+cu126torch2.7",
+      "stable-audio-3": "0.1.0",
+      "stable-audio-tools": "0.0.20",
+      "torch": "2.7.1+cu126",
+      "torchaudio": "2.7.1+cu126"
+    },
+    "environment_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env",
+    "licenses": {
+      "path": "environment/licenses.json",
+      "sha256": "10f99624b8438c1dbc385ca2cec9bebac73ecb96cfe1098af32f4b9be8bd3294"
+    },
+    "package_freeze": {
+      "path": "environment/package-freeze.txt",
+      "sha256": "da6aae61a6189ee8fc3842fa76652359ff802c6252ce191a199bad5953f98eab"
+    },
+    "python": "3.10.12",
+    "runtime_record": {
+      "path": "environment/runtime.json",
+      "sha256": "b0e3c4d2dcb9023d862f80518a0bbb1a32f9541ab7c430e0ba7be8fd41fbec70"
+    },
+    "source_packaging_boundary": "Benchmark source packaging may add packages after the foundation freeze; live dependency versions, locations, and frozen environment files remain fail-closed."
+  },
+  "provenance": {
+    "cross_provider_verification": {
+      "path": "provenance/weights.cross-provider-verification.v2.json",
+      "sha256": "905bac35a86f98b5db961b7258a31ca2f7a9c47d67760fb9ca110f83013f7dfb",
+      "status": "PASS"
+    },
+    "foundation_config": {
+      "path": "configs/foundation_v2.json",
+      "sha256": "d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f"
+    },
+    "foundation_report": {
+      "path": "SA3_FOUNDATION_REPORT.md",
+      "sha256": "b7e42c07c3a288df49dc63feafe18b05992fbc835a5ddb5b2aa5d0b164bd2c03"
+    },
+    "huggingface_revision": "b32993f73c3bdc3864043a72d8032606bba737c8",
+    "model_runtime_source": {
+      "path": "src/sa3_smoke/model_runtime.py",
+      "sha256": "614fc7e6d016e1dc07971a028653749318edac2c3c980a40d73aaf8be709fde4"
+    },
+    "modelscope_revision": "a9c479f5f28ee89f6fbdaca57b683e6b6c160314",
+    "state_capability": "PASS",
+    "weights_manifest": {
+      "path": "provenance/weights.manifest.json",
+      "sha256": "3c120446c854e814a172d499af4757a2ed86c985ba9e45f36674ad0242ca1803"
+    }
+  },
+  "schema_version": 1
+}

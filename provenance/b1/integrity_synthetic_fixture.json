@@ -1,0 +1,61 @@
+{
+  "schema": "benchmark.b1.integrity-synthetic-fixture.v1",
+  "recorded_at_utc": "2026-07-20T15:24:00Z",
+  "fixture_kind": "deterministic_programmatic_arrays",
+  "fixture_source": "tests/fixtures/integrity_injections.py",
+  "fixture_source_sha256": "90c613ee9bc4ca12c4177bf9be4871f1e48f29be5ab1a5eaa1b29d92a64a295a",
+  "sample_rate": 48000,
+  "duration_seconds": 2.0,
+  "strata": {
+    "clipping_injection": ["clipping"],
+    "dropout_injection": ["dropout"],
+    "silence_injection": ["silence"],
+    "crackle_injection": ["crackle"],
+    "clean_side_control": [],
+    "clipping_clean_side_control": [],
+    "dropout_clean_side_control": [],
+    "dropout_boundary_control": [],
+    "silence_clean_side_control": [],
+    "crackle_clean_side_control": [],
+    "sharp_percussive_control": []
+  },
+  "registered_injection_locations_seconds": {
+    "clipping_injection": [0.60, 0.62],
+    "dropout_injection": [0.80, 0.90],
+    "silence_injection": "entire_array",
+    "crackle_injection": [0.35, 0.75, 1.15, 1.55],
+    "dropout_clean_side_control": [0.80, 0.84],
+    "dropout_boundary_control": [0.05, 0.15],
+    "crackle_clean_side_control": [0.60, 1.20]
+  },
+  "special_expected_vectors": {
+    "true_peak_edge_control_constant_0p90": {
+      "defects": [],
+      "validity_failures": []
+    },
+    "stereo_any_channel_crackle": {
+      "defects": ["crackle"],
+      "validity_failures": []
+    },
+    "partial_final_frame_padding_control": {
+      "defects": [],
+      "validity_failures": []
+    },
+    "duration_mismatch_validity": {
+      "defects": [],
+      "validity_failures": ["SAMPLE_COUNT_MISMATCH"]
+    },
+    "nan_inf_validity": {
+      "defects": [],
+      "validity_failures": ["NONFINITE_AUDIO"]
+    },
+    "unexpected_channels_validity": {
+      "defects": [],
+      "validity_failures": ["CHANNEL_COUNT_MISMATCH"]
+    }
+  },
+  "validation_requirement": "each row must match its exact defect and file-validity vectors",
+  "model_generation_calls": 0,
+  "benchmark_endpoints_scored": 0,
+  "audio_files_written": 0
+}

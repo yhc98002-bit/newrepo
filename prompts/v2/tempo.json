@@ -1,0 +1,277 @@
+{
+  "primary_octave_tolerance_ratio": 1.05,
+  "rows": [
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 60 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-060-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 60 BPM.",
+      "prompt_id": "tempo-060-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 60
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 60 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-060-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 60 BPM.",
+      "prompt_id": "tempo-060-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 60
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 60 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-060-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 60 BPM.",
+      "prompt_id": "tempo-060-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 60
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 72 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-072-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 72 BPM.",
+      "prompt_id": "tempo-072-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 72
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 72 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-072-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 72 BPM.",
+      "prompt_id": "tempo-072-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 72
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 72 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-072-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 72 BPM.",
+      "prompt_id": "tempo-072-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 72
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 84 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-084-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 84 BPM.",
+      "prompt_id": "tempo-084-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 84
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 84 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-084-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 84 BPM.",
+      "prompt_id": "tempo-084-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 84
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 84 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-084-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 84 BPM.",
+      "prompt_id": "tempo-084-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 84
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 96 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-096-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 96 BPM.",
+      "prompt_id": "tempo-096-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 96
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 96 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-096-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 96 BPM.",
+      "prompt_id": "tempo-096-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 96
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 96 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-096-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 96 BPM.",
+      "prompt_id": "tempo-096-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 96
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 108 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-108-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 108 BPM.",
+      "prompt_id": "tempo-108-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 108
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 108 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-108-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 108 BPM.",
+      "prompt_id": "tempo-108-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 108
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 108 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-108-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 108 BPM.",
+      "prompt_id": "tempo-108-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 108
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 120 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-120-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 120 BPM.",
+      "prompt_id": "tempo-120-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 120
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 120 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-120-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 120 BPM.",
+      "prompt_id": "tempo-120-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 120
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 120 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-120-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 120 BPM.",
+      "prompt_id": "tempo-120-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 120
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 132 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-132-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 132 BPM.",
+      "prompt_id": "tempo-132-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 132
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 132 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-132-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 132 BPM.",
+      "prompt_id": "tempo-132-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 132
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 132 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-132-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 132 BPM.",
+      "prompt_id": "tempo-132-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 132
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 144 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-144-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 144 BPM.",
+      "prompt_id": "tempo-144-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 144
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 144 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-144-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 144 BPM.",
+      "prompt_id": "tempo-144-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 144
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 144 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-144-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 144 BPM.",
+      "prompt_id": "tempo-144-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 144
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 156 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-156-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 156 BPM.",
+      "prompt_id": "tempo-156-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 156
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 156 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-156-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 156 BPM.",
+      "prompt_id": "tempo-156-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 156
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 156 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-156-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 156 BPM.",
+      "prompt_id": "tempo-156-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 156
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A tightly played instrumental groove at 168 BPM with a clearly articulated kick-and-snare quarter-note pulse, steady throughout.",
+      "cluster_id": "tempo-168-percussive_regular",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 168 BPM.",
+      "prompt_id": "tempo-168-percussive_regular",
+      "salience": "percussive_regular",
+      "target_bpm": 168
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A syncopated instrumental funk groove at 168 BPM with off-beat accents around a stable underlying quarter-note pulse.",
+      "cluster_id": "tempo-168-syncopated",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 168 BPM.",
+      "prompt_id": "tempo-168-syncopated",
+      "salience": "syncopated",
+      "target_bpm": 168
+    },
+    {
+      "axis": "tempo",
+      "base_prompt": "A legato cinematic instrumental piece at 168 BPM with sustained strings and soft light percussion marking a stable quarter-note pulse.",
+      "cluster_id": "tempo-168-legato_light_percussion",
+      "fixed_suffix": "Maintain a steady quarter-note pulse at exactly 168 BPM.",
+      "prompt_id": "tempo-168-legato_light_percussion",
+      "salience": "legato_light_percussion",
+      "target_bpm": 168
+    }
+  ],
+  "schema_version": 2,
+  "sensitivity_octave_tolerance_ratio": 1.1
+}

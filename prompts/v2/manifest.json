@@ -1,0 +1,22 @@
+{
+  "axis_row_counts": {
+    "integrity": 18,
+    "structure_exploratory": 18,
+    "tempo": 30,
+    "vocal_instrumental": 24
+  },
+  "files": {
+    "integrity.json": "be0e7c65fa8dfad8c7fdbf4456b2c1ad7e6f4fe0bbeb67eba2fcbf96b5f16d03",
+    "seed_registry.json": "2115d7e70a6c3f4dd19f38503861b8aeb3595a8f64dd1fc839d7a209e80724eb",
+    "structure_exploratory.json": "6e9ca89c20ebb43313d9b492140970d876a5cfc657cf123cfe44b7d89e974af8",
+    "tempo.json": "16e31c155e1d535f2211fcd85c8d666c9ba7a6636e4487fd43ea2fd5fa0e36ab",
+    "vocal_instrumental.json": "602c4e0fb419d7a300116eb5fb76c30a8e19364aaef566aec05425caffed9f90"
+  },
+  "models": [
+    "stabilityai/stable-audio-3-medium-base",
+    "stabilityai/stable-audio-open-1.0",
+    "ACE-Step/ACE-Step-v1-3.5B"
+  ],
+  "schema_version": 1,
+  "total_prompt_rows": 90
+}

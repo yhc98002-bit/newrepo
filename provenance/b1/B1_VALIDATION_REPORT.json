@@ -1,0 +1,74 @@
+{
+  "schema": "benchmark.b1.validation-report.v1",
+  "status": "PASS",
+  "completed_at_utc": "2026-07-20T16:51:25Z",
+  "scope": "Phase B1 instruments only",
+  "host": "ln206",
+  "base_git_commit": "4276af9163943a8e35c3b8d7659be9925bfea88c",
+  "environment": {
+    "python_executable": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python",
+    "python_version": "3.10.12",
+    "numpy_version": "2.2.6",
+    "scipy_version": "1.15.3",
+    "gpu_used": false
+  },
+  "verification": [
+    {
+      "command": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m pytest -q tests/instruments",
+      "status": "PASS",
+      "result": "48 passed in 2.78s"
+    },
+    {
+      "command": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m ruff check src/instruments tests/instruments tests/fixtures",
+      "status": "PASS",
+      "result": "All checks passed"
+    },
+    {
+      "command": "git diff --check -- src/instruments tests/instruments tests/fixtures provenance/b1",
+      "status": "PASS",
+      "result": "no whitespace errors"
+    }
+  ],
+  "source_sha256": {
+    "src/instruments/voice.py": "b952580ec06e8b88cde704a1ad6f8597fd2d15c2f1c4b6e37c90a3a2c2378469",
+    "src/instruments/tempo.py": "626beedc64574e580bd33a06d4b97c8cc36e97a8217952f38c5c86f3ae3d4843",
+    "src/instruments/integrity.py": "b8d7f22d9b958c5a08a345ccbfba8d7fac09b8b77e51bb762f0f3bedc9a9da5d",
+    "tests/fixtures/integrity_injections.py": "90c613ee9bc4ca12c4177bf9be4871f1e48f29be5ab1a5eaa1b29d92a64a295a"
+  },
+  "canonical_inputs": {
+    "promotion_artifact_sha256": "2ec9f12fd9008dae0e32675fcdaaf9e7a22fe0ed7006dd310b665b1e82be2ff2",
+    "old_reference_implementation_sha256": "3aa68674b9ce919d407f25070a93ca73f14ed39af36f41090a4db000b5df1524",
+    "beat_this_checkpoint_sha256": "8c328b45f59d8dd3dff219253ff6a8d6482be57d0133a29140e2febbf8eb8331",
+    "integrity_fixture_manifest_sha256": "ec1fe4292dea823a4cfca29b83302b04c8a31151c9e5218157982c1fc342aaad",
+    "integrity_synthetic_validation_sha256": "4e1b124ad2247eced85d21f049ad5b3849a4e1dd1a395689c235ec3d998a4dab"
+  },
+  "synthetic_validation": {
+    "clipping_injection": "PASS_EXACT_DEFECT_SET",
+    "dropout_injection": "PASS_EXACT_DEFECT_SET",
+    "silence_injection": "PASS_EXACT_DEFECT_SET",
+    "crackle_injection": "PASS_EXACT_DEFECT_SET",
+    "clean_side_control": "PASS_NO_DEFECTS",
+    "clipping_clean_side_control": "PASS_NO_DEFECTS",
+    "dropout_clean_side_control": "PASS_NO_DEFECTS",
+    "dropout_boundary_control": "PASS_BOUNDARY_EXCLUDED",
+    "silence_clean_side_control": "PASS_NO_DEFECTS",
+    "crackle_clean_side_control": "PASS_BELOW_COUNT_THRESHOLD",
+    "sharp_percussive_control": "PASS_NO_DEFECTS",
+    "true_peak_edge_control": "PASS_NO_FALSE_CLIP",
+    "stereo_any_channel": "PASS_EXACT_DEFECT_SET",
+    "partial_final_frame_padding": "PASS_NO_DEFECTS",
+    "duration_mismatch": "PASS_EXACT_VALIDITY_VECTOR",
+    "nan_inf": "PASS_EXACT_VALIDITY_VECTOR",
+    "unexpected_channels": "PASS_EXACT_VALIDITY_VECTOR"
+  },
+  "selector_margin_validation": {
+    "voice_gate_aware_margin": "PASS_RAW_RECOMPUTATION_AND_RMS_GATE",
+    "integrity_defect_margins": "PASS_RAW_RECOMPUTATION_AND_EXACT_FLAG_SIGN",
+    "integrity_selector_priority": "PASS_MARGIN_BEFORE_CLUSTER_TIE_BREAK"
+  },
+  "runtime_dependency_note": "Beat This! and librosa are hash/version pinned but were not installed or invoked in the foundation-smoke environment; B1 validates their frozen output aggregation contract without scoring any endpoint.",
+  "model_generation_calls": 0,
+  "benchmark_endpoints_scored": 0,
+  "seeds": "not applicable; fixture arrays are analytic and deterministic",
+  "deviations": []
+}

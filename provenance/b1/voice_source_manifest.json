@@ -1,0 +1,23 @@
+{
+  "schema": "benchmark.b1.voice-source.v1",
+  "recorded_at_utc": "2026-07-20T15:14:30Z",
+  "source": {
+    "repository": "https://github.com/yhc98002-bit/Audio.git",
+    "commit": "062d75f4c235ebf306d42e215a74cfbf8c5afe87"
+  },
+  "promotion_artifact": {
+    "source_path": "orbit-research/adsr_phase2_20260604/paper_prep/autochain_20260712/T6_PROMOTION_RESULT.json",
+    "vendored_path": "T6_PROMOTION_RESULT.json",
+    "sha256": "2ec9f12fd9008dae0e32675fcdaaf9e7a22fe0ed7006dd310b665b1e82be2ff2",
+    "size_bytes": 12156,
+    "parsed_record": "heldout.selected_candidate",
+    "redundant_agreement_record": "train_selection.selected_candidate"
+  },
+  "reference_implementation": {
+    "source_path": "orbit-research/adsr_phase2_20260604/paper_prep/w2_contingency_20260711/w2_instruments.py",
+    "sha256": "3aa68674b9ce919d407f25070a93ca73f14ed39af36f41090a4db000b5df1524",
+    "reuse_scope": "behavioral reference only; implementation is not copied"
+  },
+  "port_scope": "promoted OR decision readout only",
+  "benchmark_result_claim": false
+}

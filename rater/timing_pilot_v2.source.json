@@ -1,0 +1,82 @@
+{
+  "bundle_id": "benchmark-v2-blinded-timing-pilot-04",
+  "expected_minutes": 15,
+  "presentation_order": [
+    "pilot-001",
+    "pilot-005",
+    "pilot-008",
+    "pilot-002",
+    "pilot-006",
+    "pilot-003",
+    "pilot-009",
+    "pilot-004",
+    "pilot-007"
+  ],
+  "presentations": [
+    {
+      "presentation_id": "pilot-001",
+      "source_sha256": "d51ba6038216f22b5ca6ef86d11371393b357444a90353d61bb716e2328d98db",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-a/a_fixed_seed_run1.wav",
+      "task": "tempo_tap"
+    },
+    {
+      "presentation_id": "pilot-002",
+      "source_sha256": "23786b4ae87d5ab856af48473f342365cefe29187adb7c47cb5cb95f2713e5a7",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-b/b_continuation_30s.wav",
+      "task": "tempo_tap"
+    },
+    {
+      "presentation_id": "pilot-003",
+      "source_sha256": "84f07feb44a27ac23e794467116070d7807e59be032dd26870e23c3a153ecc61",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-c/c_inpaint_single_8_12s.wav",
+      "task": "tempo_tap"
+    },
+    {
+      "presentation_id": "pilot-004",
+      "source_sha256": "e818caa68e6e33a85981b8f6a2831d08f0fbdd471970650a3c120c06486ced9a",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-d/d_cost_batch1_30s.wav",
+      "task": "tempo_tap"
+    },
+    {
+      "presentation_id": "pilot-005",
+      "source_sha256": "4d40ab211db8e10eb1b222093214a3539985917fb71d009006a17fcc4df53729",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-a/a_fixed_seed_run2.wav",
+      "task": "voice_stress"
+    },
+    {
+      "presentation_id": "pilot-006",
+      "source_sha256": "f226278085a110282e6fdc3f9b481699eedf4ea54a1a62adf94f3d20a90b1c74",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-c/c_inpaint_multi_4_6_20_23s.wav",
+      "task": "voice_stress"
+    },
+    {
+      "presentation_id": "pilot-007",
+      "repeat_of": "pilot-005",
+      "source_sha256": "4d40ab211db8e10eb1b222093214a3539985917fb71d009006a17fcc4df53729",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-a/a_fixed_seed_run2.wav",
+      "task": "voice_stress"
+    },
+    {
+      "presentation_id": "pilot-008",
+      "source_sha256": "476aaea35e40de0cdd8983ec95f02403f46f74f56610b5af98255e1fedf2fecc",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-e/e_reference_30s.wav",
+      "task": "integrity_audit"
+    },
+    {
+      "presentation_id": "pilot-009",
+      "repeat_of": "pilot-008",
+      "source_sha256": "476aaea35e40de0cdd8983ec95f02403f46f74f56610b5af98255e1fedf2fecc",
+      "source_path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-e/e_reference_30s.wav",
+      "task": "integrity_audit"
+    }
+  ],
+  "schema_version": 2,
+  "source_scope": "retained_foundation_audio_only_no_model_calls",
+  "supersedes": {
+    "bundle_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-03-fd1ff72f73f5",
+    "bundle_id": "benchmark-v2-blinded-timing-pilot-03",
+    "bundle_json_sha256": "fb3106da2625644a58c7dc7ec8d66b3afc0a70394cdc492822a904088eef35c0",
+    "manifest_sha256": "75f780b627ef595f01d5f879accfe659e09addb920e401d622552d8dec5e5f7d",
+    "status": "SUPERSEDED_RETAINED_DO_NOT_USE"
+  }
+}

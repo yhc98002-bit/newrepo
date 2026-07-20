@@ -1,0 +1,43 @@
+{
+  "audited_at_utc": "2026-07-20T15:19:08Z",
+  "excluded": [
+    {
+      "name": "MTRF",
+      "reason": "unverified; excluded from citations, operationalizations, results, and benchmark role"
+    }
+  ],
+  "policy": "primary papers, official model cards, official repositories, and version archives only",
+  "schema_version": 1,
+  "verified": [
+    {
+      "identity": "Stable Audio 3",
+      "primary_paper": "https://arxiv.org/abs/2605.17991",
+      "publisher_artifact": "https://huggingface.co/stabilityai/stable-audio-3-medium-base"
+    },
+    {
+      "identity": "Stable Audio Open 1.0",
+      "primary_paper": "https://arxiv.org/abs/2407.14358",
+      "publisher_artifact": "https://huggingface.co/stabilityai/stable-audio-open-1.0"
+    },
+    {
+      "identity": "ACE-Step v1",
+      "official_repository": "https://github.com/ace-step/ACE-Step",
+      "primary_paper": "https://arxiv.org/abs/2506.00045"
+    },
+    {
+      "identity": "ACE-Step v1.5",
+      "official_repository": "https://github.com/ace-step/ACE-Step-1.5",
+      "primary_paper": "https://arxiv.org/abs/2602.00744"
+    },
+    {
+      "identity": "Beat this!",
+      "official_repository": "https://github.com/CPJKU/beat_this",
+      "primary_paper": "https://arxiv.org/abs/2407.21658"
+    },
+    {
+      "identity": "librosa 0.11.0",
+      "primary_paper": "https://doi.org/10.25080/Majora-7b98e3ed-003",
+      "version_archive": "https://doi.org/10.5281/zenodo.15006942"
+    }
+  ]
+}

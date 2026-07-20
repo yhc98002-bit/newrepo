@@ -1,0 +1,86 @@
+{
+  "blinding": [
+    "backbone",
+    "condition",
+    "seed",
+    "automatic_values",
+    "selection_stratum",
+    "repeat_identity"
+  ],
+  "human_packet": {
+    "contingency_fraction": 0.15,
+    "fixed_minutes_excluding_pilot": 40.0,
+    "hidden_repeats_per_backbone": {
+      "integrity_audit": 1,
+      "tempo_tap": 2,
+      "voice_stress": 2
+    },
+    "integrity_strata_per_backbone": {
+      "clean_side_per_defect": 1,
+      "flagged_per_defect": 1,
+      "sharp_percussive_controls": 2
+    },
+    "item_allowance_seconds": 35.0,
+    "maximum_projected_minutes": 180.0,
+    "primary_backbone_count": 3,
+    "primary_backbones": [
+      "stable-audio-3-medium-base",
+      "stable-audio-open-1.0",
+      "ACE-Step v1"
+    ],
+    "selector_namespace": "benchmark-v2-human-packet-selector-20260720",
+    "unique_items_per_backbone": {
+      "integrity_audit": 10,
+      "tempo_tap": 30,
+      "voice_stress": 12
+    }
+  },
+  "human_packet_gate": {
+    "blocked_status": "BLOCKED_ON_TIMING_PILOT_INGESTION",
+    "budget_blocked_status": "BLOCKED_ON_HUMAN_TIME_BUDGET",
+    "required_receipt_status": "TIMING_PILOT_INGESTED"
+  },
+  "integrity_labels": [
+    "clipping",
+    "dropout",
+    "silence",
+    "crackle",
+    "clean",
+    "unsure"
+  ],
+  "integrity_response": {
+    "intentional_musical_content_nonexclusive": true,
+    "intentional_musical_content_permitted_with": [
+      "defect_labels",
+      "clean",
+      "unsure"
+    ]
+  },
+  "maximum_total_pi_minutes": 180,
+  "schema_version": 2,
+  "tempo_tap_windows_seconds": [
+    [
+      2,
+      14
+    ],
+    [
+      16,
+      28
+    ]
+  ],
+  "timing_pilot": {
+    "attestation_affirmation": "I_ATTEST_THIS_TIMING_PILOT_RESPONSE_IS_COMPLETE_ACCURATE_AND_USABLE",
+    "expected_minutes": 15,
+    "maximum_presentations": 10,
+    "minimum_full_playback_coverage_seconds": 29.5,
+    "minimum_presentations": 8,
+    "required_pi_identity": "pxy1289",
+    "response_schema_version": 2,
+    "single_bundle": true
+  },
+  "voice_labels": [
+    "present",
+    "absent",
+    "unsure"
+  ]
+}

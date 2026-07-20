@@ -1,0 +1,15 @@
+{
+  "created_date": "2026-07-20",
+  "foundation_config_sha256": "d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f",
+  "generation_attempted_by_b2_build": false,
+  "huggingface_revision": "b32993f73c3bdc3864043a72d8032606bba737c8",
+  "logical_model": "stable-audio-3-medium-base",
+  "model_id": "stabilityai/stable-audio-3-medium-base",
+  "modelscope_revision": "a9c479f5f28ee89f6fbdaca57b683e6b6c160314",
+  "network_access_by_b2_build": false,
+  "port_scope": "project-local verified model identity, local resolution path, and official StableAudioModel.generate contract",
+  "state_capability": "PASS",
+  "status": "ADAPTER_READY_FOR_AUTHORIZED_BENCHMARK_CALL",
+  "weights_cross_provider_verification_sha256": "905bac35a86f98b5db961b7258a31ca2f7a9c47d67760fb9ca110f83013f7dfb",
+  "weights_manifest_sha256": "3c120446c854e814a172d499af4757a2ed86c985ba9e45f36674ad0242ca1803"
+}

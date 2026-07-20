@@ -1,0 +1,233 @@
+{
+  "authorization": {
+    "authorization_id": "B2-ACE-V1-MINI-SMOKE-V2-ONE-SHOT",
+    "model_call_authorized_by_this_config_alone": false,
+    "required_prereg_status": "FROZEN_PROSPECTIVE_DESIGN",
+    "required_decisions_assignments": [
+      "BENCHMARK_PREREG_V2_FROZEN",
+      "BENCHMARK_PREREG_V2_SHA256",
+      "B2_MINI_SMOKE_V2_AUTHORIZED",
+      "B2_MINI_SMOKE_V2_SCOPE",
+      "B2_MINI_SMOKE_V2_CONFIG_SHA256",
+      "B2_MINI_SMOKE_V2_PROTOCOL_SHA256",
+      "B2_MINI_SMOKE_V2_RUNNER_SHA256",
+      "B2_MINI_SMOKE_V2_WRAPPER_SHA256",
+      "B2_MINI_SMOKE_V2_AUTH_TEMPLATE_SHA256",
+      "B2_MINI_SMOKE_V2_SEED_REGISTRY_SHA256",
+      "B2_MINI_SMOKE_V2_ACE_CONFIG_SHA256",
+      "B2_MINI_SMOKE_V2_ACE_ADAPTER_SHA256",
+      "B2_MINI_SMOKE_V2_COMMON_FACTORY_SHA256",
+      "B2_MINI_SMOKE_V2_COMMON_RUNNER_SHA256",
+      "B2_MINI_SMOKE_V2_BACKBONES_INIT_SHA256",
+      "B2_MINI_SMOKE_V2_COMMON_CONTRACTS_SHA256",
+      "B2_MINI_SMOKE_V2_COMMON_IO_SHA256",
+      "B2_MINI_SMOKE_V2_COMMON_RUNTIME_SHA256",
+      "B2_MINI_SMOKE_V2_SA3_ARTIFACTS_SHA256",
+      "B2_MINI_SMOKE_V2_SA3_AUDIO_SHA256",
+      "B2_MINI_SMOKE_V2_ACE_CHECKPOINT_TREE_SHA256",
+      "B2_MINI_SMOKE_V2_ACE_SOURCE_TREE",
+      "B2_MINI_SMOKE_V2_RUNTIME_CONDA_META_SHA256",
+      "B2_MINI_SMOKE_V2_RUNTIME_PIP_FREEZE_SHA256",
+      "B2_MINI_SMOKE_V2_MAX_MODEL_CALLS",
+      "B2_MINI_SMOKE_V2_MAX_GENERATED_OUTPUTS",
+      "B2_MINI_SMOKE_V2_MAX_CLIP_SECONDS",
+      "B2_MINI_SMOKE_V2_MAX_GPUS",
+      "B2_MINI_SMOKE_V2_MAX_GPU_SECONDS",
+      "B2_MINI_SMOKE_V2_RETRIES",
+      "B2_MINI_SMOKE_V2_PROMPT_IDS",
+      "B2_MINI_SMOKE_V2_RESERVED_NON_BENCHMARK_SEEDS"
+    ],
+    "required_execute_phrase": "I_UNDERSTAND_THIS_MAKES_EXACTLY_TWO_NON_BENCHMARK_MODEL_CALLS",
+    "requires_completed_external_authorization": true,
+    "template": {
+      "path": "provenance/b2/b2_mini_smoke_authorization.template.json",
+      "sha256": "3d0aaa08408ba394d827a578a8a231a39d3a965af325a4afbb019c2c34506ff1"
+    }
+  },
+  "backbone": {
+    "config": {
+      "path": "configs/backbones/ace_step_v1.json",
+      "sha256": "b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879"
+    },
+    "logical_name": "ACE-Step v1",
+    "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+    "required_checkpoint_dir": "/HOME/paratera_xy/pxy1289/.cache/modelscope/hub/models/ACE-Step/ACE-Step-v1-3___5B",
+    "required_checkpoint_environment_variable": "ACE_STEP_V1_CHECKPOINT_DIR",
+    "required_checkpoint_file_count": 17,
+    "required_checkpoint_tree_sha256": "124f8267d6c19f992e8b79880cc59e1ec1104439e6150312ebc94d7563d260fc",
+    "required_source_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/source/ACE-Step",
+    "required_source_environment_variable": "ACE_STEP_V1_SOURCE_DIR",
+    "required_source_revision": "1bee4c9f5b43e30995f8d4d33b3919197ce1bd68",
+    "required_source_tree": "a526413e5791e8b3bca32c0246701adaf7626f2b"
+  },
+  "caps": {
+    "exact_generated_outputs": 2,
+    "exact_model_calls": 2,
+    "max_clip_seconds": 30.0,
+    "max_generated_outputs": 2,
+    "max_gpu_seconds": 1800.0,
+    "max_gpus": 1,
+    "max_model_calls": 2,
+    "max_retries": 0,
+    "shared_b2_generation_ceiling": 10
+  },
+  "frozen_sources": {
+    "backbones_init": {
+      "path": "src/backbones/__init__.py",
+      "sha256": "e42845b1df342a56a55aca378f6994a2b56fe50c08cc11cac87296826e7248f0"
+    },
+    "ace_adapter": {
+      "path": "src/backbones/ace_step_v1.py",
+      "sha256": "a18aeb11d199656b46a18793e1e75bf03a54d0c135894db46738da0f18d8b0d7"
+    },
+    "common_factory": {
+      "path": "src/backbones/factory.py",
+      "sha256": "7774236d732d0262cbc412b4c516c0484ce20867ec48bc370821d037f09f60e3"
+    },
+    "common_contracts": {
+      "path": "src/backbones/contracts.py",
+      "sha256": "9368e2044380000e74bbefcd528d2f09fc22ef2b484b6f3b8bf298617b09f2d2"
+    },
+    "common_io": {
+      "path": "src/backbones/io.py",
+      "sha256": "fe3e4d101ef34c846b7b86a2cba9e44f36b839364c99487de209406e7254aa3a"
+    },
+    "common_mini_smoke": {
+      "path": "src/backbones/mini_smoke.py",
+      "sha256": "d7b810a1f1e35a7193ea2bf3ac34a5071c017c415407b90cf203737f9fed20e5"
+    },
+    "common_runtime": {
+      "path": "src/backbones/runtime.py",
+      "sha256": "d2e42754a4599e64d43d9ce43db8cfe057034581db2b5099ca6886d1eeedfeed"
+    },
+    "protocol": {
+      "path": "B2_MINI_SMOKE_PROTOCOL_v2.md",
+      "sha256": "2338cc92b1be99ce011902f9f7429976657ccb8ce2a791634d965096ce9c6118"
+    },
+    "sa3_artifacts": {
+      "path": "src/sa3_smoke/artifacts.py",
+      "sha256": "c51f2417577927180fa86b4282562a4781446a15d32cd466eda9213c7d679df3"
+    },
+    "sa3_audio": {
+      "path": "src/sa3_smoke/audio.py",
+      "sha256": "c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24"
+    },
+    "seed_registry": {
+      "path": "SEED_REGISTRY.md",
+      "sha256": "d9b175296a97e8acca72d124a950c4e2fcd08c2d4287587c5e70c149f24deb97"
+    }
+  },
+  "outer_timeout": {
+    "duration": "1800s",
+    "kill_after": "30s",
+    "pycache_prefix": "/tmp/pxy1289-b2-mini-smoke-v2-disabled-pycache",
+    "python_executable": "/HOME/paratera_xy/pxy1289/.conda/envs/audio-prm/bin/python",
+    "runner_relative_path": "scripts/run_b2_mini_smoke_v2.py",
+    "timeout_executable": "/usr/bin/timeout",
+    "wrapper": {
+      "path": "scripts/run_b2_mini_smoke_v2_with_timeout.py",
+      "sha256": "1ba0dcd7f35e4f56a0f836da10491f440eed12689ca83cca47fbd56aeb47400f"
+    }
+  },
+  "jobs": [
+    {
+      "duration_seconds": 30.0,
+      "index": 0,
+      "lyrics": "",
+      "output_relative_path": "audio/call-00.wav",
+      "prompt": "A steady instrumental engineering test passage led by piano, upright bass, and brushed drums, with continuous sound and a clean ending.",
+      "prompt_id": "b2-mini-smoke-engineering-ace-01",
+      "seed": 73193008,
+      "seed_id": "S-0008"
+    },
+    {
+      "duration_seconds": 30.0,
+      "index": 1,
+      "lyrics": "",
+      "output_relative_path": "audio/call-01.wav",
+      "prompt": "A steady instrumental engineering test passage led by acoustic guitar, warm bass, and hand percussion, with continuous sound and a clean ending.",
+      "prompt_id": "b2-mini-smoke-engineering-ace-02",
+      "seed": 73193009,
+      "seed_id": "S-0009"
+    }
+  ],
+  "placement": {
+    "allowed_nodes": [
+      "an12",
+      "an29"
+    ],
+    "allowed_physical_gpu_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "device_lock_template": "/tmp/pxy1289-b2-mini-smoke-v2-{node}-gpu-{physical_gpu_id}.lock",
+    "max_idle_utilization_percent": 5,
+    "minimum_free_memory_before_claim_mib": 60000,
+    "minimum_free_memory_before_subsequent_call_mib": 16000,
+    "replica_count": 1,
+    "required_gpu_name_substring": "A800",
+    "tensor_parallel_width": 1
+  },
+  "protocol_status": "PREPARED_NOT_AUTHORIZED",
+  "result_contract": {
+    "measurement_scope": "B2_MINI_SMOKE_NON_BENCHMARK",
+    "passing_measurement_status": "MEASURED",
+    "required_per_call_measures": [
+      "actual_nfe",
+      "requested_steps",
+      "wall_seconds",
+      "peak_allocated_bytes",
+      "peak_reserved_bytes",
+      "file_sha256",
+      "provenance_sha256",
+      "audio_sanity",
+      "row_sha256"
+    ],
+    "terminal_failure_status": "FAIL_ESCALATED"
+  },
+  "runtime_environment": {
+    "conda_executable_available": false,
+    "conda_meta_history_sha256": "592f2e9842fc975efffc320703b4589b00dc01be4359506aa33930c59c2a0108",
+    "conda_meta_manifest_sha256": "d95ae86c3d6c832777b8f571554388fd664044a79e7b8d62138453f58a991845",
+    "pip_freeze_sorted_sha256": "c11b37406749e4ae2abc030bb7ae2c6bb12206a46321af4c45535465086be680",
+    "python_executable": "/HOME/paratera_xy/pxy1289/.conda/envs/audio-prm/bin/python",
+    "python_prefix": "/HOME/paratera_xy/pxy1289/.conda/envs/audio-prm",
+    "python_version": "3.10.20",
+    "snapshot_limitation": "No standalone conda executable is available on launch PATH; all conda-meta JSON records and history are hashed instead of conda --explicit."
+  },
+  "run": {
+    "authorization_claim_filename": "b2-ace-v1-mini-smoke-v2-one-shot.claim.json",
+    "claim_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims",
+    "deadline_seconds": 1800.0,
+    "fixed_run_id": "b2-ace-v1-mini-smoke-v2-001",
+    "log_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/logs/b2-mini-smoke-v2",
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2"
+  },
+  "schema_version": 2,
+  "scope": "ACE_STEP_V1_ENGINEERING_COST_ONLY_NON_BENCHMARK",
+  "scoring": {
+    "benchmark_endpoints_scored": false,
+    "human_packet_member": false,
+    "instrument_evaluation_allowed": false
+  },
+  "seed_binding": {
+    "registry_path": "SEED_REGISTRY.md",
+    "reservation_class": "B2_ENGINEERING_ONLY_EXCLUDED_FROM_BENCHMARK_PROMPT_POOL",
+    "rows": [
+      {
+        "integer": 73193008,
+        "seed_id": "S-0008"
+      },
+      {
+        "integer": 73193009,
+        "seed_id": "S-0009"
+      }
+    ]
+  }
+}

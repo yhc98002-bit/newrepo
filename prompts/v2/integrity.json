@@ -1,0 +1,168 @@
+{
+  "rows": [
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a chamber ensemble of strings and piano, with gentle sustained phrases, soft attacks, and continuous sound, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-chamber-soft_sustained",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "soft_sustained",
+      "prompt_id": "integrity-chamber-soft_sustained",
+      "style_family": "chamber"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a chamber ensemble of strings and piano, with crisp legitimate percussive attacks and sharp musical transients, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-chamber-sharp_percussive_control",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "sharp_percussive_control",
+      "prompt_id": "integrity-chamber-sharp_percussive_control",
+      "style_family": "chamber"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a chamber ensemble of strings and piano, with a dense energetic arrangement and controlled wide dynamics, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-chamber-dense_loud",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "dense_loud",
+      "prompt_id": "integrity-chamber-dense_loud",
+      "style_family": "chamber"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by an electronic ensemble of synthesizers, bass, and drums, with gentle sustained phrases, soft attacks, and continuous sound, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-electronic-soft_sustained",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "soft_sustained",
+      "prompt_id": "integrity-electronic-soft_sustained",
+      "style_family": "electronic"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by an electronic ensemble of synthesizers, bass, and drums, with crisp legitimate percussive attacks and sharp musical transients, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-electronic-sharp_percussive_control",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "sharp_percussive_control",
+      "prompt_id": "integrity-electronic-sharp_percussive_control",
+      "style_family": "electronic"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by an electronic ensemble of synthesizers, bass, and drums, with a dense energetic arrangement and controlled wide dynamics, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-electronic-dense_loud",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "dense_loud",
+      "prompt_id": "integrity-electronic-dense_loud",
+      "style_family": "electronic"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a rock ensemble of electric guitars, bass, and drums, with gentle sustained phrases, soft attacks, and continuous sound, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-rock-soft_sustained",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "soft_sustained",
+      "prompt_id": "integrity-rock-soft_sustained",
+      "style_family": "rock"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a rock ensemble of electric guitars, bass, and drums, with crisp legitimate percussive attacks and sharp musical transients, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-rock-sharp_percussive_control",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "sharp_percussive_control",
+      "prompt_id": "integrity-rock-sharp_percussive_control",
+      "style_family": "rock"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a rock ensemble of electric guitars, bass, and drums, with a dense energetic arrangement and controlled wide dynamics, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-rock-dense_loud",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "dense_loud",
+      "prompt_id": "integrity-rock-dense_loud",
+      "style_family": "rock"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a jazz trio of piano, upright bass, and drums, with gentle sustained phrases, soft attacks, and continuous sound, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-jazz-soft_sustained",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "soft_sustained",
+      "prompt_id": "integrity-jazz-soft_sustained",
+      "style_family": "jazz"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a jazz trio of piano, upright bass, and drums, with crisp legitimate percussive attacks and sharp musical transients, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-jazz-sharp_percussive_control",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "sharp_percussive_control",
+      "prompt_id": "integrity-jazz-sharp_percussive_control",
+      "style_family": "jazz"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a jazz trio of piano, upright bass, and drums, with a dense energetic arrangement and controlled wide dynamics, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-jazz-dense_loud",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "dense_loud",
+      "prompt_id": "integrity-jazz-dense_loud",
+      "style_family": "jazz"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a full orchestral ensemble, with gentle sustained phrases, soft attacks, and continuous sound, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-orchestral-soft_sustained",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "soft_sustained",
+      "prompt_id": "integrity-orchestral-soft_sustained",
+      "style_family": "orchestral"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a full orchestral ensemble, with crisp legitimate percussive attacks and sharp musical transients, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-orchestral-sharp_percussive_control",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "sharp_percussive_control",
+      "prompt_id": "integrity-orchestral-sharp_percussive_control",
+      "style_family": "orchestral"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by a full orchestral ensemble, with a dense energetic arrangement and controlled wide dynamics, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-orchestral-dense_loud",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "dense_loud",
+      "prompt_id": "integrity-orchestral-dense_loud",
+      "style_family": "orchestral"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by an acoustic ensemble of guitar, mandolin, and hand percussion, with gentle sustained phrases, soft attacks, and continuous sound, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-acoustic-soft_sustained",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "soft_sustained",
+      "prompt_id": "integrity-acoustic-soft_sustained",
+      "style_family": "acoustic"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by an acoustic ensemble of guitar, mandolin, and hand percussion, with crisp legitimate percussive attacks and sharp musical transients, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-acoustic-sharp_percussive_control",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "sharp_percussive_control",
+      "prompt_id": "integrity-acoustic-sharp_percussive_control",
+      "style_family": "acoustic"
+    },
+    {
+      "axis": "integrity",
+      "base_prompt": "A continuous 30-second performance by an acoustic ensemble of guitar, mandolin, and hand percussion, with a dense energetic arrangement and controlled wide dynamics, with no intentional silent break or glitch effect.",
+      "cluster_id": "integrity-acoustic-dense_loud",
+      "fixed_suffix": "Clean intact audio: no clipping, dropouts, unintended silence, or digital crackle.",
+      "profile": "dense_loud",
+      "prompt_id": "integrity-acoustic-dense_loud",
+      "style_family": "acoustic"
+    }
+  ],
+  "schema_version": 2,
+  "synthetic_fixture_validation_required": true
+}

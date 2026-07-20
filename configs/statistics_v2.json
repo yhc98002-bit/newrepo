@@ -1,0 +1,173 @@
+{
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "replicates": 10000,
+    "seed": 2026072001,
+    "studentized_se_floor": 1e-12,
+    "two_stage_order": [
+      "stratified_prompt_cluster",
+      "matched_seed_within_cluster"
+    ]
+  },
+  "confirmatory": {
+    "alternative": "mean_cluster_success_fixed_minus_base_gt_0",
+    "degenerate_rule": "p=1 and lower_bound=-infinity when contrast<=0, SE=0, or estimate/SE is nonfinite",
+    "family": "three primary backbones within each confirmatory axis",
+    "multiplicity": "Holm step-down",
+    "one_sided": true
+  },
+  "eligibility": {
+    "action_tie_order": [
+      "predicted_success_descending",
+      "incremental_cost_ascending",
+      "KEEP",
+      "RESTART_FIXED",
+      "RESTART_BASE"
+    ],
+    "actions": [
+      "KEEP",
+      "RESTART_BASE",
+      "RESTART_FIXED"
+    ],
+    "baseline_name": "PROMPT_PLUS_TIME_BUDGET",
+    "checkpoint_fractions": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "cross_fitted_deviation_share_minimum": 0.1,
+    "doubling": {
+      "initial_roots": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "maximum_doublings": 1,
+      "only_trigger": "INCONCLUSIVE_UNDERPOWERED",
+      "single_regate": true,
+      "supplemental_roots": [
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    "fold_assignment": "sort prompt_id by sha256('benchmark-v2-eligibility-folds-20260720|'+prompt_id), then assign cyclically to folds 0..5; exactly two of the 12 registered prompts per fold",
+    "fold_count": 6,
+    "gate_order": [
+      "ELIGIBLE",
+      "REPLICATION_ONLY",
+      "INCONCLUSIVE_UNDERPOWERED",
+      "STOP_AXIS"
+    ],
+    "gate_rules": [
+      {
+        "label": "ELIGIBLE",
+        "rule": "lower_bound_state_incremental_value_gt_0 AND cross_fitted_deviation_share_gte_0.10"
+      },
+      {
+        "label": "REPLICATION_ONLY",
+        "rule": "lower_bound_state_incremental_value_gt_0 AND cross_fitted_deviation_share_lt_0.10"
+      },
+      {
+        "label": "INCONCLUSIVE_UNDERPOWERED",
+        "rule": "lower_bound_state_incremental_value_lte_0 AND point_estimate_state_incremental_value_gte_0.05 AND two_sided_95_interval_contains_positive_value"
+      },
+      {
+        "label": "STOP_AXIS",
+        "rule": "otherwise"
+      }
+    ],
+    "inconclusive_point_estimate_minimum": 0.05,
+    "model": {
+      "coefficient_prior": "Normal(0,1)",
+      "intercept_prior": "Normal(0,2.5)",
+      "likelihood": "Bernoulli-logit",
+      "optimizer": "L-BFGS-B",
+      "optimizer_gradient_tolerance": 1e-08,
+      "optimizer_max_iterations": 2000,
+      "prompt_intercept_prior": "Normal(0,sigma_prompt)",
+      "sigma_prompt_prior": "HalfNormal(1)",
+      "unseen_prompt_intercept": 0.0
+    },
+    "prompt_bootstrap_seed": 2026072002,
+    "prompt_bootstrap_replicates": 10000,
+    "prompt_selection": {
+      "algorithm": "sha256(namespace+'|'+identity) ascending; vocal ranks the 12 cluster_ids and assigns VOCAL to the first six and INSTRUMENTAL to the last six; tempo takes the first four prompt_ids within each salience stratum; integrity takes the first four prompt_ids within each profile stratum",
+      "axis_prompt_ids": {
+        "integrity": [
+          "integrity-acoustic-sharp_percussive_control",
+          "integrity-acoustic-soft_sustained",
+          "integrity-chamber-dense_loud",
+          "integrity-chamber-soft_sustained",
+          "integrity-electronic-dense_loud",
+          "integrity-electronic-sharp_percussive_control",
+          "integrity-electronic-soft_sustained",
+          "integrity-jazz-dense_loud",
+          "integrity-jazz-sharp_percussive_control",
+          "integrity-orchestral-soft_sustained",
+          "integrity-rock-dense_loud",
+          "integrity-rock-sharp_percussive_control"
+        ],
+        "tempo": [
+          "tempo-060-legato_light_percussion",
+          "tempo-060-percussive_regular",
+          "tempo-060-syncopated",
+          "tempo-072-legato_light_percussion",
+          "tempo-072-percussive_regular",
+          "tempo-072-syncopated",
+          "tempo-084-syncopated",
+          "tempo-108-legato_light_percussion",
+          "tempo-120-percussive_regular",
+          "tempo-120-syncopated",
+          "tempo-132-percussive_regular",
+          "tempo-168-legato_light_percussion"
+        ],
+        "vocal_instrumental": [
+          "voice-frame-01-instrumental",
+          "voice-frame-02-instrumental",
+          "voice-frame-03-vocal",
+          "voice-frame-04-vocal",
+          "voice-frame-05-instrumental",
+          "voice-frame-06-instrumental",
+          "voice-frame-07-vocal",
+          "voice-frame-08-vocal",
+          "voice-frame-09-instrumental",
+          "voice-frame-10-vocal",
+          "voice-frame-11-vocal",
+          "voice-frame-12-instrumental"
+        ]
+      },
+      "namespace": "benchmark-v2-eligibility-prompt-selection-20260720"
+    },
+    "restart_mapping": "For each prompt/checkpoint/action, sort roots; rotate the sorted four-member prompt-level restart pool by uint64_be(sha256('benchmark-v2-restart-map-20260720|'+prompt_id+'|'+checkpoint+'|'+action)[0:8]) mod 4; doubled analysis applies the same rule to each complementary four-member block.",
+    "restart_outcome_label": "RESTART_POOL_SHARED_AT_PROMPT_LEVEL",
+    "state_capture_contract": {
+      "capture_fractions": [
+        0.25,
+        0.5,
+        0.75
+      ],
+      "feature_source": "ONLY_THE_SAME_UNITS_ROOT_LOCAL_PRE_ACTION_DECODED_PREVIEW",
+      "forbidden_sources": [
+        "OTHER_ROOT_PREVIEWS",
+        "ACTION_OUTCOMES",
+        "TERMINAL_AUDIO_FEATURES",
+        "HUMAN_GOLD",
+        "HELD_OUT_FITTED_VALUES"
+      ],
+      "one_capture_per_prompt_root_checkpoint": true,
+      "preview_must_be_derived_from_exported_root_state": true,
+      "restart_outcomes": "FROZEN_PROMPT_LEVEL_POOL_NOT_SINGLE_DRAW_ORACLE",
+      "source_condition": "BASE"
+    },
+    "state_tier_name": "PROMPT_PLUS_TIME_BUDGET_PLUS_STATE",
+    "unit": [
+      "prompt",
+      "root",
+      "checkpoint"
+    ]
+  },
+  "schema_version": 2
+}

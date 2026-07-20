@@ -1,0 +1,40 @@
+{
+  "derivation": "1 + uint64_be(sha256(namespace|model_id|prompt_id|root_index)[0:8]) mod 2147483646",
+  "models": [
+    "stabilityai/stable-audio-3-medium-base",
+    "stabilityai/stable-audio-open-1.0",
+    "ACE-Step/ACE-Step-v1-3.5B"
+  ],
+  "namespace": "benchmark-v2-root-seed-20260720",
+  "root_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "schema_version": 1,
+  "test_vectors": [
+    {
+      "model_id": "stabilityai/stable-audio-3-medium-base",
+      "prompt_id": "voice-frame-01-vocal",
+      "root_index": 0,
+      "seed": 378480600
+    },
+    {
+      "model_id": "stabilityai/stable-audio-open-1.0",
+      "prompt_id": "tempo-120-syncopated",
+      "root_index": 3,
+      "seed": 138943666
+    },
+    {
+      "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+      "prompt_id": "integrity-rock-sharp_percussive_control",
+      "root_index": 7,
+      "seed": 1438817517
+    }
+  ]
+}

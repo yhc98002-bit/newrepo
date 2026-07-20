@@ -1,0 +1,11 @@
+{
+  "blocked_model_id": "stabilityai/stable-audio-open-1.0",
+  "created_date": "2026-07-20",
+  "credentials_obtained": false,
+  "download_attempted_by_b2_build": false,
+  "generation_attempted_by_b2_build": false,
+  "human_steps_source": "configs/backbones/stable_audio_open_1_0.json",
+  "status": "BLOCKED_ON_LICENSE",
+  "status_basis": "PI-adjudicated Phase-B2 instruction dated 2026-07-20",
+  "substitute_model_used": false
+}
