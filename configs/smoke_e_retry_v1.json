@@ -1,0 +1,100 @@
+{
+  "base_configuration": {
+    "path": "configs/foundation_v2.json",
+    "sha256": "d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f"
+  },
+  "benchmark_execution_authorized": false,
+  "caps": {
+    "max_clip_seconds": 30,
+    "max_generations": 8,
+    "max_gpu_seconds": 540,
+    "max_gpus": 1
+  },
+  "claim_name": ".sa3-smoke-e-d0019-retry-claim.json",
+  "decision": "D-0019",
+  "exact_plan": {
+    "calls_by_smoke": {
+      "E": 4
+    },
+    "generated_outputs": 4,
+    "generations_by_smoke": {
+      "E": 4
+    },
+    "official_generate_calls": 4,
+    "seed_calls": {
+      "E": {
+        "S-0007": 4
+      }
+    }
+  },
+  "external_process_group_deadline_seconds": 600,
+  "placement": {
+    "gpu_ids": [
+      4
+    ],
+    "justification": "The 1.4B model fits one A800. Physical GPU 4 on an12 was idle at selection and is rechecked under a device lock immediately before the one-shot claim; TP1 avoids unjustified multi-GPU execution.",
+    "minimum_free_memory_mib": 60000,
+    "node": "an12",
+    "replica_count": 1,
+    "tensor_parallel_width": 1
+  },
+  "protocol": {
+    "path": "SMOKE_E_RETRY_PROTOCOL_v1.md",
+    "sha256": "1a2892b70029bea1e36722145dceea32a814e5a00d917a98c0cb17d4582cd0a0"
+  },
+  "repair": {
+    "expected_checkpoint_latent_dtype": "torch.float32",
+    "expected_fresh_initial_latent_dtype": "torch.float16",
+    "latent_source": {
+      "path": "src/sa3_smoke/latent.py",
+      "sha256": "9aeb23557be929907548655a9a8deccaec027b6d789132d64f9d729eaa6c43f2"
+    },
+    "machinery_commit": "59b24ff9597094b1a74b00b4c9447fd23facf7be",
+    "resume_child_source": {
+      "path": "src/sa3_smoke/resume_child.py",
+      "sha256": "5fd11c39aed4e753662a7a7388107a054ed55ec0737b93f0fae58a38f3209a13"
+    },
+    "runner_source": {
+      "path": "src/sa3_smoke/run_smoke_e_retry.py",
+      "sha256": "ad9d1b00289386feb83e1cdac4ecc1c06abdafb5ab6d13e75fc749524d8cbda0"
+    },
+    "smoke_e_source": {
+      "path": "src/sa3_smoke/smoke_e.py",
+      "sha256": "1c3f50c7af3534e036794844e190cce7f193515a81d525161b0e996cf9b62fbd"
+    },
+    "strategy": "export_and_preserve_runtime_latent_dtype_without_cast"
+  },
+  "run_root": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/smoke-e-retry-runs",
+  "scope": "SMOKE_E_ONLY",
+  "seed": {
+    "id": "S-0007",
+    "value": 73193007
+  },
+  "source_failure": {
+    "checkpoints": [
+      {
+        "completed_steps": 15,
+        "sha256": "52acec3c52d4f580978222a6f392fe9577cb6e1094719a1505cfd6a62671eee1"
+      },
+      {
+        "completed_steps": 30,
+        "sha256": "95b31c86f4ae909f7009739fe20705cf0cd6c957c857c2cb303583b38b77033d"
+      },
+      {
+        "completed_steps": 40,
+        "sha256": "acadb11a0d17204370c41d120b09af322bc10388ba7a20600481191a1dc589f5"
+      }
+    ],
+    "reference_wav_sha256": "476aaea35e40de0cdd8983ec95f02403f46f74f56610b5af98255e1fedf2fecc",
+    "result": {
+      "path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/result.json",
+      "sha256": "65adbde1e8abe9e744749a52745243d7c4bb572e778284d76827f98a05b6d912"
+    },
+    "run_id": "sa3-foundation-20260719T134821.040493Z-9ea9d06209d6",
+    "smoke_e_manifest": {
+      "path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/runs/sa3-foundation-20260719T134821.040493Z-9ea9d06209d6/smoke-e/manifest.json",
+      "sha256": "7d5a25e083e5cdf2385c3505b1896e8e512efc1f78a3082bc76d347a85103495"
+    }
+  },
+  "version": 1
+}

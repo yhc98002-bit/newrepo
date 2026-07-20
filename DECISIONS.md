@@ -420,3 +420,87 @@ D-0017 result. `FOUNDATION_COST_SMOKE_AUTHORIZED = NO`,
 `FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = NO`,
 `BENCHMARK_PREREG_V1_FROZEN = NO`, and
 `BENCHMARK_EXECUTION_AUTHORIZED = NO` remain unchanged.
+
+## D-0019 — One-shot Smoke E dtype-boundary retry
+
+- Date: 2026-07-20
+- Status: accepted prospectively; one exact claim open, no result yet
+- Authority: PI, current bounded-retry prompt
+- Supersedes: D-0017 only for one Smoke E repair attempt and D-0013 only for
+  strict active-process termination at this retry's outer deadline
+
+The immutable D-0017 failure remains historical. Its run is
+`sa3-foundation-20260719T134821.040493Z-9ea9d06209d6`; result SHA-256 is
+`65adbde1e8abe9e744749a52745243d7c4bb572e778284d76827f98a05b6d912`,
+Smoke E manifest SHA-256 is
+`7d5a25e083e5cdf2385c3505b1896e8e512efc1f78a3082bc76d347a85103495`,
+and L-0009 records the failure. The three valid old checkpoint SHA-256s are
+`52acec3c52d4f580978222a6f392fe9577cb6e1094719a1505cfd6a62671eee1`,
+`95b31c86f4ae909f7009739fe20705cf0cd6c957c857c2cb303583b38b77033d`,
+and `acadb11a0d17204370c41d120b09af322bc10388ba7a20600481191a1dc589f5`.
+
+The reviewed mechanism commit is
+`59b24ff9597094b1a74b00b4c9447fd23facf7be`. The repair exports the evolved
+latent in its actual runtime dtype and resumes from that saved dtype without a
+cast. This is selected over a resume-time FP16 cast because the latter would
+discard state precision and change the trajectory. Source SHA-256s are:
+`src/sa3_smoke/latent.py` =
+`9aeb23557be929907548655a9a8deccaec027b6d789132d64f9d729eaa6c43f2`,
+`src/sa3_smoke/resume_child.py` =
+`5fd11c39aed4e753662a7a7388107a054ed55ec0737b93f0fae58a38f3209a13`,
+`src/sa3_smoke/smoke_e.py` =
+`1c3f50c7af3534e036794844e190cce7f193515a81d525161b0e996cf9b62fbd`,
+and the E-only runner =
+`ad9d1b00289386feb83e1cdac4ecc1c06abdafb5ab6d13e75fc749524d8cbda0`.
+
+Rules are frozen before results by
+`SMOKE_E_RETRY_PROTOCOL_v1.md` SHA-256
+`1a2892b70029bea1e36722145dceea32a814e5a00d917a98c0cb17d4582cd0a0`
+and the no-clobber control file below. The original foundation v2 config SHA-256
+`d26985d3a5fb6280fd93b30fa7dea575abed0eb3c4b28caada292ca10585d69f`
+continues to identify the model call and checkpoint state contract.
+
+`RETRY_CONFIG_SHA256 = 39553c595659e29e3c0fa691c0d47f344421548ca3ac12157c01fac32a716c84`
+
+The exact plan is one new uninterrupted official call exporting at 15/30/40
+completed steps (30/60/80%), followed by three sequential official resume
+calls in distinct processes: four calls and four WAVs total, all Smoke E and
+S-0007 = `73193007`. Expected resumed NFE is 35/20/10. The frozen numerical
+gate remains maximum absolute decoded-waveform error `<= 1e-5` and SNR
+`>= 80 dB`, with full duration/sample-rate/stereo/non-silence/finite checks and
+provenance required for every output. A missing condition is failure.
+
+Hard guards are `MAX_GENERATIONS = 8`, `MAX_CLIP_SECONDS = 30`,
+`MAX_GPUS = 1`, and `MAX_GPU_SECONDS = 540`. The 540-second claim-bound
+residency cap is stricter than the PI's 600-second limit; children are bounded
+to 120 seconds or the smaller remaining allowance. The outer command has a
+600-second process deadline and may terminate an active subcase, superseding
+D-0013's atomic-finish rule only here. The fixed exclusive claim is
+`.sa3-smoke-e-d0019-retry-claim.json`; its creation consumes the sole retry.
+No claim may be deleted and there is no second retry.
+
+Placement is `an12`, physical GPU 4, TP1, one replica. A read-only selection
+probe found it idle with 81,226 MiB free on 2026-07-20. The runner must hold
+`/tmp/pxy1289-sa3-smoke-e-gpu-4.lock` and repeat the no-process, A800,
+free-memory, utilization, and one-visible-device checks immediately before
+claim creation. The exact executable is
+`scripts/run_smoke_e_retry_d0019.sh` SHA-256
+`87ef45bdf50fe091cb8f7a6ec509c6cfbb7c6904aff07a1bdf3e9ae3e03edbee`.
+
+If every frozen condition and the exact budget pass, terminal values are
+`SA3_SMOKE_E_RETRY_STATUS = PASS`, `SMOKE_E = PASS`, and
+`SA3_STATE_CAPABILITY = PASS`. Otherwise, after claim consumption, terminal
+values are `SA3_SMOKE_E_RETRY_STATUS = FAIL_ESCALATED`, `SMOKE_E = FAIL`, and
+`SA3_STATE_CAPABILITY = NOT_IDENTIFIABLE`; eligibility screens then fall back
+to ACE-Step v1 only. Either result closes the retry and preserves the original
+five-smoke `FAIL_ESCALATED` classification.
+
+`FOUNDATION_COST_SMOKE_AUTHORIZED = NO`
+
+`FOUNDATION_COST_SMOKE_RETRY_AUTHORIZED = YES`
+
+`BENCHMARK_PREREG_V1_FROZEN = NO`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`SA3_SMOKE_E_SINGLE_RETRY_AUTHORIZED = YES`
