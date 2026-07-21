@@ -7,12 +7,20 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import torch
 
+import state_capture.sa3_artifacts as artifact_module
 import state_capture.sa3_worker as worker_module
 from benchmark_core.heartbeat import validate_heartbeat
 from benchmark_core.ledger import validate_ledger
 from benchmark_core.placement import PlacementUnavailable
-from state_capture.sa3_artifacts import StagedPrefixGroup, StagedResume
+from sa3_smoke.latent import load_euler_checkpoint, save_euler_checkpoint, sha256_file
+from state_capture.sa3_artifacts import (
+    StagedCheckpointPreview,
+    StagedPrefixGroup,
+    StagedResume,
+    commit_prefix_group,
+)
 from state_capture.sa3_claims import (
     StateAlreadyClaimed,
     StateClaimStore,
@@ -156,6 +164,93 @@ def test_post_load_reserve_guard_fails_before_inference_without_cuda() -> None:
             20_000_000_000,
             memory_info=lambda: (19_999_999_999, 80_000_000_000),
         )
+
+
+def test_prefix_commit_rebinds_checkpoint_sidecar_after_canonical_rename(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    frozen_contract: tuple[Any, list[dict], list[dict], list[dict], dict],
+) -> None:
+    config, units, groups, _, _ = frozen_contract
+    group = groups[0]
+    unit_index = {row["lane_request_sha256"]: row for row in units}
+    group_units = [unit_index[value] for value in group["lane_request_sha256s"]]
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    conditioning_sha256 = "c" * 64
+    schedule = torch.linspace(1.0, 0.0, 51, dtype=torch.float32)
+    previews: list[StagedCheckpointPreview] = []
+    source_sidecar_sha256s: dict[str, str] = {}
+
+    for unit in group_units:
+        completed_steps = int(unit["checkpoint_completed_steps"])
+        checkpoint = save_euler_checkpoint(
+            staging / f"root.step-{completed_steps:03d}.pt",
+            latent=torch.full((1, 2, 4), float(completed_steps)),
+            schedule=schedule,
+            next_step_index=completed_steps,
+            run_id="sidecar-relocation-regression",
+            conditioning_sha256=conditioning_sha256,
+            config_sha256=config.source_sha256,
+        )
+        preview = staging / f"preview-{completed_steps:03d}.wav"
+        preview.write_bytes(b"preview-fixture")
+        previews.append(
+            StagedCheckpointPreview(
+                lane_request_sha256=unit["lane_request_sha256"],
+                checkpoint_path=checkpoint.path,
+                checkpoint_state_metadata_path=checkpoint.state_metadata_path,
+                preview_path=preview,
+            )
+        )
+        source_sidecar_sha256s[unit["lane_request_sha256"]] = sha256_file(
+            checkpoint.state_metadata_path
+        )
+
+    reference = staging / "reference.wav"
+    reference.write_bytes(b"reference-fixture")
+    monkeypatch.setattr(
+        artifact_module,
+        "basic_audio_sanity",
+        lambda *_args, **_kwargs: {"fixture": True},
+    )
+    artifact_root = tmp_path / "artifacts"
+    commit_prefix_group(
+        artifact_root,
+        group,
+        group_units,
+        StagedPrefixGroup(
+            reference_terminal_path=reference,
+            checkpoint_previews=tuple(previews),
+            actual_nfe=config.transformer_budget_nfe,
+            synchronized_gpu_seconds=1.0,
+            peak_allocated_bytes=1,
+            peak_reserved_bytes=1,
+            conditioning_sha256=conditioning_sha256,
+        ),
+        config=config,
+    )
+
+    for unit, staged_preview in zip(group_units, previews, strict=True):
+        destination = artifact_root / unit["checkpoint_relpath"]
+        destination_sidecar = destination.with_suffix(destination.suffix + ".state.json")
+        relocated = json.loads(destination_sidecar.read_text(encoding="utf-8"))
+        source = json.loads(
+            staged_preview.checkpoint_state_metadata_path.read_text(encoding="utf-8")
+        )
+        assert destination.name == "checkpoint.pt"
+        assert source["checkpoint_file"]["name"] == staged_preview.checkpoint_path.name
+        assert relocated["checkpoint_file"]["name"] == destination.name
+        assert relocated["checkpoint_file"]["sha256"] == sha256_file(destination)
+        assert sha256_file(staged_preview.checkpoint_state_metadata_path) == (
+            source_sidecar_sha256s[unit["lane_request_sha256"]]
+        )
+        loaded = load_euler_checkpoint(
+            destination,
+            expected_conditioning_sha256=conditioning_sha256,
+            expected_config_sha256=config.source_sha256,
+        )
+        assert loaded.next_step_index == unit["checkpoint_completed_steps"]
 
 
 def test_supervisor_launch_requires_explicit_bounded_subset_or_all() -> None:

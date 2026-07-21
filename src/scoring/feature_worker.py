@@ -7,6 +7,7 @@ import random
 import subprocess
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +52,15 @@ def require_post_load_headroom(
         "required_reserve_bytes": required_bytes,
         "total_vram_bytes": total,
     }
+
+
+def panns_vocal_indices(labels: Sequence[str]) -> list[int]:
+    """Select the frozen source set by intersection, as the old instrument did."""
+
+    indices = [index for index, label in enumerate(labels) if label in VOCAL_CLASSES]
+    if not indices:
+        raise RuntimeError("PANNs vocal class set is empty")
+    return indices
 
 
 def runtime_identity(config: dict[str, Any], *, require_interpreter: bool) -> dict[str, Any]:
@@ -160,11 +170,7 @@ class VoiceExtractor:
             device="cuda",
         )
         self.labels = labels
-        self.vocal_indices = [
-            index for index, label in enumerate(labels) if label in set(VOCAL_CLASSES)
-        ]
-        if {labels[index] for index in self.vocal_indices} != set(VOCAL_CLASSES):
-            raise RuntimeError("PANNs label table differs from the frozen vocal-class set")
+        self.vocal_indices = panns_vocal_indices(labels)
 
     def __call__(self, path: Path) -> dict[str, float]:
         import librosa

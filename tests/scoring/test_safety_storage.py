@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from scoring.feature_worker import PostLoadHeadroomBlocked, require_post_load_headroom
+from scoring.feature_worker import (
+    PostLoadHeadroomBlocked,
+    panns_vocal_indices,
+    require_post_load_headroom,
+)
 from scoring.gpu_guard import acquire_idle_gpu, inspect_idle_gpus
 from scoring.storage import ImmutableRun
 
@@ -67,6 +71,26 @@ def test_post_load_reserve_blocks_before_row_zero() -> None:
     assert require_post_load_headroom(
         20_000_000_000, torch_module=_Torch(20_000_000_000)
     )["free_vram_bytes_after_load"] == 20_000_000_000
+
+
+def test_panns_vocal_indices_preserve_old_instrument_intersection() -> None:
+    # PANNs' frozen 527-class AudioSet CSV has no "Human voice" parent label.
+    # The promoted source implementation intentionally selected the intersection.
+    labels = [
+        "Speech",
+        "Music",
+        "Singing",
+        "Choir",
+        "Male singing",
+        "Female singing",
+        "Child singing",
+        "Rapping",
+        "Vocal music",
+        "A capella",
+    ]
+    assert panns_vocal_indices(labels) == [0, 2, 3, 4, 5, 6, 7, 8, 9]
+    with pytest.raises(RuntimeError, match="vocal class set is empty"):
+        panns_vocal_indices(["Music", "Guitar"])
 
 
 def test_immutable_outputs_ledger_and_heartbeat_are_no_clobber(tmp_path: Path) -> None:

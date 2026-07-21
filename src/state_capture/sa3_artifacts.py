@@ -59,6 +59,50 @@ def _copy_exclusive(source: Path, destination: Path) -> None:
             temporary.unlink()
 
 
+def _copy_checkpoint_pair_exclusive(
+    checkpoint_source: Path,
+    state_metadata_source: Path,
+    checkpoint_destination: Path,
+    state_metadata_destination: Path,
+) -> None:
+    """Relocate a checkpoint while preserving the sidecar's filename binding."""
+
+    try:
+        state_metadata = json.loads(state_metadata_source.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            f"invalid staged checkpoint state metadata: {state_metadata_source}"
+        ) from exc
+    if not isinstance(state_metadata, Mapping):
+        raise ValueError("staged checkpoint state metadata must be an object")
+    checkpoint_file = state_metadata.get("checkpoint_file")
+    if not isinstance(checkpoint_file, Mapping):
+        raise ValueError("staged checkpoint state metadata lacks checkpoint_file")
+
+    source_sha256 = sha256_file(checkpoint_source)
+    source_size = checkpoint_source.stat().st_size
+    if checkpoint_file.get("name") != checkpoint_source.name:
+        raise ValueError("staged checkpoint state metadata names a different file")
+    if checkpoint_file.get("sha256") != source_sha256:
+        raise ValueError("staged checkpoint state metadata SHA-256 mismatch")
+    if checkpoint_file.get("size_bytes") != source_size:
+        raise ValueError("staged checkpoint state metadata size mismatch")
+
+    _copy_exclusive(checkpoint_source, checkpoint_destination)
+    destination_sha256 = sha256_file(checkpoint_destination)
+    destination_size = checkpoint_destination.stat().st_size
+    if destination_sha256 != source_sha256 or destination_size != source_size:
+        raise ValueError("published checkpoint differs from its staged source")
+
+    relocated_metadata = dict(state_metadata)
+    relocated_metadata["checkpoint_file"] = {
+        "name": checkpoint_destination.name,
+        "sha256": destination_sha256,
+        "size_bytes": destination_size,
+    }
+    _write_json_exclusive(state_metadata_destination, relocated_metadata)
+
+
 def _write_json_exclusive(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as handle:
@@ -192,8 +236,17 @@ def commit_prefix_group(
         ):
             if os.path.lexists(path):
                 raise FileExistsError(path)
-        _copy_exclusive(item.checkpoint_path, checkpoint_destination)
-        _copy_exclusive(item.checkpoint_state_metadata_path, checkpoint_sidecar_destination)
+        _copy_checkpoint_pair_exclusive(
+            item.checkpoint_path,
+            item.checkpoint_state_metadata_path,
+            checkpoint_destination,
+            checkpoint_sidecar_destination,
+        )
+        load_euler_checkpoint(
+            checkpoint_destination,
+            expected_conditioning_sha256=staged.conditioning_sha256,
+            expected_config_sha256=config.source_sha256,
+        )
         _copy_exclusive(item.preview_path, preview_destination)
         preview_sha = sha256_file(preview_destination)
         checkpoint_sha = sha256_file(checkpoint_destination)
