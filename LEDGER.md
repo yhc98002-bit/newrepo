@@ -522,3 +522,57 @@ manifest and artifacts are named here with SHA-256 digests.
 - Supersedes: L-0012 only for ACE-Step v1 queue eligibility; its original
   exact-frame failure record remains immutable and is re-adjudicated under
   D-0026 rather than rewritten
+
+## L-0016 — ACE-Step v1 incremental core first ledgered batch
+
+- Time: 2026-07-21T17:21:40+08:00
+- Kind: completed launch milestone with retained benchmark audio; no endpoint
+  has been scored and the resident worker continues
+- Authority: D-0027 exact ACE-only incremental launch
+- Git: `79d9193b7e67944242395600576d0a3762503ea6`, clean and equal to
+  `origin/main` at launch
+- Node: `an12`; physical GPU ID: `4` exposed as logical GPU `0`; TP: 1;
+  replicas: 1; detached worker PID at launch: `3426125`
+- Placement: GPU 4 was an idle A800 with 81,226 MiB free, no compute PID,
+  and 0% utilization before launch; no neighboring process was changed
+- Run: `benchmark-core-v2-ace-20260721t091500z`
+- Command: `/HOME/paratera_xy/pxy1289/.conda/envs/audio-prm/bin/python -B
+  scripts/run_benchmark_core_worker.py --config
+  configs/benchmark_core_v2_ace_incremental.json --model-id
+  ACE-Step/ACE-Step-v1-3.5B --run-dir
+  /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/
+  benchmark_v2_runtime/runs/core-v2/
+  benchmark-core-v2-ace-20260721t091500z`
+- Config / launch claim / run manifest SHA-256s:
+  `6e4886b235474ea08083b9a01d24d6cddaad8443ce3e0ab3fef49dedfe5ef23f` /
+  `9ae7640d42198cd0a985f092d40a06afb63affbdb9963a7ead6c70249ce8a990` /
+  `776cf4ed9bd14a6bc1712d3edc85cf21c27694861810fd8353d3895882aab64d`
+- Generation queue: 1,536 ACE-only rows, SHA-256
+  `db4ce65dabee9219e30a5c22c0eb56ed7b0a6f9e3ebaf98302f725cb8e8fd37f`;
+  SA3 is excluded through its COMPLETE receipt
+- Initial / supplemental state queues: 432 / 432 prior-SA3 rows, SHA-256s
+  `bc03a333e9cb096747ca7d9392a1a33a1c781315b1c1c698b20c888f74ca00c8` /
+  `e7eb055e53183f2f6f85bd6ede586e9ed22a390a07cc149bdb121261961da8c1`;
+  closed / locked
+- First-shard heartbeat / shard record SHA-256s:
+  `b76fb604e0151bb88ccda1bc7badfc566db71bd21638143c5606fda8efc93a6f` /
+  `1466cec9a528e157a7ead46fcfde879eba357ef10f3149c2af4858e1d41d5ac2`
+- Result: `ACE_INCREMENTAL_LAUNCHED_FIRST_LEDGERED_BATCH` — four completed,
+  zero failed; each output is 48-kHz stereo at `29.9073125 s`, within the
+  inclusive `0.25 s` rule, with sanity, provenance, and commit records
+- First-shard seeds: `227666909`, `423452959`, `2008097831`,
+  `1601745438` for BASE roots 0–3 of `voice-frame-01-vocal`
+- Output WAV SHA-256s:
+  `563473b06c7d84a9e550e8ff6ba761d7aa3e82a9945cef12caf33cfd9bd0a5ec`,
+  `f2cf0ef8142404b83e3f74d3411a44fbbff4987718d3b4cc63b817fa33ac1f9b`,
+  `080659bc3e5ae984604132f0227dd1d475e6b2c47d1ef6cfdce8f3386df7f7ca`,
+  and `746610fd7d90029ca45954cbd8378e6db17503bac3a1faa95ba9a04936d32831`
+- Measured cost at the boundary: load `123.0669956356287 s`; synchronized
+  calls `11.75711365789175 s`; NFE 180; peak allocated/reserved VRAM
+  `8,544,569,856 / 10,085,203,968 B`
+- Ledger tail at the immutable boundary:
+  `4d0a91627c3b4175ee5891ded72ea52f30f4447f5fbb23a9a3d77acb60631fab`
+- Budget: one GPU, TP1/R1, four of 1,536 calls completed at the boundary;
+  full-run cap `95,254.39525944367462 GPU-s`; no retry or replacement
+- Supersedes: L-0015 only for latest ACE ordinary-core operational status;
+  the B2 confirmation evidence remains retained

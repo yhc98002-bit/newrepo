@@ -1,8 +1,8 @@
 # Benchmark v2 freeze, build, and launch report
 
 - Report date: 2026-07-21 (Asia/Shanghai)
-- Scope: preregistration freeze, Phase-B build receipts, and the first
-  ledgered ordinary-core batch
+- Scope: preregistration freeze, terminal Phase-B build receipts, and the
+  first ledgered ordinary-core batch for each launched backbone
 - Benchmark result status: **no endpoint has been scored**
 - Human-audit packet: **not assembled**; timing-pilot ingestion is still
   required
@@ -13,15 +13,16 @@
 | --- | --- | --- |
 | A — preregistration v2 | `FROZEN_PROSPECTIVE_DESIGN` | D-0021; `BENCHMARK_PREREG_v2.md` SHA-256 `77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa` |
 | B1 — instruments | `PASS` | `provenance/b1/B1_VALIDATION_REPORT.json` SHA-256 `656c8f960538ac0e35ea85786d1025d2350b581a0adb510a9879b2917506d448` |
-| B2 — adapters | `TERMINAL` | `provenance/b2/build_status_terminal_v2.json` SHA-256 `d31c45f80f2397ee7dc9456d543da0bced560de8b299db1b10d495c4162efe72` |
+| B2 — adapters | `TERMINAL` | amended receipt `provenance/b2/build_status_terminal_v2_ace_amendment.json` SHA-256 `619eb06b21012624b446dfa0d41dc6602c060889406ec431ff52d5a9cb879a34` |
 | B3 — prompts and raters | `PASS; TIMING_PILOT_OFFERED_AWAITING_PI_RESPONSE` | prompt manifest SHA-256 `171d6c757ff3ecec1918d2f032206c2b570b3302dc5ed0100da0db5d22708089`; offer record SHA-256 `645cca46a001b42aace2f20a95d35921c6e26d7c56665cb7c457b30cf57227cb` |
-| C — ordinary core | `LAUNCHED_FIRST_LEDGERED_BATCH` | active run `benchmark-core-v2-20260720t174500z`; immutable shard-0 heartbeat SHA-256 `e0cbcec63a1c400b6798ec0e14b747c65f1c73f51944315a07dc591deb30bea3` |
+| C — ordinary core | `ACE_INCREMENTAL_LAUNCHED_FIRST_LEDGERED_BATCH` | SA3 run complete; active ACE run `benchmark-core-v2-ace-20260721t091500z`; immutable ACE shard-0 heartbeat SHA-256 `b76fb604e0151bb88ccda1bc7badfc566db71bd21638143c5606fda8efc93a6f` |
 
-The active worker continues after the milestone, as required by
-`BENCHMARK_CORE_PROTOCOL_v2.md`. Stable Audio Open 1.0 and ACE-Step v1 have no
-core queue rows. The initial and supplemental state queues are materialized
-but closed. No evaluator, best-of-N selector, or human-audit packet builder is
-running.
+The completed SA3 worker is bound by a 1,536-call completion receipt. The
+active ACE worker continues after its milestone, as required by
+`BENCHMARK_CORE_PROTOCOL_v2.md`. Stable Audio Open 1.0 remains
+`BLOCKED_ON_LICENSE`. The initial and supplemental state queues are
+materialized but closed. No evaluator, best-of-N selector, or human-audit
+packet builder is running.
 
 ## Phase A — frozen preregistration v2
 
@@ -84,21 +85,34 @@ obtained benchmark result.
 
 ## Phase B2 — adapters and bounded mini-smoke
 
-All three rows in `provenance/b2/build_status_terminal_v2.json` are terminal:
+All three rows in the additive amended receipt
+`provenance/b2/build_status_terminal_v2_ace_amendment.json` are terminal:
 
 | Backbone | Build / queue status | Measured or blocking evidence |
 | --- | --- | --- |
 | Stable Audio 3 Medium Base | `MEASURED_READY` / `READY` | D-0020 measured `c_m = 116.34399104863405 s`, `u_m = 25.023961771279573 s`, state capability `PASS` |
 | Stable Audio Open 1.0 | `BLOCKED_ON_LICENSE` / `BLOCKED_ON_LICENSE` | No credential, access acceptance, download, or generation was attempted; cost is not measured and is not treated as zero |
-| ACE-Step v1 | `FAIL_ESCALATED` / `BLOCKED_ON_ENGINEERING_FAILURE` | One retained 30-second request decoded to `29.9073125 s`; exact-duration sanity failed, so the second authorized call was not made and there was no retry |
+| ACE-Step v1 | `MEASURED_READY` / `READY` | D-0026 re-adjudicates S-0008 under the 0.25-second rule; the sole S-0009 confirmation independently passed at the same native `29.9073125 s` decoder duration |
 
-The user ceiling was ten B2 calls; D-0021 tightened the executable cap to two,
-of which one call and one output were consumed. The ACE failure row remains a
-measured engineering-cost row, not a benchmark result: actual NFE 45,
-synchronized wall `27.25068249553442 s`, load wall `182.45191994681954 s`, peak
-allocated/reserved VRAM
-`8,371,735,040 / 10,085,203,968 B`. Its retained WAV SHA-256 is
-`1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458`.
+The user ceiling was ten B2 calls. D-0021 and D-0026 jointly consumed exactly
+two ACE engineering calls and two outputs, with zero retries. Both requested
+30 seconds and decoded to 1,435,551 stereo frames at 48 kHz, exactly
+`29.9073125 s`, an exact `0.0926875 s` error within the amended inclusive
+`0.25 s` rule. S-0009 passed every other frozen sanity check. Its retained
+WAV/provenance SHA-256s are
+`5070dc1b8916cc0cdc7d8fdf533968e72b5fe4198829546bd01fed4525b3a052` /
+`b1c141a59d3eebded4f7cf587d9325c46328bf4fc9d4d459af10321cec08fe67`;
+the terminal result SHA-256 is
+`213ab5fa2937ae263a1c2fbee1276774755a69d60a0e0032f388ed7677720f75`.
+
+S-0009 measured actual NFE 45, synchronized wall
+`30.9385858848691 s`, load wall `241.99800701066852 s`, one-GPU residency
+`281.0608921535313 s`, and peak allocated/reserved VRAM
+`8,371,731,968 / 10,085,203,968 B`. Conservatively combining it with S-0008
+freezes `u_m = 30.9385858848691 s`, `c_m = 272.93659289553762 s`, and a
+1,536-call cap of `95,254.39525944367462 GPU-s`
+(`26.459554238734354 GPU-h`). These are engineering-cost observations, not
+benchmark scores.
 
 The prior an29 submission was `REFUSED_PREFLIGHT` before lock or claim because
 node-local `/tmp` was full. It made zero calls and outputs. The unconsumed plan
@@ -160,7 +174,14 @@ the complete project-local SA3 runtime closure in every new launch claim. The
 correction changes no prompt, seed, NFE, duration, queue, budget, placement,
 evaluator, or retry rule.
 
-### Active immutable bundle
+The recovery SA3 run subsequently completed all 1,536 rows with zero failures.
+`provenance/core/sa3_core_completion_v2.json`, SHA-256
+`4574f439c6f74a7a1b6fac9bf850135f7903f3e49ffd09477e91853826c5bac6`,
+binds its terminal heartbeat, ledger, generation queue, and retained counts.
+D-0027 therefore excludes SA3 from regeneration and authorizes exactly the
+ACE-only incremental run described below.
+
+### SA3 immutable launch bundle (complete)
 
 - Run: `benchmark-core-v2-20260720t174500z`
 - Launch Git: `f8a44fedf4a466d8dea43c81f58bc6fdb2f8bae1`, clean and equal to
@@ -193,7 +214,7 @@ and was rejected before worker creation. The same unconsumed run was then
 started with absolute paths. The rejected submission created no worker,
 request claim, model call, ledger row, or audio and is not a generation retry.
 
-### First ledgered batch
+### SA3 first ledgered batch
 
 Immutable heartbeat snapshot
 `workers/sa3-medium-base/heartbeat-snapshots/
@@ -215,6 +236,60 @@ provenance, sanity, and commit records. They are the first four BASE roots for
 `voice-frame-01-vocal`. No automatic instrument has scored them and no human
 has heard or labeled them through this workflow.
 
+### ACE-Step v1 incremental launch
+
+- Run: `benchmark-core-v2-ace-20260721t091500z`
+- Launch Git: `79d9193b7e67944242395600576d0a3762503ea6`, clean and
+  equal to `origin/main` at launch
+- Incremental config SHA-256:
+  `6e4886b235474ea08083b9a01d24d6cddaad8443ce3e0ab3fef49dedfe5ef23f`
+- Launch claim / run manifest SHA-256s:
+  `9ae7640d42198cd0a985f092d40a06afb63affbdb9963a7ead6c70249ce8a990` /
+  `776cf4ed9bd14a6bc1712d3edc85cf21c27694861810fd8353d3895882aab64d`
+- Generation queue: 1,536 rows, all and only
+  `ACE-Step/ACE-Step-v1-3.5B`, SHA-256
+  `db4ce65dabee9219e30a5c22c0eb56ed7b0a6f9e3ebaf98302f725cb8e8fd37f`
+- Initial state queue: 432 prior-SA3 rows, SHA-256
+  `bc03a333e9cb096747ca7d9392a1a33a1c781315b1c1c698b20c888f74ca00c8`,
+  closed
+- Supplemental state queue: 432 prior-SA3 rows, SHA-256
+  `e7eb055e53183f2f6f85bd6ede586e9ed22a390a07cc149bdb121261961da8c1`,
+  locked
+- Placement: `an12`, physical GPU 4 exposed as logical GPU 0, TP1, one
+  replica; worker PID at launch `3426125`
+- Placement rationale: ACE-Step v1 fits one A800. Immediately before launch,
+  GPU 4 had 81,226 MiB free, no compute PID, and 0% utilization; TP1/R1 leaves
+  ample headroom and does not alter neighboring processes
+
+Preparation made zero model calls and created no claims or WAVs. The detached
+worker then loaded once in `123.0669956356287 s` and continued beyond the
+first shard under the no-retry and `95,254.39525944367462 GPU-s` cap.
+
+The immutable first-shard heartbeat
+`workers/ace-step-v1/heartbeat-snapshots/
+shard-000000-b76fb604e0151bb88ccda1bc7badfc566db71bd21638143c5606fda8efc93a6f.json`
+has SHA-256
+`b76fb604e0151bb88ccda1bc7badfc566db71bd21638143c5606fda8efc93a6f`.
+Its immutable shard record has SHA-256
+`1466cec9a528e157a7ead46fcfde879eba357ef10f3149c2af4858e1d41d5ac2`.
+The boundary records four completed, zero failed, `RUNNING`, cumulative
+synchronized call wall `11.75711365789175 s`, peak allocated/reserved VRAM
+`8,544,569,856 / 10,085,203,968 B`, and ledger tail SHA-256
+`4d0a91627c3b4175ee5891ded72ea52f30f4447f5fbb23a9a3d77acb60631fab`.
+
+| Root | Actual NFE | Synchronized wall (s) | WAV SHA-256 | Commit SHA-256 |
+| --- | ---: | ---: | --- | --- |
+| 0 | 45 | 3.715504363179207 | `563473b06c7d84a9e550e8ff6ba761d7aa3e82a9945cef12caf33cfd9bd0a5ec` | `c67d9932ecae50834b1c1d41f47afa0c41bc07ab96a1470b701eb12082a8be3f` |
+| 1 | 45 | 2.7087645642459393 | `f2cf0ef8142404b83e3f74d3411a44fbbff4987718d3b4cc63b817fa33ac1f9b` | `180b424c34d2a7db55a0d06e4009ee390a8542def5a5f4138bfba43d4730affc` |
+| 2 | 45 | 2.6346603482961655 | `080659bc3e5ae984604132f0227dd1d475e6b2c47d1ef6cfdce8f3386df7f7ca` | `cf3015dd64fe2306f38b0aac94176df65dfd7eb0ec4505b197edebad95123f3f` |
+| 3 | 45 | 2.6981843821704388 | `746610fd7d90029ca45954cbd8378e6db17503bac3a1faa95ba9a04936d32831` | `c10404c0e9a7d6ba085fab97c170112e7a8e0a86b2301363c80a43e105088a1c` |
+
+All four are retained 48-kHz stereo WAVs at the native
+`29.9073125 s` decoder duration. Each passes the frozen inclusive
+`0.25 s` duration rule and has adjacent hash-bound provenance, sanity, and
+commit records. They are BASE roots 0–3 for `voice-frame-01-vocal`.
+No automatic instrument has scored them and no human label has been obtained.
+
 ## Execution-cost appendix
 
 ### Frozen launch accounting
@@ -223,10 +298,11 @@ has heard or labeled them through this workflow.
 | --- | --- | --- |
 | SA3 foundation calibration | `MEASURED_SINGLETON` | `c_m = 116.34399104863405 s`; `u_m = 25.023961771279573 s` |
 | SA3 ordinary-core cap | frozen formula output | `76,939.90662887692 GPU-s = 21.372196285799145 GPU-h` for 1,536 calls; this is a conservative cap, not an observed final cost |
-| ACE-Step v1 B2 failed row | `MEASURED_FAILURE_ROW_NOT_QUEUE_ELIGIBLE` | load `182.45191994681954 s`; call `27.25068249553442 s`; NFE 45; no core queue |
+| ACE-Step v1 calibration | `MEASURED_TWO_OBSERVATIONS_READY` | conservative `c_m = 272.93659289553762 s`; `u_m = 30.9385858848691 s` |
+| ACE-Step v1 ordinary-core cap | frozen formula output | `95,254.39525944367462 GPU-s = 26.459554238734354 GPU-h` for 1,536 calls; conservative cap, not observed final cost |
 | Stable Audio Open 1.0 | `NOT_MEASURED_BLOCKED_ON_LICENSE` | no cost imputation and no core queue |
 
-### Obtained launch measurements at first-batch boundary
+### SA3 obtained launch measurements at first-batch boundary
 
 | Measurement | Obtained value |
 | --- | ---: |
@@ -240,6 +316,22 @@ has heard or labeled them through this workflow.
 
 These are measured launch facts through the first completed shard only. They
 do not replace the frozen full-run cap and do not support p95 claims.
+
+### ACE-Step v1 obtained launch measurements at first-batch boundary
+
+| Measurement | Obtained value |
+| --- | ---: |
+| Model-load wall | `123.0669956356287 s` |
+| Four synchronized call walls | `11.75711365789175 s` |
+| Total NFE | `180` |
+| Peak allocated VRAM | `8,544,569,856 B` |
+| Peak reserved VRAM | `10,085,203,968 B` |
+| Completed / failed at immutable boundary | `4 / 0` |
+| GPUs / TP / replicas | `1 / 1 / 1` |
+
+These are measured launch facts through ACE shard 0 only. The resident run
+continues under the frozen cap; this boundary does not support a final-cost or
+p95 claim.
 
 ### PI-minute accounting
 
@@ -261,27 +353,28 @@ auditing and endpoint scoring have not begun.
 
 ## Verification
 
-Before the recovery launch commit:
+Before the D-0027 ACE launch commit:
 
 ```text
 /HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m pytest -q
-242 passed, 111 subtests passed
+278 passed, 111 subtests passed
 
 /HOME/paratera_xy/pxy1289/sa3_foundation_runtime/env/bin/python -m ruff check .
 All checks passed
 ```
 
-The focused relaunch gate additionally verifies every frozen runtime identity
-in D-0024 and exercises public metadata drift, imported module-build drift,
-and the flash-attention special-case boundary. A final full-suite receipt is
-recorded after this report and its append-only governance entries are added.
+The incremental launch gate additionally verifies the ACE-only allowlist,
+the SA3 completion receipt and prior queue, both explicit 0.25-second
+tolerances, exact measured budget arithmetic, closed state queues, and
+fail-closed drift behavior. The same full suite is run again after this
+report and its append-only governance entries are added.
 
 ## Remaining gates
 
-- The ordinary SA3 worker is active and should be monitored through its
+- The ordinary SA3 run is complete and must not be regenerated.
+- The ACE-Step v1 worker is active and should be monitored through its
   mutable heartbeat; it must not be preempted merely to close this report.
 - Stable Audio Open 1.0 remains `BLOCKED_ON_LICENSE`.
-- ACE-Step v1 remains `BLOCKED_ON_ENGINEERING_FAILURE`.
 - Both state-capture queues remain unauthorized.
 - Timing-pilot ingestion is required before human-audit packet assembly.
 - Automatic evaluators, human labels, fixed-intervention comparisons,

@@ -1422,3 +1422,98 @@ The exact launch inputs are:
 `BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
 
 `HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
+
+## D-0028 — ACE-Step v1 incremental core launched and first batch ledgered
+
+- Date: 2026-07-21
+- Status: accepted execution milestone; resident ACE worker continues
+- Authority: D-0027 exact ACE-only launch package
+- Supersedes: D-0027 only for ACE ordinary-core launch status
+
+Run `benchmark-core-v2-ace-20260721t091500z` was prepared with zero model
+calls from clean Git `79d9193b7e67944242395600576d0a3762503ea6`, equal
+to `origin/main`. Its config, launch claim, run manifest, generation queue,
+initial state queue, and supplemental state queue SHA-256s are respectively:
+
+1. `6e4886b235474ea08083b9a01d24d6cddaad8443ce3e0ab3fef49dedfe5ef23f`
+2. `9ae7640d42198cd0a985f092d40a06afb63affbdb9963a7ead6c70249ce8a990`
+3. `776cf4ed9bd14a6bc1712d3edc85cf21c27694861810fd8353d3895882aab64d`
+4. `db4ce65dabee9219e30a5c22c0eb56ed7b0a6f9e3ebaf98302f725cb8e8fd37f`
+5. `bc03a333e9cb096747ca7d9392a1a33a1c781315b1c1c698b20c888f74ca00c8`
+6. `e7eb055e53183f2f6f85bd6ede586e9ed22a390a07cc149bdb121261961da8c1`
+
+The 1,536-row generation queue contains all and only
+`ACE-Step/ACE-Step-v1-3.5B`. The two 432-row state queues are reconstructed
+from the SHA-bound completed SA3 queue; the initial queue remains closed and
+the supplemental queue remains locked. SA3 receives no generation row.
+
+The worker runs on `an12`, physical GPU 4 exposed as logical GPU 0, TP1,
+one replica. Immediately before launch the A800 had 81,226 MiB free, no
+compute PID, and 0% utilization. The load wall was
+`123.0669956356287 s`. The worker is detached as PID `3426125` and
+continues under the frozen no-retry and
+`95,254.39525944367462 GPU-s` cap.
+
+Immutable heartbeat snapshot
+`shard-000000-b76fb604e0151bb88ccda1bc7badfc566db71bd21638143c5606fda8efc93a6f.json`
+has the same SHA-256 as its embedded suffix. The immutable shard record
+SHA-256 is
+`1466cec9a528e157a7ead46fcfde879eba357ef10f3149c2af4858e1d41d5ac2`.
+The boundary records four completed, zero failed, `RUNNING`, synchronized
+call wall `11.75711365789175 s`, peak allocated/reserved VRAM
+`8,544,569,856 / 10,085,203,968 B`, and ledger tail SHA-256
+`4d0a91627c3b4175ee5891ded72ea52f30f4447f5fbb23a9a3d77acb60631fab`.
+
+The four rows are BASE roots 0–3 for `voice-frame-01-vocal`, each with
+actual NFE 45. Their synchronized walls are
+`3.715504363179207`, `2.7087645642459393`,
+`2.6346603482961655`, and `2.6981843821704388 s`. Their retained WAV
+SHA-256s are:
+
+1. `563473b06c7d84a9e550e8ff6ba761d7aa3e82a9945cef12caf33cfd9bd0a5ec`
+2. `f2cf0ef8142404b83e3f74d3411a44fbbff4987718d3b4cc63b817fa33ac1f9b`
+3. `080659bc3e5ae984604132f0227dd1d475e6b2c47d1ef6cfdce8f3386df7f7ca`
+4. `746610fd7d90029ca45954cbd8378e6db17503bac3a1faa95ba9a04936d32831`
+
+Their adjacent commit-record SHA-256s are:
+
+1. `c67d9932ecae50834b1c1d41f47afa0c41bc07ab96a1470b701eb12082a8be3f`
+2. `180b424c34d2a7db55a0d06e4009ee390a8542def5a5f4138bfba43d4730affc`
+3. `cf3015dd64fe2306f38b0aac94176df65dfd7eb0ec4505b197edebad95123f3f`
+4. `c10404c0e9a7d6ba085fab97c170112e7a8e0a86b2301363c80a43e105088a1c`
+
+Every first-shard output is retained, 48-kHz stereo, finite, non-silent,
+provenance-valid, and `29.9073125 s`; every duration deviation is within
+the inclusive `0.25 s` ACE rule. No automatic endpoint has scored these
+outputs and no human label has been obtained. Both state queues, automatic
+evaluation, and human-audit packet assembly remain closed.
+
+`BENCHMARK_PREREG_V2_FROZEN = YES`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_AUTHORIZED = NO`
+
+`ACE_STEP_V1_BUILD_STATUS = MEASURED_READY`
+
+`ACE_STEP_V1_QUEUE_STATUS = READY`
+
+`STABLE_AUDIO_OPEN_1_0_QUEUE_STATUS = BLOCKED_ON_LICENSE`
+
+`STABLE_AUDIO_3_MEDIUM_BASE_QUEUE_STATUS = COMPLETE`
+
+`PHASE_B_STATUS = TERMINAL`
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = YES`
+
+`BENCHMARK_CORE_GENERATION_STATUS = ACE_INCREMENTAL_LAUNCHED_FIRST_LEDGERED_BATCH`
+
+`BENCHMARK_CORE_ACTIVE_RUN_ID = benchmark-core-v2-ace-20260721t091500z`
+
+`BENCHMARK_CORE_AUTHORIZED_MODEL_IDS = ACE-Step/ACE-Step-v1-3.5B`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_INITIAL_QUEUE_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
