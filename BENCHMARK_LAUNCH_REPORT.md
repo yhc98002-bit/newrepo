@@ -380,3 +380,115 @@ report and its append-only governance entries are added.
 - Automatic evaluators, human labels, fixed-intervention comparisons,
   best-of-N baselines, and the eligibility gate remain unrun; this report
   makes no benchmark-performance claim.
+
+## Postlaunch addendum — 2026-07-22
+
+This addendum preserves the historical freeze and first-batch sections above.
+It updates only the subsequently obtained runtime state; in particular, the
+original header's “no endpoint has been scored” and “ACE worker is active”
+statements describe the 2026-07-21 report boundary, not this later boundary.
+Detailed hash and path evidence is in `SCORING_STATE_LANES_REPORT.md`.
+
+### Current phase status
+
+| Phase or lane | Postlaunch status |
+| --- | --- |
+| Ordinary SA3 core | `COMPLETE; 1,536/1,536; ZERO FAILURES` |
+| Ordinary ACE core | `COMPLETE; 1,536/1,536; ZERO FAILURES` |
+| Automatic scoring | `SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE` |
+| SA3 formal state capture | `FAILED_STOPPED AT FIRST RESUME; NO RETRY` |
+| ACE state capability | `PASS; SOLE PREFLIGHT ATTEMPT CONSUMED` |
+| ACE formal state capture | `INITIAL QUEUE PREPARED/AUTHORIZED; EXECUTION NOT STARTED` |
+| Human-audit packet | `ARMED; WAITING ON TIMING PILOT AND SCORING STRATA` |
+| Stable Audio Open 1.0 | `BLOCKED_ON_LICENSE` |
+
+The ordinary ACE worker ended naturally without intervention. Its completion
+receipt `provenance/core/ace_core_completion_v2.json`, SHA-256
+`813c81219c7bcf3035f377248afd6a4996de1a6c2c3cbc1b5c396888149dc2a0`,
+binds all 384 completed shards, 1,536 completed calls, zero failures, 1,536
+retained WAVs, the complete heartbeat, queue, and ledger. Its final measured
+synchronized GPU time was `4,063.758026678115 s` on an12 GPU 4, TP1/R1.
+
+D-0033 records the sole ACE state preflight as `PASS`: four calls/four clips,
+three separate-process resumes, no retry, exact waveform equivalence at all
+25/50/75% checkpoints (`max_abs_error = 0.0`, infinite SNR),
+`309.50720739737153 s` synchronized GPU time, and
+`364.1350744701922 s` exclusive one-GPU occupancy. Terminal/result SHA-256s
+are
+`69afb2851dbe5b90e6c4c71cc5c4581740bce4b88a4aaab42a410c69c7f8bb7d`
+and
+`700ec8e32bd200d91f1345fb72d76b69c74678849152367f7f1661e2236398b9`.
+A fresh ACE-only queue was then materialized at
+`.../state-capture-v2/ace-state-v2-001/queues/initial/`: 144 prefix groups,
+432 units, 36 prompt-grouped fold rows, and 1,296 replicated-action rows.
+Its manifest SHA-256 is
+`62c215ae38f0753198dcfcad36bebb8afeb669b11d170249c4be974ae7dd6e6a`;
+it reports zero model calls and execution not started.
+
+The SA3 formal queue was materialized and launched on an12 GPU 4, but the
+worker failed closed on its first resume after a canonical checkpoint rename
+left the state sidecar bound to the old filename. Its retained heartbeat is
+`FAILED_STOPPED`, with zero formal units completed and one failed. No retry
+was attempted, the failed run remains at
+`.../state-capture-v2/sa3-state-v2-001/`, and no rerun authority exists. The
+code correction and regression test are committed and pushed at
+`61ddecf457ad5902fd9bf529a121411dd41ac043`, but are not an obtained rerun
+result.
+
+Automatic scoring has produced the integrity-axis first prevalence table at
+`.../automatic-scoring-v2-001/tables/integrity-prevalence-first.json`,
+SHA-256
+`2caa3e375a222fd1c7d4d6e7aab516aa6c18cc7d967a9181d7aafebfa8702018`.
+It is an automatic-DSP-only table with prompt-cluster intervals and no human-
+gold claim. All four tempo feature shards are complete. Initial vocal parts 0
+and 1 failed before shard publication on a label-set equality bug; the
+retained failures are implementation evidence, not model outcomes. After the
+focused fix was committed at `61ddecf457ad5902fd9bf529a121411dd41ac043`,
+all four corrected 240-row vocal shards completed.
+
+Final aggregation is terminal for the two available backbones. The full paths
+share this root:
+
+```text
+/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/
+runs/scoring-v2/automatic-scoring-v2-001/
+```
+
+- `tables/prevalence.json`: 192 rows,
+  `AUTOMATIC_PREVALENCE_COMPLETE`, SHA-256
+  `0be7513c018c4e6e088de96960b892e1cd94f2312fa2cca9abd16cdb9a402b9c`;
+- `tables/evaluator-audit.json`: 16 rows,
+  `FRESH_OUTPUT_OPERATIONALIZATION_DISCORDANCE_ONLY`, SHA-256
+  `b7baa6089170ba7b1f7a2785c9fd9a30413e048283bec22f99959c8059eb3094`;
+- `tables/human-audit-candidate-index.json`: 2,496 rows, SHA-256
+  `4538d75aea8e245affffbace63ff9f214598cdfa284ed95052827ea1a4978bda`;
+- `scoring-status.json`: `SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE`,
+  SHA-256
+  `9fc9b01e19af41bb588ef4feb3a88da1d3de9540a087e730a17ce3d65b3789b6`.
+
+Every prevalence/audit status is automatic-only and denies human-gold claims;
+the evaluator audit additionally sets `accuracy_claim_authorized = false`.
+The candidate index has 1,248 SA3 and 1,248 ACE rows but no SAO rows, so the
+frozen three-primary-backbone human strata remain incomplete.
+
+The human-packet watcher remains armed. Its heartbeat is
+`.../control/human-packet-autoassembly-v2/heartbeat.json` and reports that
+both the absent timing-pilot receipt and missing final scoring strata keep
+assembly closed. The scorer's terminal artifacts exist, but SAO's primary
+strata remain missing. No packet or human labels were produced.
+
+Stable Audio Open 1.0 remains `BLOCKED_ON_LICENSE`. The required human path
+is unchanged: PI browser review and explicit acceptance of the displayed
+terms; a PI-controlled least-privilege token kept outside Git/logs/chat;
+proxy-wrapped acquisition of the exact revision into a new no-clobber
+directory; a path/size/SHA/license receipt matching
+`provenance/b2/sao_access_receipt.schema.json`; offline verification; token
+removal; and a new project decision. No workaround or substitute is allowed.
+
+All CUDA work in this addendum used an12 physical GPUs 4–7 only, TP1/R1, with
+cooperative locks, live idle/headroom checks, and queue-don't-preempt. GPUs
+0–3 and neighboring jobs were untouched. After the narrow state-sidecar and
+PANNs-label fixes and these report edits, the repository-wide suite completed
+with `329 passed, 111 subtests passed in 130.81 s`. A focused run covering the
+lane reports and both changed modules also passed all 17 collected tests, and
+Ruff passed.
