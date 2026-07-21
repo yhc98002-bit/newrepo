@@ -13,7 +13,7 @@ import soundfile as sf
 
 from backbones.contracts import GenerationMeasurement
 from benchmark_core.adapter_bridge import BackboneCoreBridge
-from benchmark_core.artifacts import StagedGeneration, commit_generation
+from benchmark_core.artifacts import StagedGeneration, basic_audio_sanity, commit_generation
 from benchmark_core.claims import AlreadyClaimed, CallClaimStore, HardCapReached
 from benchmark_core.config import (
     ACE_MODEL_ID,
@@ -41,7 +41,9 @@ from benchmark_core.heartbeat import (
     validate_heartbeat,
 )
 from benchmark_core.launcher import (
+    GitLaunchState,
     LaunchAuthorizationError,
+    prepare_run,
     validate_external_launch_claim,
     validate_run_bundle,
     verify_decision_authorization,
@@ -200,6 +202,125 @@ def _load_test_config(path: Path):
     )
 
 
+def _write_completed_sa3_fixture(tmp_path: Path, config_path: Path) -> tuple[Path, Path]:
+    run_dir = tmp_path / "completed-sa3-run"
+    generation = build_queue(
+        config_path,
+        run_dir / "queues" / "generation",
+        authorized_model_ids=(SA3_MODEL_ID,),
+    )
+    heartbeat_path = run_dir / "workers" / "sa3-medium-base" / "heartbeat.json"
+    tail_sha = "8" * 64
+    _write_json(
+        heartbeat_path,
+        {
+            "completed": 1_536,
+            "failed": 0,
+            "last_ledger_sha256": tail_sha,
+            "run_id": "completed-sa3-run",
+            "state": "COMPLETE",
+        },
+    )
+    ledger_path = run_dir / "ledger.jsonl"
+    ledger_path.write_text(
+        json.dumps({"ledger_row_sha256": tail_sha}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    generation_path = Path(generation["queue_path"])
+    generation_manifest_path = generation_path.parent / "queue-manifest.json"
+    receipt_path = tmp_path / "sa3-completion.json"
+    _write_json(
+        receipt_path,
+        {
+            "completed_calls": 1_536,
+            "failed_calls": 0,
+            "generation_queue": {
+                "manifest_path": str(generation_manifest_path),
+                "manifest_sha256": _sha(generation_manifest_path),
+                "path": str(generation_path),
+                "row_count": 1_536,
+                "sha256": _sha(generation_path),
+            },
+            "heartbeat": {
+                "path": str(heartbeat_path),
+                "sha256": _sha(heartbeat_path),
+            },
+            "ledger": {
+                "path": str(ledger_path),
+                "row_count": 1,
+                "sha256": _sha(ledger_path),
+                "tail_sha256": tail_sha,
+            },
+            "model_id": SA3_MODEL_ID,
+            "retained_counts": {
+                "commit_records": 1_536,
+                "request_claims": 1_536,
+                "wav_files": 1_536,
+            },
+            "run_dir": str(run_dir),
+            "run_id": "completed-sa3-run",
+            "schema_version": 1,
+            "status": "COMPLETE",
+        },
+    )
+    return receipt_path, generation_path
+
+
+def _configure_ace_incremental(
+    config_path: Path,
+    completion_receipt: Path,
+) -> None:
+    terminal_path = config_path.parent / "phase-b-terminal.json"
+    terminal = json.loads(terminal_path.read_text(encoding="utf-8"))
+    terminal["models"][ACE_MODEL_ID] = {
+        "build_status": "MEASURED_READY",
+        "cold_plus_first_seconds": 10.0,
+        "cost_status": "MEASURED",
+        "mini_smoke_status": "MEASURED_MINI_SMOKE_PASS",
+        "queue_status": "READY",
+        "resident_unit_seconds": 2.0,
+    }
+    _write_json(terminal_path, terminal)
+    raw = json.loads(config_path.read_text(encoding="utf-8"))
+    raw["phase_b_terminal"]["sha256"] = _sha(terminal_path)
+    raw["execution"]["authorized_model_ids"] = [ACE_MODEL_ID]
+    raw["execution"]["prior_model_completions"] = {
+        SA3_MODEL_ID: {
+            "path": str(completion_receipt),
+            "sha256": _sha(completion_receipt),
+        }
+    }
+    raw["models"][0]["core_execution"]["duration_tolerance_seconds"] = 0.25
+    ace_adapter = ROOT / "configs" / "backbones" / "ace_step_v1.json"
+    raw["models"][2]["queue_status"] = "READY"
+    raw["models"][2]["core_execution"] = {
+        "adapter_config_path": str(ace_adapter),
+        "adapter_config_sha256": _sha(ace_adapter),
+        "budget": {
+            "cold_plus_first_seconds": 10.0,
+            "gpu_seconds_cap": 10.0 + 1_535 * 4.0,
+            "resident_unit_seconds": 2.0,
+            "scheduled_calls": 1_536,
+        },
+        "duration_tolerance_seconds": 0.25,
+        "expected_channels": 2,
+        "placement": {
+            "lock_root": str(config_path.parent / "locks"),
+            "logical_gpu_id": 0,
+            "maximum_idle_utilization_percent": 5,
+            "minimum_free_vram_bytes": 60_000_000_000,
+            "node": "an12",
+            "physical_gpu_id": 4,
+            "post_load_reserve_bytes": 20_000_000_000,
+            "replica_count": 1,
+            "required_gpu_name_substring": "A800",
+            "tp_width": 1,
+        },
+        "state_capture_status": "AUTOMATIC_OUTPUT_ONLY",
+    }
+    _write_json(config_path, raw)
+
+
 def test_strict_config_binds_statistics_state_and_exact_budget(tmp_path: Path) -> None:
     path = _core_config(tmp_path)
     config = _load_test_config(path)
@@ -212,6 +333,9 @@ def test_strict_config_binds_statistics_state_and_exact_budget(tmp_path: Path) -
     assert model.budget.reservation_for_call(1) == 4.0
     assert len(config.state_capture.eligible_prompt_ids) == 36
     assert config.state_capture.conditions == ("BASE",)
+    assert config.authorized_model_ids == (SA3_MODEL_ID,)
+    assert config.prior_model_completions == {}
+    assert model.duration_tolerance_seconds == 0.0
     assert config.phase_b_terminal.model_queue_statuses == {
         ACE_MODEL_ID: BLOCKED_ON_ENGINEERING_FAILURE,
         SA3_MODEL_ID: "READY",
@@ -230,9 +354,10 @@ def test_phase_b_terminal_receipt_controls_exact_model_queue_statuses(tmp_path: 
     receipt_path = tmp_path / "phase-b-terminal.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     receipt["models"][ACE_MODEL_ID] = {
-        "build_status": "MEASURED_MINI_SMOKE_PASS",
+        "build_status": "MEASURED_READY",
         "cold_plus_first_seconds": 10.0,
         "cost_status": "MEASURED",
+        "mini_smoke_status": "MEASURED_MINI_SMOKE_PASS",
         "queue_status": "READY",
         "resident_unit_seconds": 2.0,
     }
@@ -249,9 +374,10 @@ def test_phase_b_measured_ace_pass_can_enter_ready_queue(tmp_path: Path) -> None
     receipt_path = tmp_path / "phase-b-terminal.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     receipt["models"][ACE_MODEL_ID] = {
-        "build_status": "MEASURED_MINI_SMOKE_PASS",
+        "build_status": "MEASURED_READY",
         "cold_plus_first_seconds": 10.0,
         "cost_status": "MEASURED",
+        "mini_smoke_status": "MEASURED_MINI_SMOKE_PASS",
         "queue_status": "READY",
         "resident_unit_seconds": 2.0,
     }
@@ -269,6 +395,7 @@ def test_phase_b_measured_ace_pass_can_enter_ready_queue(tmp_path: Path) -> None
             "resident_unit_seconds": 2.0,
             "scheduled_calls": 4,
         },
+        "duration_tolerance_seconds": 0.25,
         "expected_channels": 2,
         "placement": {
             "lock_root": str(tmp_path / "locks"),
@@ -290,6 +417,54 @@ def test_phase_b_measured_ace_pass_can_enter_ready_queue(tmp_path: Path) -> None
         ACE_MODEL_ID,
         SA3_MODEL_ID,
     }
+
+
+def test_incremental_config_requires_completion_and_exact_amended_tolerance(
+    tmp_path: Path,
+) -> None:
+    path = _core_config(tmp_path)
+    completion_receipt, _ = _write_completed_sa3_fixture(tmp_path, path)
+    _configure_ace_incremental(path, completion_receipt)
+    config = _load_test_config(path)
+    assert config.authorized_model_ids == (ACE_MODEL_ID,)
+    assert set(config.prior_model_completions) == {SA3_MODEL_ID}
+    tolerances = {
+        model.model_id: model.duration_tolerance_seconds
+        for model in config.models
+        if model.queue_status == "READY"
+    }
+    assert tolerances == {SA3_MODEL_ID: 0.25, ACE_MODEL_ID: 0.25}
+
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["execution"]["prior_model_completions"] = {}
+    _write_json(path, raw)
+    with pytest.raises(CoreConfigurationError, match="READY-but-excluded"):
+        _load_test_config(path)
+
+    raw["execution"]["prior_model_completions"] = {
+        SA3_MODEL_ID: {
+            "path": str(completion_receipt),
+            "sha256": _sha(completion_receipt),
+        }
+    }
+    raw["models"][2]["core_execution"]["duration_tolerance_seconds"] = 0.250001
+    _write_json(path, raw)
+    with pytest.raises(CoreConfigurationError, match="exceeds"):
+        _load_test_config(path)
+
+
+def test_phase_b_receipt_path_is_flexible_but_hash_bound(tmp_path: Path) -> None:
+    path = _core_config(tmp_path)
+    source = tmp_path / "phase-b-terminal.json"
+    receipt = tmp_path / "receipts" / "phase-b-terminal-amended.json"
+    _write_json(receipt, json.loads(source.read_text(encoding="utf-8")))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["execution"]["run_root"] = str(tmp_path.parent / f"{tmp_path.name}-external-runs")
+    raw["phase_b_terminal"]["path"] = "receipts/phase-b-terminal-amended.json"
+    raw["phase_b_terminal"]["sha256"] = _sha(receipt)
+    _write_json(path, raw)
+    config = load_core_execution_config(path, repo_root=tmp_path)
+    assert config.phase_b_terminal.path == receipt.resolve()
 
 
 def test_initial_and_supplemental_state_tiers_are_separate_and_locked(
@@ -368,6 +543,7 @@ def test_run_bundle_binds_run_root_and_all_generation_and_state_bytes(tmp_path: 
         }
 
     claim = {
+        "authorized_model_ids": list(config.authorized_model_ids),
         "config_sha256": config.source_sha256,
         "git_head": "b" * 40,
         "queue_bindings": {
@@ -378,6 +554,7 @@ def test_run_bundle_binds_run_root_and_all_generation_and_state_bytes(tmp_path: 
         "run_id": "run",
     }
     manifest = {
+        "authorized_model_ids": list(config.authorized_model_ids),
         "config_sha256": config.source_sha256,
         "generation_queue_manifest": generation,
         "git_commit": "b" * 40,
@@ -394,6 +571,151 @@ def test_run_bundle_binds_run_root_and_all_generation_and_state_bytes(tmp_path: 
     tampered["generation_queue_manifest"] = dict(generation, row_count=1_535)
     with pytest.raises(LaunchAuthorizationError, match="manifest bytes disagree"):
         validate_run_bundle(run_dir, tampered, claim, config=config)
+
+
+def test_incremental_bundle_executes_only_ace_and_sources_closed_sa3_state(
+    tmp_path: Path,
+) -> None:
+    config_path = _core_config(tmp_path)
+    completion_receipt, completed_sa3_queue = _write_completed_sa3_fixture(
+        tmp_path,
+        config_path,
+    )
+    _configure_ace_incremental(config_path, completion_receipt)
+    config = _load_test_config(config_path)
+    run_dir = tmp_path / "incremental-run"
+    generation = build_queue(
+        config_path,
+        run_dir / "queues" / "generation",
+        authorized_model_ids=config.authorized_model_ids,
+    )
+    generation_rows = load_queue(Path(generation["queue_path"]))
+    assert len(generation_rows) == 1_536
+    assert {row["model_id"] for row in generation_rows} == {ACE_MODEL_ID}
+    state_source_rows = generation_rows + load_queue(completed_sa3_queue)
+    initial = build_state_capture_queue(
+        state_source_rows,
+        config.state_capture,
+        run_dir / "queues" / "state-initial",
+        root_indices=config.state_capture.initial_root_indices,
+        tier="INITIAL",
+        authorization_status="CLOSED_AWAITING_SEPARATE_STATE_AUTHORIZATION",
+    )
+    supplemental = build_state_capture_queue(
+        state_source_rows,
+        config.state_capture,
+        run_dir / "queues" / "state-supplemental",
+        root_indices=config.state_capture.doubling_root_indices,
+        tier="SUPPLEMENTAL",
+        authorization_status=(
+            "SUPPLEMENTAL_LOCKED_UNLESS_INITIAL_GATE_IS_INCONCLUSIVE_UNDERPOWERED"
+        ),
+    )
+
+    def binding(record: dict, manifest_name: str) -> dict:
+        queue_path = Path(record["queue_path"])
+        manifest_path = queue_path.parent / manifest_name
+        return {
+            "manifest_path": str(manifest_path),
+            "manifest_sha256": _sha(manifest_path),
+            "queue_path": str(queue_path),
+            "queue_sha256": _sha(queue_path),
+            "row_count": record["row_count"],
+        }
+
+    claim = {
+        "authorized_model_ids": [ACE_MODEL_ID],
+        "config_sha256": config.source_sha256,
+        "git_head": "b" * 40,
+        "queue_bindings": {
+            "generation": binding(generation, "queue-manifest.json"),
+            "state_capture_initial": binding(initial, "state-capture-manifest.json"),
+            "state_capture_supplemental": binding(
+                supplemental,
+                "state-capture-manifest.json",
+            ),
+        },
+        "run_id": "incremental-run",
+    }
+    manifest = {
+        "authorized_model_ids": [ACE_MODEL_ID],
+        "config_sha256": config.source_sha256,
+        "generation_queue_manifest": generation,
+        "git_commit": "b" * 40,
+        "run_id": "incremental-run",
+        "state_capture_initial_manifest": initial,
+        "state_capture_supplemental_manifest": supplemental,
+        "status": "PREPARED_NO_MODEL_CALLS",
+    }
+    validated = validate_run_bundle(run_dir, manifest, claim, config=config)
+    assert validated["generation"]["row_count"] == 1_536
+    initial_rows = load_state_capture_queue(Path(initial["queue_path"]))
+    assert {row["model_id"] for row in initial_rows} == {SA3_MODEL_ID}
+    assert initial["authorization_status"].startswith("CLOSED_")
+    assert supplemental["authorization_status"].startswith("SUPPLEMENTAL_LOCKED_")
+
+    tampered_claim = dict(claim, authorized_model_ids=[SA3_MODEL_ID])
+    with pytest.raises(LaunchAuthorizationError, match="allowlist"):
+        validate_run_bundle(run_dir, manifest, tampered_claim, config=config)
+
+    sa3_model = next(model for model in config.models if model.model_id == SA3_MODEL_ID)
+    with pytest.raises(ValueError, match="authorized-model allowlist"):
+        BenchmarkWorker(
+            run_dir=run_dir,
+            run_id="incremental-run",
+            git_commit="b" * 40,
+            config_sha256=config.source_sha256,
+            prompt_manifest_sha256="d" * 64,
+            model=sa3_model,
+            adapter=SimpleNamespace(model_id=SA3_MODEL_ID),
+            heartbeat_interval_seconds=30,
+            heartbeat_stale_after_seconds=90,
+            launch_claim_path=run_dir / "unused-claim.json",
+            authorized_model_ids=config.authorized_model_ids,
+        )
+
+
+def test_prepare_run_refuses_prior_queue_drift_after_config_load(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config_path = _core_config(tmp_path)
+    completion_receipt, completed_sa3_queue = _write_completed_sa3_fixture(
+        tmp_path,
+        config_path,
+    )
+    _configure_ace_incremental(config_path, completion_receipt)
+    loaded_config = _load_test_config(config_path)
+
+    def load_then_drift(*_args, **_kwargs):
+        with completed_sa3_queue.open("a", encoding="utf-8") as handle:
+            handle.write("{}\n")
+        return loaded_config
+
+    monkeypatch.setattr(
+        "benchmark_core.launcher.load_core_execution_config",
+        load_then_drift,
+    )
+    monkeypatch.setattr(
+        "benchmark_core.launcher.observe_clean_origin_main",
+        lambda _root: GitLaunchState(head="b" * 40, origin_main="b" * 40),
+    )
+    monkeypatch.setattr(
+        "benchmark_core.launcher.verify_decision_authorization",
+        lambda *_args, **_kwargs: {},
+    )
+    decisions = tmp_path / "DECISIONS.md"
+    decisions.write_text("# test-only authorization stub\n", encoding="utf-8")
+
+    with pytest.raises(LaunchAuthorizationError, match="drifted after config validation"):
+        prepare_run(
+            config_path,
+            run_id="incremental-drift-test",
+            decisions_path=decisions,
+            decision_id="D-TEST",
+            frozen_files=(),
+            repo_root=ROOT,
+        )
 
 
 def _request(index: int, model_id: str = "model") -> dict:
@@ -675,7 +997,7 @@ def test_artifact_commit_enforces_native_stereo_format_and_no_clobber(tmp_path: 
     too_long_request["request_sha256"] = hashlib.sha256(
         canonical_json(too_long_request).encode()
     ).hexdigest()
-    with pytest.raises(ValueError, match="frame count"):
+    with pytest.raises(ValueError, match="duration error"):
         commit_generation(
             tmp_path / "artifacts",
             too_long_request,
@@ -683,6 +1005,108 @@ def test_artifact_commit_enforces_native_stereo_format_and_no_clobber(tmp_path: 
             expected_sample_rate=44_100,
             expected_channels=2,
         )
+
+
+def test_ace_native_duration_passes_core_tolerance_and_overage_fails(
+    tmp_path: Path,
+) -> None:
+    sample_rate = 48_000
+    native_frames = 1_435_551
+    native_path = tmp_path / "ace-native.wav"
+    sf.write(
+        native_path,
+        np.full((native_frames, 2), 0.01, dtype=np.float32),
+        sample_rate,
+        subtype="FLOAT",
+    )
+    request = {
+        "duration_seconds": 30.0,
+        "model_id": ACE_MODEL_ID,
+        "output_relpath": "ace-step-v1/axis/prompt/base/root-00.wav",
+        "prompt": "prompt",
+        "prompt_id": "prompt",
+        "root_index": 0,
+        "seed": 1,
+        "sequence": 1,
+    }
+    request["request_sha256"] = hashlib.sha256(canonical_json(request).encode()).hexdigest()
+    staged = StagedGeneration(
+        wav_path=native_path,
+        actual_nfe=45,
+        synchronized_wall_seconds=1.0,
+        peak_allocated_bytes=100,
+        peak_reserved_bytes=200,
+        sample_rate=sample_rate,
+        channels=2,
+    )
+    commit = commit_generation(
+        tmp_path / "ace-artifacts",
+        request,
+        staged,
+        expected_sample_rate=sample_rate,
+        expected_channels=2,
+        duration_tolerance_seconds=0.25,
+    )
+    sanity_path = (
+        tmp_path / "ace-artifacts" / request["output_relpath"]
+    ).with_suffix(".sanity.json")
+    sanity = json.loads(sanity_path.read_text(encoding="utf-8"))["sanity"]
+    assert commit["status"] == "COMMITTED"
+    assert sanity["duration_seconds"] == 29.9073125
+    assert sanity["duration_within_tolerance"] is True
+    assert sanity["duration_tolerance_seconds"] == 0.25
+
+    boundary_path = tmp_path / "ace-boundary.wav"
+    sf.write(
+        boundary_path,
+        np.full((1_428_000, 2), 0.01, dtype=np.float32),
+        sample_rate,
+        subtype="FLOAT",
+    )
+    assert basic_audio_sanity(
+        boundary_path,
+        expected_duration_seconds=30.0,
+        expected_sample_rate=sample_rate,
+        expected_channels=2,
+        duration_tolerance_seconds=0.25,
+    )["duration_within_tolerance"] is True
+
+    outside_path = tmp_path / "ace-outside.wav"
+    sf.write(
+        outside_path,
+        np.full((1_427_999, 2), 0.01, dtype=np.float32),
+        sample_rate,
+        subtype="FLOAT",
+    )
+    with pytest.raises(ValueError, match="exceeds"):
+        basic_audio_sanity(
+            outside_path,
+            expected_duration_seconds=30.0,
+            expected_sample_rate=sample_rate,
+            expected_channels=2,
+            duration_tolerance_seconds=0.25,
+        )
+
+    for invalid_tolerance in (-0.001, 0.250001, float("nan"), float("inf"), True):
+        with pytest.raises((TypeError, ValueError), match="tolerance"):
+            basic_audio_sanity(
+                native_path,
+                expected_duration_seconds=30.0,
+                expected_sample_rate=sample_rate,
+                expected_channels=2,
+                duration_tolerance_seconds=invalid_tolerance,
+            )
+
+    with pytest.raises(ValueError, match="artifact maximum"):
+        commit_generation(
+            tmp_path / "rejected-tolerance-artifacts",
+            request,
+            staged,
+            expected_sample_rate=sample_rate,
+            expected_channels=2,
+            duration_tolerance_seconds=0.250001,
+        )
+    assert not (tmp_path / "rejected-tolerance-artifacts").exists()
 
 
 class _FakeLease:
@@ -760,6 +1184,7 @@ def _write_test_launch_claim(path: Path, run_dir: Path) -> None:
     _write_json(
         path,
         {
+            "authorized_model_ids": ["model"],
             "config_sha256": "a" * 64,
             "git_head": "b" * 40,
             "git_origin_main": "b" * 40,
@@ -796,6 +1221,7 @@ def _worker_model(tmp_path: Path, scheduled_calls: int) -> ModelExecutionConfig:
         state_capture_status="AUTOMATIC_OUTPUT_ONLY",
         expected_sample_rate=44_100,
         expected_channels=2,
+        duration_tolerance_seconds=0.0,
     )
 
 
@@ -810,7 +1236,11 @@ def test_resident_worker_loads_once_and_continues_after_first_batch(
     adapter = _FakeCoreAdapter()
 
     def fake_commit(_root, request, _staged, **kwargs):
-        assert kwargs == {"expected_sample_rate": 44_100, "expected_channels": 2}
+        assert kwargs == {
+            "duration_tolerance_seconds": 0.0,
+            "expected_sample_rate": 44_100,
+            "expected_channels": 2,
+        }
         return {"request_sha256": request["request_sha256"], "status": "COMMITTED"}
 
     monkeypatch.setattr("benchmark_core.worker.commit_generation", fake_commit)
@@ -827,6 +1257,7 @@ def test_resident_worker_loads_once_and_continues_after_first_batch(
         heartbeat_interval_seconds=0.05,
         heartbeat_stale_after_seconds=5,
         launch_claim_path=launch_claim,
+        authorized_model_ids=("model",),
         placement_wait_poll_seconds=0,
         probe=probe,
         lease=lease,
@@ -903,6 +1334,7 @@ def test_worker_waits_on_lock_and_post_preflight_neighbor_without_preemption(
         heartbeat_interval_seconds=0.05,
         heartbeat_stale_after_seconds=5,
         launch_claim_path=launch_claim,
+        authorized_model_ids=("model",),
         placement_wait_poll_seconds=0,
         probe=probe,
         lease=lease,
@@ -943,6 +1375,7 @@ def test_stale_heartbeat_halts_before_request_claim(
         heartbeat_interval_seconds=0.05,
         heartbeat_stale_after_seconds=5,
         launch_claim_path=launch_claim,
+        authorized_model_ids=("model",),
         placement_wait_poll_seconds=0,
         probe=_FakeProbe(),
         lease=_FakeLease(),
@@ -1032,6 +1465,7 @@ def test_decision_and_external_claim_are_hash_bound_and_placeholder_free(
             config_sha256="a" * 64,
             git_commit="b" * 40,
             run_dir=tmp_path,
+            authorized_model_ids=("model",),
         )["status"]
         == "AUTHORIZED_CLEAN_ORIGIN_MAIN"
     )

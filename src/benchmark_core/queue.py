@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -93,7 +93,12 @@ def _model_slug(model: Mapping[str, Any]) -> str:
     return slug
 
 
-def _queue_rows(config: Mapping[str, Any], prompt_root: Path) -> list[dict[str, Any]]:
+def _queue_rows(
+    config: Mapping[str, Any],
+    prompt_root: Path,
+    *,
+    authorized_model_ids: Sequence[str] | None = None,
+) -> list[dict[str, Any]]:
     seed_registry = _read_json(prompt_root / "seed_registry.json")
     namespace = seed_registry.get("namespace")
     if not isinstance(namespace, str) or not namespace:
@@ -102,6 +107,21 @@ def _queue_rows(config: Mapping[str, Any], prompt_root: Path) -> list[dict[str, 
     models = config.get("models")
     if not isinstance(models, list) or not models:
         raise ValueError("core config must contain models")
+    ready_model_ids = {
+        model.get("model_id")
+        for model in models
+        if isinstance(model, dict) and model.get("queue_status") == READY
+    }
+    if authorized_model_ids is None:
+        authorized_ids = ready_model_ids
+    else:
+        authorized_ids = set(authorized_model_ids)
+        if (
+            not authorized_model_ids
+            or len(authorized_ids) != len(authorized_model_ids)
+            or not authorized_ids.issubset(ready_model_ids)
+        ):
+            raise ValueError("authorized_model_ids must uniquely select READY backbones")
     rows: list[dict[str, Any]] = []
     sequence = 0
     model_ids: set[str] = set()
@@ -122,6 +142,8 @@ def _queue_rows(config: Mapping[str, Any], prompt_root: Path) -> list[dict[str, 
             continue
         if status != READY:  # defensive if QUEUE_STATUSES grows later
             raise ValueError(f"queue status is not executable: {status}")
+        if model_id not in authorized_ids:
+            continue
         if not isinstance(model_id, str) or model_id not in seed_registry.get("models", []):
             raise ValueError(f"ready model is absent from seed registry: {model_id!r}")
         before = len(rows)
@@ -180,7 +202,12 @@ def _queue_rows(config: Mapping[str, Any], prompt_root: Path) -> list[dict[str, 
     return rows
 
 
-def build_queue(config_path: Path, output_dir: Path) -> dict[str, Any]:
+def build_queue(
+    config_path: Path,
+    output_dir: Path,
+    *,
+    authorized_model_ids: Sequence[str] | None = None,
+) -> dict[str, Any]:
     """Create an immutable JSONL queue and manifest under an absent directory."""
 
     config_path = config_path.resolve(strict=True)
@@ -200,7 +227,11 @@ def build_queue(config_path: Path, output_dir: Path) -> dict[str, Any]:
     if sha256_file(prompt_root / "seed_registry.json") != expected_hashes.get("seed_registry.json"):
         raise ValueError("seed registry hash mismatch")
 
-    rows = _queue_rows(config, prompt_root)
+    rows = _queue_rows(
+        config,
+        prompt_root,
+        authorized_model_ids=authorized_model_ids,
+    )
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=False)
     _fsync_directory(output_dir.parent)

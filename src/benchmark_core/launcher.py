@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any
 
 from benchmark_core.config import (
-    READY,
     CoreExecutionConfig,
     load_core_execution_config,
     sha256_file,
@@ -167,6 +166,7 @@ def create_external_launch_claim(
     """Bind observed clean Git state after commit without self-reference."""
 
     claim = {
+        "authorized_model_ids": list(config.authorized_model_ids),
         "claimed_at_utc": datetime.now(timezone.utc).isoformat(),
         "config_path": str(config.source_path),
         "config_sha256": config.source_sha256,
@@ -191,6 +191,7 @@ def validate_external_launch_claim(
     config_sha256: str,
     git_commit: str,
     run_dir: Path,
+    authorized_model_ids: Sequence[str],
 ) -> dict[str, Any]:
     """Validate the immutable claim required by every worker process."""
 
@@ -209,6 +210,8 @@ def validate_external_launch_claim(
     for key, expected_value in expected.items():
         if value.get(key) != expected_value:
             raise LaunchAuthorizationError(f"launch claim mismatch: {key}")
+    if value.get("authorized_model_ids") != list(authorized_model_ids):
+        raise LaunchAuthorizationError("launch claim authorized-model allowlist mismatch")
     bindings = value.get("queue_bindings")
     if not isinstance(bindings, dict) or set(bindings) != {
         "generation",
@@ -237,6 +240,11 @@ def validate_run_bundle(
         raise LaunchAuthorizationError("run manifest/config identity mismatch")
     if manifest.get("git_commit") != launch_claim.get("git_head"):
         raise LaunchAuthorizationError("run manifest/claim Git identity mismatch")
+    expected_authorized = list(config.authorized_model_ids)
+    if manifest.get("authorized_model_ids") != expected_authorized:
+        raise LaunchAuthorizationError("run manifest authorized-model allowlist mismatch")
+    if launch_claim.get("authorized_model_ids") != expected_authorized:
+        raise LaunchAuthorizationError("launch claim authorized-model allowlist mismatch")
     bindings = launch_claim.get("queue_bindings")
     assert isinstance(bindings, dict)  # validated by validate_external_launch_claim
     sources = {
@@ -271,13 +279,13 @@ def validate_run_bundle(
         if record.get("row_count") != binding.get("row_count"):
             raise LaunchAuthorizationError(f"{name} row count mismatch")
         validated[name] = dict(binding)
-    ready_ids = {model.model_id for model in config.models if model.queue_status == READY}
     expected_generation_counts = {
-        model_id: EXPECTED_OUTPUTS_PER_READY_BACKBONE for model_id in ready_ids
+        model_id: EXPECTED_OUTPUTS_PER_READY_BACKBONE
+        for model_id in config.authorized_model_ids
     }
     generation_manifest = manifest["generation_queue_manifest"]
     if generation_manifest.get("model_row_counts") != expected_generation_counts:
-        raise LaunchAuthorizationError("generation queue model counts drift from READY set")
+        raise LaunchAuthorizationError("generation queue model counts drift from allowlist")
     if generation_manifest.get("row_count") != sum(expected_generation_counts.values()):
         raise LaunchAuthorizationError("generation queue row count drift")
     expected_state_count = 432 * len(config.state_capture.eligible_model_ids)
@@ -298,7 +306,9 @@ def validate_run_bundle(
         "SUPPLEMENTAL_LOCKED_UNLESS_INITIAL_GATE_IS_INCONCLUSIVE_UNDERPOWERED"
     ):
         raise LaunchAuthorizationError("supplemental state queue is not locked")
-    load_queue(Path(validated["generation"]["queue_path"]))
+    generation_rows = load_queue(Path(validated["generation"]["queue_path"]))
+    if {row["model_id"] for row in generation_rows} != set(config.authorized_model_ids):
+        raise LaunchAuthorizationError("generation queue contains an unauthorized model")
     load_state_capture_queue(Path(validated["state_capture_initial"]["queue_path"]))
     load_state_capture_queue(Path(validated["state_capture_supplemental"]["queue_path"]))
     return validated
@@ -319,10 +329,21 @@ def prepare_run(
         raise ValueError("run_id contains unsafe characters")
     config = load_core_execution_config(config_path, repo_root=repo_root)
     git_state = observe_clean_origin_main(config.repo_root)
+    dynamic_files = [config.source_path, config.phase_b_terminal.path]
+    dynamic_files.extend(
+        model.adapter_config_path
+        for model in config.models
+        if model.model_id in config.authorized_model_ids
+        and model.adapter_config_path is not None
+    )
+    dynamic_files.extend(binding.path for binding in config.prior_model_completions.values())
+    exact_frozen_files = tuple(
+        dict.fromkeys(path.resolve(strict=True) for path in (*dynamic_files, *frozen_files))
+    )
     identities = verify_decision_authorization(
         decisions_path.resolve(strict=True),
         decision_id=decision_id,
-        frozen_files=(config.source_path, *frozen_files),
+        frozen_files=exact_frozen_files,
     )
     run_dir = config.run_root / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
@@ -332,10 +353,35 @@ def prepare_run(
             os.fsync(descriptor)
         finally:
             os.close(descriptor)
-    generation_manifest = build_queue(config.source_path, run_dir / "queues" / "generation")
+    generation_manifest = build_queue(
+        config.source_path,
+        run_dir / "queues" / "generation",
+        authorized_model_ids=config.authorized_model_ids,
+    )
     generation_rows = load_queue(Path(generation_manifest["queue_path"]))
+    state_source_rows = list(generation_rows)
+    generation_model_ids = {row["model_id"] for row in generation_rows}
+    for model_id in config.state_capture.eligible_model_ids:
+        if model_id in generation_model_ids:
+            continue
+        completion = config.prior_model_completions.get(model_id)
+        if completion is None:
+            raise LaunchAuthorizationError(
+                "state-capable excluded model lacks a verified prior generation queue"
+            )
+        try:
+            observed_queue_sha256 = sha256_file(completion.generation_queue_path)
+        except OSError as exc:
+            raise LaunchAuthorizationError(
+                "prior completion generation queue is unavailable at state-row reread"
+            ) from exc
+        if observed_queue_sha256 != completion.generation_queue_sha256:
+            raise LaunchAuthorizationError(
+                "prior completion generation queue drifted after config validation"
+            )
+        state_source_rows.extend(load_queue(completion.generation_queue_path))
     initial_state_manifest = build_state_capture_queue(
-        generation_rows,
+        state_source_rows,
         config.state_capture,
         run_dir / "queues" / "state-capture-initial",
         root_indices=config.state_capture.initial_root_indices,
@@ -343,7 +389,7 @@ def prepare_run(
         authorization_status="CLOSED_AWAITING_SEPARATE_STATE_AUTHORIZATION",
     )
     supplemental_state_manifest = build_state_capture_queue(
-        generation_rows,
+        state_source_rows,
         config.state_capture,
         run_dir / "queues" / "state-capture-supplemental",
         root_indices=config.state_capture.doubling_root_indices,
@@ -382,6 +428,7 @@ def prepare_run(
     )
     manifest = {
         "audio_generation_calls": 0,
+        "authorized_model_ids": list(config.authorized_model_ids),
         "config_sha256": config.source_sha256,
         "generation_queue_manifest": generation_manifest,
         "git_commit": git_state.head,
@@ -399,6 +446,7 @@ def prepare_run(
         config_sha256=config.source_sha256,
         git_commit=git_state.head,
         run_dir=run_dir,
+        authorized_model_ids=config.authorized_model_ids,
     )
     validate_run_bundle(run_dir, manifest, launch_claim, config=config)
     assert launch_claim["status"] == "AUTHORIZED_CLEAN_ORIGIN_MAIN"

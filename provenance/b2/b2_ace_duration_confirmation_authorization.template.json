@@ -1,0 +1,64 @@
+{
+  "authorization_id": "B2-ACE-V1-DURATION-CONFIRMATION-V1-ONE-SHOT",
+  "authorized_at_utc": "REPLACE_WITH_UTC_TIMESTAMP",
+  "benchmark_endpoint": false,
+  "caps": {
+    "max_clip_seconds_requested": 30.0,
+    "max_generated_outputs": 1,
+    "max_gpu_seconds": 1800.0,
+    "max_gpus": 1,
+    "max_model_calls": 1,
+    "max_retries": 0
+  },
+  "decisions_sha256": "REPLACE_WITH_DECISIONS_SHA256_AFTER_DURATION_AMENDMENT_APPEND",
+  "duration_policy": {
+    "ace_step_v1_tolerance_seconds": 0.25,
+    "rule": "abs(decoded_duration_seconds - requested_duration_seconds) <= tolerance_seconds",
+    "stable_audio_3_tolerance_seconds": 0.25
+  },
+  "execution_authorized": "REPLACE_WITH_BOOLEAN_TRUE_ONLY_AFTER_DECISIONS_AUTHORIZATION",
+  "expires_at_utc": "REPLACE_WITH_UTC_TIMESTAMP_NO_MORE_THAN_24_HOURS_AFTER_AUTHORIZATION",
+  "frozen_artifacts": {
+    "ace_adapter": {"path": "src/backbones/ace_step_v1.py", "sha256": "a18aeb11d199656b46a18793e1e75bf03a54d0c135894db46738da0f18d8b0d7"},
+    "ace_config": {"path": "configs/backbones/ace_step_v1.json", "sha256": "b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879"},
+    "authorization_template": {"path": "provenance/b2/b2_ace_duration_confirmation_authorization.template.json", "sha256": "REPLACE_WITH_COMMITTED_TEMPLATE_SHA256"},
+    "benchmark_prereg_v2": {"path": "BENCHMARK_PREREG_v2.md", "sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa"},
+    "common_contracts": {"path": "src/backbones/contracts.py", "sha256": "9368e2044380000e74bbefcd528d2f09fc22ef2b484b6f3b8bf298617b09f2d2"},
+    "common_io": {"path": "src/backbones/io.py", "sha256": "fe3e4d101ef34c846b7b86a2cba9e44f36b839364c99487de209406e7254aa3a"},
+    "common_runtime": {"path": "src/backbones/runtime.py", "sha256": "d2e42754a4599e64d43d9ce43db8cfe057034581db2b5099ca6886d1eeedfeed"},
+    "confirmation_config": {"path": "configs/b2_ace_duration_confirmation_v1.json", "sha256": "REPLACE_WITH_CONFIRMATION_CONFIG_SHA256"},
+    "confirmation_protocol": {"path": "B2_ACE_DURATION_CONFIRMATION_PROTOCOL_v1.md", "sha256": "REPLACE_WITH_CONFIRMATION_PROTOCOL_SHA256"},
+    "confirmation_runner": {"path": "scripts/run_b2_ace_duration_confirmation_v1.py", "sha256": "REPLACE_WITH_CONFIRMATION_RUNNER_SHA256"},
+    "confirmation_wrapper": {"path": "scripts/run_b2_ace_duration_confirmation_v1_with_timeout.py", "sha256": "REPLACE_WITH_CONFIRMATION_WRAPPER_SHA256"},
+    "duration_policy": {"path": "src/audio_duration_policy.py", "sha256": "REPLACE_WITH_DURATION_POLICY_SHA256"},
+    "duration_quantization_provenance": {"path": "provenance/b2/ace_duration_quantization_provenance_v1.json", "sha256": "1e7628491badc2d70cfc8357b7502d1facb6b6ed5b8282e73e60302ef5b9f254"},
+    "duration_readjudication": {"path": "provenance/b2/ace_call0_duration_readjudication_v1.json", "sha256": "be4e3a9d705c1e8cb627b08fec3be28fad6ff4623d530283b7f32056a031129e"},
+    "duration_sanity": {"path": "src/backbones/duration_sanity.py", "sha256": "REPLACE_WITH_DURATION_SANITY_SHA256"},
+    "legacy_b2_runner": {"path": "scripts/run_b2_mini_smoke_v2.py", "sha256": "040d0f75280c7adfbe614f74dab4a236b70068325ea4f85fe20b4b98ad56baff"},
+    "sa3_artifacts": {"path": "src/sa3_smoke/artifacts.py", "sha256": "c51f2417577927180fa86b4282562a4781446a15d32cd466eda9213c7d679df3"},
+    "sa3_audio": {"path": "src/sa3_smoke/audio.py", "sha256": "c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24"},
+    "seed_registry": {"path": "SEED_REGISTRY.md", "sha256": "d9b175296a97e8acca72d124a950c4e2fcd08c2d4287587c5e70c149f24deb97"}
+  },
+  "origin": {
+    "branch": "main",
+    "commit": "REPLACE_WITH_CLEAN_HEAD_EQUAL_TO_LOCAL_ORIGIN_MAIN",
+    "remote_tracking_ref": "origin/main"
+  },
+  "placement": {
+    "node": "REPLACE_WITH_an12_OR_an29",
+    "physical_gpu_id": "REPLACE_WITH_INTEGER_0_THROUGH_7_AFTER_IDLE_PROBE",
+    "placement_justification": "ACE-Step v1 fits one A800; the sole duration-confirmation call uses TP1 and one replica on an idle authorized GPU without disturbing neighboring jobs.",
+    "replica_count": 1,
+    "tensor_parallel_width": 1
+  },
+  "prior_consumed_evidence": "REPLACE_WITH_EXACT_CONFIG_PRIOR_CONSUMED_EVIDENCE_OBJECT",
+  "required_prereg_status": "FROZEN_PROSPECTIVE_DESIGN",
+  "reserved_non_benchmark_seeds": [
+    {"prompt_id": "b2-mini-smoke-engineering-ace-02", "seed": 73193009, "seed_id": "S-0009"}
+  ],
+  "run_id": "b2-ace-v1-duration-confirmation-v1-001",
+  "runtime_environment": "REPLACE_WITH_EXACT_CONFIG_RUNTIME_ENVIRONMENT_OBJECT",
+  "schema_version": 1,
+  "scope": "ACE_STEP_V1_DURATION_CONFIRMATION_NON_BENCHMARK",
+  "source_bindings": "REPLACE_WITH_EXACT_CONFIG_SOURCE_BINDINGS_OBJECT"
+}

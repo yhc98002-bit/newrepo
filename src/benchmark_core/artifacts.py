@@ -16,7 +16,23 @@ from typing import Any
 import numpy as np
 import soundfile as sf
 
+from audio_duration_policy import duration_within_tolerance
 from benchmark_core.queue import canonical_json
+
+MAX_ARTIFACT_DURATION_TOLERANCE_SECONDS = 0.25
+
+
+def _validated_duration_tolerance(value: float) -> float:
+    """Fail closed on tolerance values at the artifact trust boundary."""
+
+    # The shared predicate owns the finite-real and non-negative contract.
+    duration_within_tolerance(1.0, 1.0, value)
+    tolerance = float(value)
+    if tolerance > MAX_ARTIFACT_DURATION_TOLERANCE_SECONDS:
+        raise ValueError(
+            "duration_tolerance_seconds exceeds the 0.25-second artifact maximum"
+        )
+    return tolerance
 
 
 def sha256_file(path: Path) -> str:
@@ -82,9 +98,13 @@ def basic_audio_sanity(
     expected_duration_seconds: float,
     expected_sample_rate: int,
     expected_channels: int,
+    duration_tolerance_seconds: float = 0.0,
 ) -> dict[str, Any]:
     """Decode the complete waveform and reject corrupt, empty, or non-finite audio."""
 
+    duration_tolerance_seconds = _validated_duration_tolerance(
+        duration_tolerance_seconds
+    )
     if not path.is_file():
         raise ValueError(f"audio is absent: {path}")
     info = sf.info(path)
@@ -98,10 +118,16 @@ def basic_audio_sanity(
         raise ValueError("audio metadata is invalid")
     expected_frames = round(expected_duration_seconds * expected_sample_rate)
     observed_duration = info.frames / info.samplerate
-    if info.frames != expected_frames:
+    absolute_duration_error = abs(observed_duration - expected_duration_seconds)
+    within_duration_tolerance = duration_within_tolerance(
+        observed_duration,
+        expected_duration_seconds,
+        duration_tolerance_seconds,
+    )
+    if not within_duration_tolerance:
         raise ValueError(
-            f"audio frame count {info.frames} does not exactly match {expected_frames} "
-            f"for {expected_duration_seconds} seconds"
+            f"audio duration error {absolute_duration_error} seconds exceeds "
+            f"the {duration_tolerance_seconds}-second tolerance"
         )
     waveform, sample_rate = sf.read(path, dtype="float32", always_2d=True)
     if sample_rate != info.samplerate or waveform.shape != (info.frames, info.channels):
@@ -113,12 +139,16 @@ def basic_audio_sanity(
     if not math.isfinite(peak) or not math.isfinite(rms) or rms <= 1e-8:
         raise ValueError("decoded waveform is silent or invalid")
     return {
+        "absolute_duration_error_seconds": absolute_duration_error,
         "channels": info.channels,
+        "duration_tolerance_seconds": duration_tolerance_seconds,
         "duration_seconds": observed_duration,
+        "duration_within_tolerance": within_duration_tolerance,
         "expected_frames": expected_frames,
         "frames": info.frames,
         "peak_absolute": peak,
         "rms": rms,
+        "requested_duration_seconds": expected_duration_seconds,
         "sample_rate": info.samplerate,
         "status": "PASS",
     }
@@ -195,6 +225,7 @@ def commit_generation(
     state_contracts: Sequence[Mapping[str, Any]] = (),
     expected_sample_rate: int,
     expected_channels: int,
+    duration_tolerance_seconds: float = 0.0,
 ) -> dict[str, Any]:
     """Commit all required artifacts without replacing any existing path.
 
@@ -202,6 +233,9 @@ def commit_generation(
     artifacts remain for audit and the durable request claim forbids retry.
     """
 
+    duration_tolerance_seconds = _validated_duration_tolerance(
+        duration_tolerance_seconds
+    )
     root = artifact_root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     request_sha = request.get("request_sha256")
@@ -235,6 +269,7 @@ def commit_generation(
         expected_duration_seconds=duration,
         expected_sample_rate=expected_sample_rate,
         expected_channels=expected_channels,
+        duration_tolerance_seconds=duration_tolerance_seconds,
     )
     state_pairs = _validate_state_contracts(state_contracts, staged.state_artifacts)
     state_records: list[dict[str, Any]] = []
@@ -250,6 +285,7 @@ def commit_generation(
             expected_duration_seconds=duration,
             expected_sample_rate=expected_sample_rate,
             expected_channels=expected_channels,
+            duration_tolerance_seconds=duration_tolerance_seconds,
         )
         _copy_exclusive(artifact.checkpoint_path, checkpoint)
         _copy_exclusive(artifact.preview_path, preview)
@@ -271,6 +307,7 @@ def commit_generation(
         "actual_nfe": staged.actual_nfe,
         "model_id": request.get("model_id"),
         "expected_channels": expected_channels,
+        "duration_tolerance_seconds": duration_tolerance_seconds,
         "expected_sample_rate": expected_sample_rate,
         "peak_allocated_bytes": staged.peak_allocated_bytes,
         "peak_reserved_bytes": staged.peak_reserved_bytes,

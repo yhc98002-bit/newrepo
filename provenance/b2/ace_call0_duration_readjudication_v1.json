@@ -1,0 +1,45 @@
+{
+  "adjudication_id": "ACE-STEP-V1-B2-CALL-00-DURATION-READJUDICATION-V1",
+  "adjudicated_date": "2026-07-21",
+  "audio_generation_calls": 0,
+  "new_duration_rule": {
+    "absolute_error_seconds": 0.0926875,
+    "formula": "abs(observed_duration_seconds - requested_duration_seconds) <= tolerance_seconds",
+    "observed_duration_seconds": 29.9073125,
+    "pass": true,
+    "requested_duration_seconds": 30.0,
+    "tolerance_seconds": 0.25
+  },
+  "original_immutable_result": {
+    "audio_sanity_status": "FAIL",
+    "call_claim_sha256": "93fc96218ef13524237f3a67d2313fed6e18e6dd55c9a919cabcc63198ae0123",
+    "decoded_waveform_sha256": "7cf636e0f126d4731029c38477da0c98ac13403b6645e72b5dde22a3a92b6d25",
+    "failure_check": "sample_count",
+    "generation_ledger_sha256": "d6b9aa821f8a4031b370ec267c864a3bbe5d68f8fb8fed26efad4cdc58b9c627",
+    "global_claim_sha256": "deb9d1c3bff85f96fe162f624a52e54b3b9cc94f84e620efd58d65152a545084",
+    "manifest_sha256": "466b56249594724e0241cf6fe0f447fa71012bac23bd3a63cde4a38cdd8470e2",
+    "observed_frames": 1435551,
+    "provenance_sha256": "881f09abeb1b4aa103db37125dc3017aa289f6a8b0e6d493b5f15568eaa70f4b",
+    "requested_frames_under_old_exact_rule": 1440000,
+    "result_sha256": "66c4aafd3dc1d7c8da774d539f003fe03c94ae276e248d85386411461a693df0",
+    "run_id": "b2-ace-v1-mini-smoke-v2-001",
+    "sample_rate_hz": 48000,
+    "terminal_runner_result_sha256": "012a6ebb57c2273cf4cea5d4a678bc4285acc92a20d199d481baceb2fd120f36",
+    "wav_sha256": "1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458"
+  },
+  "other_sanity_checks_from_original_retained_row": {
+    "active_fraction_pass": true,
+    "all_finite_pass": true,
+    "channels": 2,
+    "non_silent_pass": true,
+    "provenance_valid": true,
+    "sample_rate_hz": 48000
+  },
+  "provenance_basis": {
+    "path": "provenance/b2/ace_duration_quantization_provenance_v1.json",
+    "sha256": "1e7628491badc2d70cfc8357b7502d1facb6b6ed5b8282e73e60302ef5b9f254"
+  },
+  "qualification": "This is a read-only re-adjudication of retained evidence. The original ledger, result, sanity record, claims, provenance, and WAV remain immutable and keep their original FAIL label under the superseded exact-frame rule.",
+  "schema_version": 1,
+  "status": "PASS_UNDER_AMENDED_DURATION_RULE"
+}

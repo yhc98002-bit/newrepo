@@ -1,0 +1,38 @@
+{
+  "completed_calls": 1536,
+  "config_sha256": "d45e9c6c2ab6326b6dc4cf4c23b55845db59417f3553d00832b33cb8b29e8b61",
+  "failed_calls": 0,
+  "generation_queue": {
+    "manifest_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/queues/generation/queue-manifest.json",
+    "manifest_sha256": "bd6123551557289622adffb46235eb06a594797cf40001236d465b27cc68f15f",
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/queues/generation/queue.jsonl",
+    "row_count": 1536,
+    "sha256": "afedee0bb422c27c2cad64e7be9dc960384f706f8f9201bbea95e8f2418c7bf4"
+  },
+  "git_commit": "f8a44fedf4a466d8dea43c81f58bc6fdb2f8bae1",
+  "heartbeat": {
+    "completed": 1536,
+    "failed": 0,
+    "last_ledger_sha256": "83ccc0d171f6f2418aafb8dfd93c9cabcfeda65e10c78d0d23c19c7d976b3eda",
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/workers/sa3-medium-base/heartbeat.json",
+    "sha256": "e43dc2ff05ee0c69a981c4c321de9438799790ffaba889eeae23b9c4c10a4c04",
+    "state": "COMPLETE"
+  },
+  "ledger": {
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/ledger.jsonl",
+    "row_count": 4608,
+    "sha256": "1c4e8937bd5eb4f94836bbb0b5a7e205bfc714ad2fdba81bfc3802ff9e4e192f",
+    "tail_sha256": "83ccc0d171f6f2418aafb8dfd93c9cabcfeda65e10c78d0d23c19c7d976b3eda"
+  },
+  "model_id": "stabilityai/stable-audio-3-medium-base",
+  "prompt_manifest_sha256": "171d6c757ff3ecec1918d2f032206c2b570b3302dc5ed0100da0db5d22708089",
+  "retained_counts": {
+    "commit_records": 1536,
+    "request_claims": 1536,
+    "wav_files": 1536
+  },
+  "run_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z",
+  "run_id": "benchmark-core-v2-20260720t174500z",
+  "schema_version": 1,
+  "status": "COMPLETE"
+}

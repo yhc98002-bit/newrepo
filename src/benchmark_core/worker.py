@@ -95,6 +95,7 @@ class BenchmarkWorker:
         heartbeat_interval_seconds: float,
         heartbeat_stale_after_seconds: float,
         launch_claim_path: Path,
+        authorized_model_ids: Sequence[str],
         placement_wait_poll_seconds: float = 15.0,
         probe: NvidiaSmiProbe | None = None,
         lease: DeviceLease | None = None,
@@ -105,6 +106,8 @@ class BenchmarkWorker:
             raise ValueError("worker model lacks a frozen output audio format")
         if adapter.model_id != model.model_id:
             raise ValueError("adapter/model identity mismatch")
+        if model.model_id not in authorized_model_ids:
+            raise ValueError("worker model is absent from the authorized-model allowlist")
         self.run_dir = run_dir.resolve()
         self.run_id = run_id
         self.git_commit = git_commit
@@ -131,6 +134,7 @@ class BenchmarkWorker:
             config_sha256=config_sha256,
             git_commit=git_commit,
             run_dir=self.run_dir,
+            authorized_model_ids=authorized_model_ids,
         )
         self.ledger = HashChainedLedger(self.run_dir / "ledger.jsonl")
         self.claims = CallClaimStore(
@@ -384,6 +388,9 @@ class BenchmarkWorker:
                                     staged,
                                     expected_sample_rate=self.model.expected_sample_rate,
                                     expected_channels=self.model.expected_channels,
+                                    duration_tolerance_seconds=(
+                                        self.model.duration_tolerance_seconds or 0.0
+                                    ),
                                 )
                                 last = self.ledger.transition(
                                     request_sha,

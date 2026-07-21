@@ -59,10 +59,13 @@ def main() -> int:
         config_sha256=config.source_sha256,
         git_commit=git_state.head,
         run_dir=run_dir,
+        authorized_model_ids=config.authorized_model_ids,
     )
     bindings = validate_run_bundle(run_dir, manifest, launch_claim, config=config)
     queue_path = Path(bindings["generation"]["queue_path"])
     all_rows = load_queue(queue_path)
+    if args.model_id not in config.authorized_model_ids:
+        raise RuntimeError("requested worker model is absent from the launch allowlist")
     candidates = [model for model in config.models if model.model_id == args.model_id]
     if len(candidates) != 1 or candidates[0].queue_status != READY:
         raise RuntimeError("requested worker model is not uniquely READY")
@@ -84,6 +87,7 @@ def main() -> int:
         heartbeat_interval_seconds=config.heartbeat_interval_seconds,
         heartbeat_stale_after_seconds=config.heartbeat_stale_after_seconds,
         launch_claim_path=launch_claim_path,
+        authorized_model_ids=config.authorized_model_ids,
     )
     log_path = run_dir / "logs" / f"{model.slug}-worker.jsonl"
     log_path.parent.mkdir(parents=True, exist_ok=True)

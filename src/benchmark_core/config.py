@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from audio_duration_policy import duration_within_tolerance
+
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 READY = "READY"
 BLOCKED_ON_LICENSE = "BLOCKED_ON_LICENSE"
@@ -22,6 +24,7 @@ ACE_MODEL_ID = "ACE-Step/ACE-Step-v1-3.5B"
 REQUIRED_MODEL_IDS = frozenset({SA3_MODEL_ID, SAO_MODEL_ID, ACE_MODEL_ID})
 PHASE_B_TERMINAL_PATH = Path("provenance/b2/build_status_terminal_v2.json")
 PHASE_B_TERMINAL_STATUS = "TERMINAL"
+MAX_DURATION_TOLERANCE_SECONDS = 0.25
 REQUIRED_PROMPT_HASHES = frozenset(
     {
         "vocal_instrumental.json",
@@ -114,6 +117,16 @@ def _positive_int(record: dict[str, Any], key: str) -> int:
     return value
 
 
+def _nonnegative_number(record: dict[str, Any], key: str, *, default: float | None = None) -> float:
+    value = record.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise CoreConfigurationError(f"{key} must be a non-negative number")
+    result = float(value)
+    if not math.isfinite(result) or result < 0:
+        raise CoreConfigurationError(f"{key} must be a non-negative finite number")
+    return result
+
+
 def _resolve_repo_path(repo_root: Path, value: str, *, key: str) -> Path:
     candidate = (
         (repo_root / value).resolve() if not Path(value).is_absolute() else Path(value).resolve()
@@ -163,6 +176,7 @@ class ModelExecutionConfig:
     state_capture_status: str
     expected_sample_rate: int | None
     expected_channels: int | None
+    duration_tolerance_seconds: float | None = 0.0
 
 
 @dataclass(frozen=True)
@@ -172,6 +186,16 @@ class PhaseBTerminalBinding:
     status: str
     model_queue_statuses: dict[str, str]
     ready_costs: dict[str, tuple[float, float]]
+
+
+@dataclass(frozen=True)
+class PriorCompletionBinding:
+    model_id: str
+    path: Path
+    sha256: str
+    run_dir: Path
+    generation_queue_path: Path
+    generation_queue_sha256: str
 
 
 @dataclass(frozen=True)
@@ -199,8 +223,10 @@ class CoreExecutionConfig:
     shard_size: int
     heartbeat_interval_seconds: float
     heartbeat_stale_after_seconds: float
+    authorized_model_ids: tuple[str, ...]
     models: tuple[ModelExecutionConfig, ...]
     phase_b_terminal: PhaseBTerminalBinding
+    prior_model_completions: dict[str, PriorCompletionBinding]
     state_capture: StateCapturePolicy
     raw: dict[str, Any]
 
@@ -374,10 +400,9 @@ def _validate_phase_b_terminal(
 
     binding = _object(raw, "phase_b_terminal")
     declared_path = _string(binding, "path")
-    if Path(declared_path) != PHASE_B_TERMINAL_PATH:
-        raise CoreConfigurationError(
-            f"phase_b_terminal.path must equal {PHASE_B_TERMINAL_PATH.as_posix()}"
-        )
+    declared_path_object = Path(declared_path)
+    if declared_path_object.is_absolute() or ".." in declared_path_object.parts:
+        raise CoreConfigurationError("phase_b_terminal.path must be a safe repository path")
     declared_sha = _sha256(binding, "sha256")
     declared_status = _string(binding, "status")
     if declared_status != PHASE_B_TERMINAL_STATUS:
@@ -387,7 +412,7 @@ def _validate_phase_b_terminal(
     receipt_path = (
         path_override.resolve(strict=True)
         if path_override is not None
-        else (repo_root / PHASE_B_TERMINAL_PATH).resolve(strict=True)
+        else _resolve_repo_path(repo_root, declared_path, key="phase_b_terminal.path")
     )
     if sha256_file(receipt_path) != declared_sha:
         raise CoreConfigurationError("Phase-B terminal receipt hash mismatch")
@@ -414,8 +439,13 @@ def _validate_phase_b_terminal(
             if queue_status != BLOCKED_ON_LICENSE or build_status != BLOCKED_ON_LICENSE:
                 raise CoreConfigurationError("stable-audio-open-1.0 must remain BLOCKED_ON_LICENSE")
         elif queue_status == READY:
-            if build_status != "MEASURED_MINI_SMOKE_PASS":
-                raise CoreConfigurationError("ACE READY requires terminal MEASURED_MINI_SMOKE_PASS")
+            if (
+                build_status != "MEASURED_READY"
+                or record.get("mini_smoke_status") != "MEASURED_MINI_SMOKE_PASS"
+            ):
+                raise CoreConfigurationError(
+                    "ACE READY requires MEASURED_READY and MEASURED_MINI_SMOKE_PASS"
+                )
         elif queue_status == BLOCKED_ON_ENGINEERING_FAILURE:
             if build_status != "FAIL_ESCALATED":
                 raise CoreConfigurationError("blocked ACE requires terminal FAIL_ESCALATED")
@@ -439,6 +469,151 @@ def _validate_phase_b_terminal(
         status=declared_status,
         model_queue_statuses=statuses,
         ready_costs=ready_costs,
+    )
+
+
+def _exact_nonnegative_int(record: dict[str, Any], key: str) -> int:
+    value = record.get(key)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise CoreConfigurationError(f"{key} must be a non-negative integer")
+    return value
+
+
+def _completion_external_file(
+    record: dict[str, Any],
+    *,
+    path_key: str,
+    sha_key: str,
+    run_dir: Path,
+) -> Path:
+    path = Path(_string(record, path_key)).resolve(strict=True)
+    try:
+        path.relative_to(run_dir)
+    except ValueError as exc:
+        raise CoreConfigurationError(f"completion {path_key} escapes its immutable run") from exc
+    if sha256_file(path) != _sha256(record, sha_key):
+        raise CoreConfigurationError(f"completion {path_key} hash mismatch")
+    return path
+
+
+def _validate_prior_completion(
+    model_id: str,
+    binding: dict[str, Any],
+    *,
+    repo_root: Path,
+) -> PriorCompletionBinding:
+    """Verify a project receipt and the immutable external completion evidence it binds."""
+
+    declared_path = _string(binding, "path")
+    receipt_path = _resolve_repo_path(repo_root, declared_path, key="prior completion receipt")
+    declared_sha = _sha256(binding, "sha256")
+    if sha256_file(receipt_path) != declared_sha:
+        raise CoreConfigurationError("prior completion receipt hash mismatch")
+    receipt = strict_json(receipt_path)
+    if (
+        receipt.get("schema_version") != 1
+        or receipt.get("status") != "COMPLETE"
+        or receipt.get("model_id") != model_id
+    ):
+        raise CoreConfigurationError("prior completion receipt identity/status mismatch")
+    if _exact_nonnegative_int(receipt, "completed_calls") != 1_536:
+        raise CoreConfigurationError("prior completion must contain 1,536 completed calls")
+    if _exact_nonnegative_int(receipt, "failed_calls") != 0:
+        raise CoreConfigurationError("prior completion must contain zero failed calls")
+    run_dir = Path(_string(receipt, "run_dir")).resolve(strict=True)
+    if run_dir == Path("/") or not run_dir.is_dir():
+        raise CoreConfigurationError("prior completion run_dir is invalid")
+
+    generation = _object(receipt, "generation_queue")
+    queue_path = _completion_external_file(
+        generation,
+        path_key="path",
+        sha_key="sha256",
+        run_dir=run_dir,
+    )
+    manifest_path = _completion_external_file(
+        generation,
+        path_key="manifest_path",
+        sha_key="manifest_sha256",
+        run_dir=run_dir,
+    )
+    if _exact_nonnegative_int(generation, "row_count") != 1_536:
+        raise CoreConfigurationError("prior completion generation queue must have 1,536 rows")
+    manifest = strict_json(manifest_path)
+    if (
+        manifest.get("queue_path") != str(queue_path)
+        or manifest.get("queue_sha256") != generation.get("sha256")
+        or manifest.get("row_count") != 1_536
+        or manifest.get("model_row_counts") != {model_id: 1_536}
+    ):
+        raise CoreConfigurationError("prior completion generation manifest mismatch")
+    queue_lines = queue_path.read_text(encoding="utf-8").splitlines()
+    if len(queue_lines) != 1_536:
+        raise CoreConfigurationError("prior completion generation queue line count mismatch")
+    for expected_sequence, line in enumerate(queue_lines, start=1):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise CoreConfigurationError("prior completion generation queue is invalid") from exc
+        if (
+            not isinstance(row, dict)
+            or row.get("sequence") != expected_sequence
+            or row.get("model_id") != model_id
+            or not isinstance(row.get("request_sha256"), str)
+            or SHA256_RE.fullmatch(row["request_sha256"]) is None
+        ):
+            raise CoreConfigurationError("prior completion generation queue row mismatch")
+
+    heartbeat_record = _object(receipt, "heartbeat")
+    heartbeat_path = _completion_external_file(
+        heartbeat_record,
+        path_key="path",
+        sha_key="sha256",
+        run_dir=run_dir,
+    )
+    heartbeat = strict_json(heartbeat_path)
+    if (
+        heartbeat.get("state") != "COMPLETE"
+        or heartbeat.get("completed") != 1_536
+        or heartbeat.get("failed") != 0
+        or heartbeat.get("model_id", model_id) != model_id
+        or heartbeat.get("run_id") != receipt.get("run_id")
+    ):
+        raise CoreConfigurationError("prior completion heartbeat is not terminal COMPLETE")
+
+    ledger_record = _object(receipt, "ledger")
+    ledger_path = _completion_external_file(
+        ledger_record,
+        path_key="path",
+        sha_key="sha256",
+        run_dir=run_dir,
+    )
+    ledger_lines = ledger_path.read_text(encoding="utf-8").splitlines()
+    if len(ledger_lines) != _exact_nonnegative_int(ledger_record, "row_count"):
+        raise CoreConfigurationError("prior completion ledger row count mismatch")
+    try:
+        ledger_tail = json.loads(ledger_lines[-1])
+    except (IndexError, json.JSONDecodeError) as exc:
+        raise CoreConfigurationError("prior completion ledger has no valid tail") from exc
+    if ledger_tail.get("ledger_row_sha256") != _sha256(ledger_record, "tail_sha256"):
+        raise CoreConfigurationError("prior completion ledger tail mismatch")
+    if heartbeat.get("last_ledger_sha256") != ledger_record.get("tail_sha256"):
+        raise CoreConfigurationError("prior completion heartbeat/ledger tail mismatch")
+
+    counts = _object(receipt, "retained_counts")
+    if counts != {
+        "commit_records": 1_536,
+        "request_claims": 1_536,
+        "wav_files": 1_536,
+    }:
+        raise CoreConfigurationError("prior completion retained counts are incomplete")
+    return PriorCompletionBinding(
+        model_id=model_id,
+        path=receipt_path,
+        sha256=declared_sha,
+        run_dir=run_dir,
+        generation_queue_path=queue_path,
+        generation_queue_sha256=str(generation["sha256"]),
     )
 
 
@@ -551,6 +726,7 @@ def load_core_execution_config(
                     "BLOCKED",
                     None,
                     None,
+                    None,
                 )
             )
             continue
@@ -579,6 +755,24 @@ def load_core_execution_config(
         state_status = _string(core, "state_capture_status")
         if state_status not in {"READY", "AUTOMATIC_OUTPUT_ONLY"}:
             raise CoreConfigurationError("state_capture_status has an unsupported value")
+        duration_tolerance = _nonnegative_number(
+            core,
+            "duration_tolerance_seconds",
+            default=0.0,
+        )
+        if duration_tolerance > MAX_DURATION_TOLERANCE_SECONDS:
+            raise CoreConfigurationError(
+                "duration_tolerance_seconds exceeds the adjudicated 0.25-second maximum"
+            )
+        if (
+            "duration_tolerance_seconds" in core
+            and duration_tolerance != MAX_DURATION_TOLERANCE_SECONDS
+        ):
+            raise CoreConfigurationError(
+                "an explicit duration_tolerance_seconds must equal the adjudicated 0.25"
+            )
+        # Exercise the shared policy validator at configuration load rather than first audio.
+        duration_within_tolerance(30.0, 30.0, duration_tolerance)
         models.append(
             ModelExecutionConfig(
                 model_id=model_id,
@@ -591,6 +785,7 @@ def load_core_execution_config(
                 state_capture_status=state_status,
                 expected_sample_rate=sample_rate,
                 expected_channels=expected_channels,
+                duration_tolerance_seconds=duration_tolerance,
             )
         )
     ready_ids = {model.model_id for model in models if model.queue_status == READY}
@@ -622,6 +817,43 @@ def load_core_execution_config(
             )
     if not ready_ids:
         raise CoreConfigurationError("at least one model must be READY")
+
+    authorized_value = execution.get("authorized_model_ids")
+    if authorized_value is None:
+        authorized_model_ids = tuple(
+            model.model_id for model in models if model.queue_status == READY
+        )
+    else:
+        if (
+            not isinstance(authorized_value, list)
+            or not authorized_value
+            or not all(isinstance(item, str) and item for item in authorized_value)
+            or len(set(authorized_value)) != len(authorized_value)
+        ):
+            raise CoreConfigurationError(
+                "execution.authorized_model_ids must be a non-empty unique string list"
+            )
+        if not set(authorized_value).issubset(ready_ids):
+            raise CoreConfigurationError("authorized_model_ids must be a subset of READY models")
+        authorized_model_ids = tuple(authorized_value)
+
+    completion_values = execution.get("prior_model_completions", {})
+    if not isinstance(completion_values, dict):
+        raise CoreConfigurationError("execution.prior_model_completions must be an object")
+    excluded_ready_ids = ready_ids - set(authorized_model_ids)
+    if set(completion_values) != excluded_ready_ids:
+        raise CoreConfigurationError(
+            "prior_model_completions must exactly bind every READY-but-excluded model"
+        )
+    prior_model_completions: dict[str, PriorCompletionBinding] = {}
+    for model_id, completion_value in completion_values.items():
+        if not isinstance(completion_value, dict):
+            raise CoreConfigurationError("each prior model completion binding must be an object")
+        prior_model_completions[model_id] = _validate_prior_completion(
+            model_id,
+            completion_value,
+            repo_root=root,
+        )
     if not set(state_policy.eligible_model_ids).issubset(ready_ids):
         raise CoreConfigurationError("state-capture model IDs must be READY")
     for model in models:
@@ -642,8 +874,10 @@ def load_core_execution_config(
         shard_size=shard_size,
         heartbeat_interval_seconds=interval,
         heartbeat_stale_after_seconds=stale,
+        authorized_model_ids=authorized_model_ids,
         models=tuple(models),
         phase_b_terminal=phase_b_terminal,
+        prior_model_completions=prior_model_completions,
         state_capture=state_policy,
         raw=raw,
     )

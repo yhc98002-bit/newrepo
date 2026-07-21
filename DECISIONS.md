@@ -1101,3 +1101,184 @@ assembly remains blocked.
 `BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
 
 `HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
+
+## D-0026 — ACE-Step v1 duration-sanity amendment and sole confirmation authority
+
+- Date: 2026-07-21
+- Status: accepted prospectively; exactly one non-benchmark confirmation call authorized
+- Authority: Chief Scientist / PI duration-sanity amendment and final B2 ruling
+- Supersedes: D-0022 only for interpretation of its sole `sample_count` failure;
+  D-0025 only for the now-complete SA3 ordinary-core status
+
+The exact-frame duration invariant was frozen before ACE-Step v1's decoder
+frame-rate behavior was known. It is replaced for benchmark-v2 retained-audio
+sanity by an explicit per-backbone decoded-duration rule:
+
+`abs(decoded_duration_seconds - requested_duration_seconds) <= 0.25 seconds`
+
+The boundary is inclusive. ACE-Step v1 and Stable Audio 3 both receive exactly
+the same `0.25 s` tolerance. This changes only the duration criterion: requested
+clips remain capped at `30.0 s`, while sample rate, stereo channels,
+decodeability, finite samples, non-silence, provenance, retention, and
+no-clobber checks remain strict. SA3's completed 1,536-row core run produced
+exact 30-second outputs throughout, so this does not loosen any obtained SA3
+acceptance in practice. Its project receipt is
+`provenance/core/sa3_core_completion_v2.json`, SHA-256
+`4574f439c6f74a7a1b6fac9bf850135f7903f3e49ffd09477e91853826c5bac6`:
+1,536 completed, zero failed, terminal heartbeat `COMPLETE`, and no row may be
+regenerated.
+
+### Decoder-quantization provenance
+
+The old repository's pre-generation frozen protocol and prompt snapshot are
+SHA-256 `e20e0fbeff2cd98acd7df765ad042336a56cbe910547c64e53cf87be65a15176`
+and `a616137db58e2e639c2c2665688b72fb0d3c06253cc0266763e52107b79558a6`,
+committed at `7f63ab79948736c5bb6bd0d733c3eb570a1a2ac6`. Snapshot row 197 binds
+`dev_0196` to a `30.0 s` target. Eight independent ACE-Step v1 outputs at row
+99 of ledgers `generation_w0.jsonl` through `generation_w7.jsonl`, committed
+at `a2655a19a8f11eb22e5ca9991acf7dd2eeed2f5f`, are each ledgered `PASS`,
+48 kHz, and `29.907312 s` after six-decimal serialization. Their ledger
+SHA-256s are, in worker order:
+
+1. `ebb9a8fa171efb1f57e4739730dc53c07d239219ab1a2ceb627fe334d762b51c`
+2. `b6252f5077cb857a9d74da269317d2888a4f0f839fbdbac9217d271c9a5b59cd`
+3. `8aded005153d3d979e41b74e5620cf5cd3c18701713efd1f1e334f20dfc49983`
+4. `73626e147e221e4e7e9ef6958dfffd2fdf349086be22f52278b5a6355d711e6b`
+5. `57a3c639eb12d8968b703f83776d748f4c9e5f28bcf156e76041eed78db02e2f`
+6. `fa1126fe485997c3ab629b49c19f7e6f0bfa7fc889ae2c8c732db7b554c16551`
+7. `576fb3aa10be527a505c8c8bcd00b58ba1d99d64260d1bda6c5593a99c8c69a6`
+8. `36763f24bc7dd91ee93176312aa4b299b031736dc3560cfe44650b13c3a86f51`
+
+Read-only probes of all eight SHA-bound retained WAVs give 1,435,551 stereo
+frames at 48 kHz, exactly `29.9073125 s`, an absolute deviation of
+`0.0926875 s`. The full extraction, row identities, seeds, media hashes, Git
+ancestry, and the qualification that WAVs are SHA-bound persistent media but
+not themselves Git-tracked are recorded in
+`provenance/b2/ace_duration_quantization_provenance_v1.json`, SHA-256
+`1e7628491badc2d70cfc8357b7502d1facb6b6ed5b8282e73e60302ef5b9f254`.
+
+D-0022's retained call 0 has the same 1,435,551-frame native duration and no
+other sanity failure. It therefore passes the amended duration rule. This is
+recorded without rewriting its old ledger, result, claim, provenance, or WAV
+in `provenance/b2/ace_call0_duration_readjudication_v1.json`, SHA-256
+`be4e3a9d705c1e8cb627b08fec3be28fad6ff4623d530283b7f32056a031129e`.
+The original row correctly remains `AUDIO_SANITY_FAILED` under the superseded
+exact-frame rule.
+
+### Exact one-call package and terminal rule
+
+Exactly one remaining engineering call is authorized in fresh immutable run
+`b2-ace-v1-duration-confirmation-v1-001`: original B2 job 1, prompt
+`b2-mini-smoke-engineering-ace-02`, seed `S-0009 = 73193009`, requested
+duration `30.0 s`, empty lyrics, and output `audio/confirmation-00.wav`.
+It is non-benchmark, unscored, excluded from the human packet, and uses one
+idle A800, TP1, one replica. Caps are one model call, one output, 1,800
+one-GPU seconds, and zero retries. No alternate prompt, seed, run ID, output,
+or duration is allowed.
+
+A completed authorization must live outside the repository, bind the
+post-append `DECISIONS.md`, clean `main == origin/main`, exact source,
+checkpoint, runtime, package hashes, node, and physical GPU, and expire within
+24 hours. Once that authorization validates, the runner durable-writes an
+exclusive authorized-attempt claim before any prior-evidence, runtime, GPU,
+or adapter preflight. Any subsequent new failure is terminal
+`BLOCKED_ON_ENGINEERING_FAILURE`; the attempt cannot be submitted again and
+no further B2 call is permitted. On PASS only, a later append-only decision
+may set ACE-Step v1 to `MEASURED_READY`, freeze its measured cost row, and
+open a fresh ACE-only core queue. SA3 is explicitly excluded from that future
+generation queue; both state queues remain closed.
+
+The frozen confirmation package is:
+
+| Path | SHA-256 |
+| --- | --- |
+| `configs/b2_ace_duration_confirmation_v1.json` | `0cb1bb88f98bcc23093713c2edd969908da14f0fa991ed0c54fcc4dea6a88162` |
+| `B2_ACE_DURATION_CONFIRMATION_PROTOCOL_v1.md` | `02ea12725dfec085e5375714653f46d81106a0c95a7c412306a4eea0ad324d4b` |
+| `scripts/run_b2_ace_duration_confirmation_v1.py` | `656062a15bc00496a56341cdea1b7db93a8c44147d8ee5533a28293e6106ed20` |
+| `scripts/run_b2_ace_duration_confirmation_v1_with_timeout.py` | `bdf83f3478f684fd3fed0da0ab2921b010f19a3c2d2c0dcfe7eb36a867db8acf` |
+| `provenance/b2/b2_ace_duration_confirmation_authorization.template.json` | `a96e16bff5650a7a2548bb31a31e47a1e9e98052dfd878493120ed81a0901931` |
+| `src/audio_duration_policy.py` | `54268349d62a35e86b55127c374219749e33c66995aeded6750b26944efb568e` |
+| `src/backbones/duration_sanity.py` | `a06818e4ccb0a0da67a664783bd29181269cc00bfeeb65c4f3d5c5089a283bd6` |
+
+Stable Audio Open 1.0 remains `BLOCKED_ON_LICENSE`; therefore the PI's
+two-backbone continuation on an ACE failure is a scope intent contingent on a
+future valid SAO license/access receipt, not a claim that two backbones are
+currently executable.
+
+`BENCHMARK_PREREG_V2_FROZEN = YES`
+
+`BENCHMARK_PREREG_V2_SHA256 = 77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa`
+
+`B2_MINI_SMOKE_V2_AUTHORIZED = NO`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_AUTHORIZED = YES`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_SCOPE = ACE_STEP_V1_DURATION_CONFIRMATION_NON_BENCHMARK`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_CONFIG_SHA256 = 0cb1bb88f98bcc23093713c2edd969908da14f0fa991ed0c54fcc4dea6a88162`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_PROTOCOL_SHA256 = 02ea12725dfec085e5375714653f46d81106a0c95a7c412306a4eea0ad324d4b`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_RUNNER_SHA256 = 656062a15bc00496a56341cdea1b7db93a8c44147d8ee5533a28293e6106ed20`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_WRAPPER_SHA256 = bdf83f3478f684fd3fed0da0ab2921b010f19a3c2d2c0dcfe7eb36a867db8acf`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_AUTH_TEMPLATE_SHA256 = a96e16bff5650a7a2548bb31a31e47a1e9e98052dfd878493120ed81a0901931`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_DURATION_POLICY_SHA256 = 54268349d62a35e86b55127c374219749e33c66995aeded6750b26944efb568e`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_DURATION_SANITY_SHA256 = a06818e4ccb0a0da67a664783bd29181269cc00bfeeb65c4f3d5c5089a283bd6`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_QUANTIZATION_PROVENANCE_SHA256 = 1e7628491badc2d70cfc8357b7502d1facb6b6ed5b8282e73e60302ef5b9f254`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_READJUDICATION_SHA256 = be4e3a9d705c1e8cb627b08fec3be28fad6ff4623d530283b7f32056a031129e`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_GLOBAL_CLAIM_SHA256 = deb9d1c3bff85f96fe162f624a52e54b3b9cc94f84e620efd58d65152a545084`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_CALL_CLAIM_SHA256 = 93fc96218ef13524237f3a67d2313fed6e18e6dd55c9a919cabcc63198ae0123`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_LEDGER_SHA256 = d6b9aa821f8a4031b370ec267c864a3bbe5d68f8fb8fed26efad4cdc58b9c627`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_WAV_SHA256 = 1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_PROVENANCE_SHA256 = 881f09abeb1b4aa103db37125dc3017aa289f6a8b0e6d493b5f15568eaa70f4b`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_MAX_MODEL_CALLS = 1`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_MAX_GENERATED_OUTPUTS = 1`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_MAX_REQUESTED_CLIP_SECONDS = 30`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_DURATION_TOLERANCE_SECONDS = 0.25`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_MAX_GPUS = 1`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_MAX_GPU_SECONDS = 1800`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_RETRIES = 0`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_PROMPT_ID = b2-mini-smoke-engineering-ace-02`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_RESERVED_SEED = S-0009:73193009`
+
+`B2_ACE_DURATION_CONFIRMATION_V1_STATUS = AUTHORIZED_NOT_RUN`
+
+`ACE_STEP_V1_QUEUE_STATUS = PENDING_DURATION_CONFIRMATION`
+
+`STABLE_AUDIO_OPEN_1_0_QUEUE_STATUS = BLOCKED_ON_LICENSE`
+
+`STABLE_AUDIO_3_MEDIUM_BASE_QUEUE_STATUS = COMPLETE`
+
+`PHASE_B_STATUS = AMENDMENT_CONFIRMATION_AUTHORIZED`
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = NO`
+
+`BENCHMARK_CORE_GENERATION_STATUS = SA3_COMPLETE_ACE_PENDING_CONFIRMATION`
+
+`BENCHMARK_EXECUTION_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_INITIAL_QUEUE_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`

@@ -1,0 +1,283 @@
+{
+  "audio_sanity": {
+    "duration_tolerance_seconds": 0.25,
+    "expected_channels": 2,
+    "expected_sample_rate": 48000
+  },
+  "authorization": {
+    "authorization_id": "B2-ACE-V1-DURATION-CONFIRMATION-V1-ONE-SHOT",
+    "model_call_authorized_by_this_config_alone": false,
+    "required_decisions_assignments": [
+      "BENCHMARK_PREREG_V2_FROZEN",
+      "BENCHMARK_PREREG_V2_SHA256",
+      "B2_MINI_SMOKE_V2_AUTHORIZED",
+      "B2_ACE_DURATION_CONFIRMATION_V1_AUTHORIZED",
+      "B2_ACE_DURATION_CONFIRMATION_V1_SCOPE",
+      "B2_ACE_DURATION_CONFIRMATION_V1_CONFIG_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_PROTOCOL_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_RUNNER_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_WRAPPER_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_AUTH_TEMPLATE_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_DURATION_POLICY_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_DURATION_SANITY_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_QUANTIZATION_PROVENANCE_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_READJUDICATION_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_GLOBAL_CLAIM_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_CALL_CLAIM_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_LEDGER_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_WAV_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_PRIOR_PROVENANCE_SHA256",
+      "B2_ACE_DURATION_CONFIRMATION_V1_MAX_MODEL_CALLS",
+      "B2_ACE_DURATION_CONFIRMATION_V1_MAX_GENERATED_OUTPUTS",
+      "B2_ACE_DURATION_CONFIRMATION_V1_MAX_REQUESTED_CLIP_SECONDS",
+      "B2_ACE_DURATION_CONFIRMATION_V1_DURATION_TOLERANCE_SECONDS",
+      "B2_ACE_DURATION_CONFIRMATION_V1_MAX_GPUS",
+      "B2_ACE_DURATION_CONFIRMATION_V1_MAX_GPU_SECONDS",
+      "B2_ACE_DURATION_CONFIRMATION_V1_RETRIES",
+      "B2_ACE_DURATION_CONFIRMATION_V1_PROMPT_ID",
+      "B2_ACE_DURATION_CONFIRMATION_V1_RESERVED_SEED"
+    ],
+    "required_execute_phrase": "I_UNDERSTAND_THIS_MAKES_EXACTLY_ONE_ACE_DURATION_CONFIRMATION_MODEL_CALL",
+    "required_prereg_status": "FROZEN_PROSPECTIVE_DESIGN",
+    "requires_completed_external_authorization": true,
+    "template": {
+      "path": "provenance/b2/b2_ace_duration_confirmation_authorization.template.json",
+      "sha256": "a96e16bff5650a7a2548bb31a31e47a1e9e98052dfd878493120ed81a0901931"
+    }
+  },
+  "backbone": {
+    "config": {
+      "path": "configs/backbones/ace_step_v1.json",
+      "sha256": "b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879"
+    },
+    "logical_name": "ACE-Step v1",
+    "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+    "required_checkpoint_dir": "/HOME/paratera_xy/pxy1289/.cache/modelscope/hub/models/ACE-Step/ACE-Step-v1-3___5B",
+    "required_checkpoint_environment_variable": "ACE_STEP_V1_CHECKPOINT_DIR",
+    "required_checkpoint_file_count": 17,
+    "required_checkpoint_tree_sha256": "124f8267d6c19f992e8b79880cc59e1ec1104439e6150312ebc94d7563d260fc",
+    "required_source_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/source/ACE-Step",
+    "required_source_environment_variable": "ACE_STEP_V1_SOURCE_DIR",
+    "required_source_revision": "1bee4c9f5b43e30995f8d4d33b3919197ce1bd68",
+    "required_source_tree": "a526413e5791e8b3bca32c0246701adaf7626f2b"
+  },
+  "caps": {
+    "exact_generated_outputs": 1,
+    "exact_model_calls": 1,
+    "max_clip_seconds_requested": 30.0,
+    "max_generated_outputs": 1,
+    "max_gpu_seconds": 1800.0,
+    "max_gpus": 1,
+    "max_model_calls": 1,
+    "max_retries": 0,
+    "shared_b2_generation_ceiling": 10
+  },
+  "duration_policy": {
+    "ace_step_v1_tolerance_seconds": 0.25,
+    "rule": "abs(decoded_duration_seconds - requested_duration_seconds) <= tolerance_seconds",
+    "stable_audio_3_tolerance_seconds": 0.25
+  },
+  "frozen_sources": {
+    "ace_adapter": {
+      "path": "src/backbones/ace_step_v1.py",
+      "sha256": "a18aeb11d199656b46a18793e1e75bf03a54d0c135894db46738da0f18d8b0d7"
+    },
+    "ace_config": {
+      "path": "configs/backbones/ace_step_v1.json",
+      "sha256": "b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879"
+    },
+    "authorization_template": {
+      "path": "provenance/b2/b2_ace_duration_confirmation_authorization.template.json",
+      "sha256": "a96e16bff5650a7a2548bb31a31e47a1e9e98052dfd878493120ed81a0901931"
+    },
+    "common_contracts": {
+      "path": "src/backbones/contracts.py",
+      "sha256": "9368e2044380000e74bbefcd528d2f09fc22ef2b484b6f3b8bf298617b09f2d2"
+    },
+    "common_io": {
+      "path": "src/backbones/io.py",
+      "sha256": "fe3e4d101ef34c846b7b86a2cba9e44f36b839364c99487de209406e7254aa3a"
+    },
+    "common_runtime": {
+      "path": "src/backbones/runtime.py",
+      "sha256": "d2e42754a4599e64d43d9ce43db8cfe057034581db2b5099ca6886d1eeedfeed"
+    },
+    "confirmation_protocol": {
+      "path": "B2_ACE_DURATION_CONFIRMATION_PROTOCOL_v1.md",
+      "sha256": "02ea12725dfec085e5375714653f46d81106a0c95a7c412306a4eea0ad324d4b"
+    },
+    "confirmation_runner": {
+      "path": "scripts/run_b2_ace_duration_confirmation_v1.py",
+      "sha256": "656062a15bc00496a56341cdea1b7db93a8c44147d8ee5533a28293e6106ed20"
+    },
+    "confirmation_wrapper": {
+      "path": "scripts/run_b2_ace_duration_confirmation_v1_with_timeout.py",
+      "sha256": "bdf83f3478f684fd3fed0da0ab2921b010f19a3c2d2c0dcfe7eb36a867db8acf"
+    },
+    "duration_policy": {
+      "path": "src/audio_duration_policy.py",
+      "sha256": "54268349d62a35e86b55127c374219749e33c66995aeded6750b26944efb568e"
+    },
+    "duration_quantization_provenance": {
+      "path": "provenance/b2/ace_duration_quantization_provenance_v1.json",
+      "sha256": "1e7628491badc2d70cfc8357b7502d1facb6b6ed5b8282e73e60302ef5b9f254"
+    },
+    "duration_readjudication": {
+      "path": "provenance/b2/ace_call0_duration_readjudication_v1.json",
+      "sha256": "be4e3a9d705c1e8cb627b08fec3be28fad6ff4623d530283b7f32056a031129e"
+    },
+    "duration_sanity": {
+      "path": "src/backbones/duration_sanity.py",
+      "sha256": "a06818e4ccb0a0da67a664783bd29181269cc00bfeeb65c4f3d5c5089a283bd6"
+    },
+    "legacy_b2_runner": {
+      "path": "scripts/run_b2_mini_smoke_v2.py",
+      "sha256": "040d0f75280c7adfbe614f74dab4a236b70068325ea4f85fe20b4b98ad56baff"
+    },
+    "sa3_artifacts": {
+      "path": "src/sa3_smoke/artifacts.py",
+      "sha256": "c51f2417577927180fa86b4282562a4781446a15d32cd466eda9213c7d679df3"
+    },
+    "sa3_audio": {
+      "path": "src/sa3_smoke/audio.py",
+      "sha256": "c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24"
+    },
+    "seed_registry": {
+      "path": "SEED_REGISTRY.md",
+      "sha256": "d9b175296a97e8acca72d124a950c4e2fcd08c2d4287587c5e70c149f24deb97"
+    }
+  },
+  "jobs": [
+    {
+      "duration_seconds": 30.0,
+      "index": 0,
+      "lyrics": "",
+      "original_b2_call_index": 1,
+      "output_relative_path": "audio/confirmation-00.wav",
+      "prompt": "A steady instrumental engineering test passage led by acoustic guitar, warm bass, and hand percussion, with continuous sound and a clean ending.",
+      "prompt_id": "b2-mini-smoke-engineering-ace-02",
+      "seed": 73193009,
+      "seed_id": "S-0009"
+    }
+  ],
+  "outer_timeout": {
+    "duration": "1800s",
+    "kill_after": "30s",
+    "pycache_prefix": "/tmp/pxy1289-b2-ace-duration-confirmation-v1-disabled-pycache",
+    "python_executable": "/HOME/paratera_xy/pxy1289/.conda/envs/audio-prm/bin/python",
+    "runner_relative_path": "scripts/run_b2_ace_duration_confirmation_v1.py",
+    "timeout_executable": "/usr/bin/timeout",
+    "wrapper_relative_path": "scripts/run_b2_ace_duration_confirmation_v1_with_timeout.py"
+  },
+  "placement": {
+    "allowed_nodes": ["an12", "an29"],
+    "allowed_physical_gpu_ids": [0, 1, 2, 3, 4, 5, 6, 7],
+    "device_lock_template": "/tmp/pxy1289-b2-ace-duration-confirmation-v1-{node}-gpu-{physical_gpu_id}.lock",
+    "max_idle_utilization_percent": 5,
+    "minimum_free_memory_before_claim_mib": 60000,
+    "replica_count": 1,
+    "required_gpu_name_substring": "A800",
+    "tensor_parallel_width": 1
+  },
+  "prior_consumed_evidence": {
+    "artifacts": {
+      "external_authorization": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/authorizations/b2-ace-v1-mini-smoke-v2-001.authorization-02.json",
+        "sha256": "504b91ebdee19a2f3203f45a1d6d3079ad12492bea8131db4edbfa969b9c183d"
+      },
+      "global_claim": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-one-shot.claim.json",
+        "sha256": "deb9d1c3bff85f96fe162f624a52e54b3b9cc94f84e620efd58d65152a545084"
+      },
+      "call_00_claim": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-001/call-00.claim.json",
+        "sha256": "93fc96218ef13524237f3a67d2313fed6e18e6dd55c9a919cabcc63198ae0123"
+      },
+      "manifest": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/manifest.json",
+        "sha256": "466b56249594724e0241cf6fe0f447fa71012bac23bd3a63cde4a38cdd8470e2"
+      },
+      "generation_ledger": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/generation_ledger.jsonl",
+        "sha256": "d6b9aa821f8a4031b370ec267c864a3bbe5d68f8fb8fed26efad4cdc58b9c627"
+      },
+      "common_result": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/result.json",
+        "sha256": "012a6ebb57c2273cf4cea5d4a678bc4285acc92a20d199d481baceb2fd120f36"
+      },
+      "terminal_result": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/b2_mini_smoke_result.json",
+        "sha256": "66c4aafd3dc1d7c8da774d539f003fe03c94ae276e248d85386411461a693df0"
+      },
+      "retained_wav": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/audio/call-00.wav",
+        "sha256": "1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458"
+      },
+      "retained_wav_provenance": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/audio/call-00.wav.provenance.json",
+        "sha256": "881f09abeb1b4aa103db37125dc3017aa289f6a8b0e6d493b5f15568eaa70f4b"
+      }
+    },
+    "original_run_id": "b2-ace-v1-mini-smoke-v2-001",
+    "required_absent_paths": [
+      "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-001/call-01.claim.json",
+      "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/audio/call-01.wav"
+    ]
+  },
+  "protocol_status": "PREPARED_NOT_AUTHORIZED",
+  "result_contract": {
+    "measurement_scope": "B2_ACE_DURATION_CONFIRMATION_NON_BENCHMARK",
+    "passing_measurement_status": "MEASURED",
+    "required_per_call_measures": [
+      "actual_nfe",
+      "requested_steps",
+      "wall_seconds",
+      "peak_allocated_bytes",
+      "peak_reserved_bytes",
+      "measurement_sample_rate",
+      "frozen_expected_sample_rate",
+      "measurement_sample_rate_matches_frozen",
+      "file_sha256",
+      "provenance_sha256",
+      "audio_sanity",
+      "row_sha256"
+    ],
+    "terminal_failure_status": "BLOCKED_ON_ENGINEERING_FAILURE"
+  },
+  "run": {
+    "authorization_claim_filename": "b2-ace-v1-duration-confirmation-v1-one-shot.claim.json",
+    "authorization_attempt_claim_filename": "b2-ace-v1-duration-confirmation-v1-authorized-attempt.claim.json",
+    "claim_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims",
+    "deadline_seconds": 1800.0,
+    "fixed_run_id": "b2-ace-v1-duration-confirmation-v1-001",
+    "log_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/logs/b2-ace-duration-confirmation-v1",
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-ace-duration-confirmation-v1"
+  },
+  "runtime_environment": {
+    "conda_executable_available": false,
+    "conda_meta_history_sha256": "592f2e9842fc975efffc320703b4589b00dc01be4359506aa33930c59c2a0108",
+    "conda_meta_manifest_sha256": "d95ae86c3d6c832777b8f571554388fd664044a79e7b8d62138453f58a991845",
+    "pip_freeze_sorted_sha256": "c11b37406749e4ae2abc030bb7ae2c6bb12206a46321af4c45535465086be680",
+    "python_executable": "/HOME/paratera_xy/pxy1289/.conda/envs/audio-prm/bin/python",
+    "python_prefix": "/HOME/paratera_xy/pxy1289/.conda/envs/audio-prm",
+    "python_version": "3.10.20",
+    "snapshot_limitation": "No standalone conda executable is available on launch PATH; all conda-meta JSON records and history are hashed instead of conda --explicit."
+  },
+  "schema_version": 1,
+  "scope": "ACE_STEP_V1_DURATION_CONFIRMATION_NON_BENCHMARK",
+  "scoring": {
+    "benchmark_endpoints_scored": false,
+    "human_packet_member": false,
+    "instrument_evaluation_allowed": false
+  },
+  "source_bindings": {
+    "checkpoint_dir": "/HOME/paratera_xy/pxy1289/.cache/modelscope/hub/models/ACE-Step/ACE-Step-v1-3___5B",
+    "checkpoint_exact_file_count": 17,
+    "checkpoint_manifest_exclusions": [],
+    "checkpoint_tree_sha256": "124f8267d6c19f992e8b79880cc59e1ec1104439e6150312ebc94d7563d260fc",
+    "source_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/source/ACE-Step",
+    "source_revision": "1bee4c9f5b43e30995f8d4d33b3919197ce1bd68",
+    "source_tree": "a526413e5791e8b3bca32c0246701adaf7626f2b",
+    "source_untracked_exception": "ONLY_CPYTHON_310_PYCACHE_NOT_READ_UNDER_ALTERNATE_PREFIX"
+  }
+}
