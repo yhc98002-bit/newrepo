@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 from datetime import datetime, timedelta, timezone
@@ -38,6 +39,11 @@ from scripts.run_b2_ace_duration_confirmation_v1 import (
     validate_prior_consumed_evidence,
     validate_static_config,
 )
+from tests.seed_registry_history import (
+    AUTHORIZED_S0010_SUFFIX,
+    FROZEN_B2_SEED_REGISTRY_SHA256,
+    frozen_b2_seed_registry_prefix,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 FROZEN_V2_HASHES = {
@@ -58,6 +64,23 @@ FROZEN_V2_HASHES = {
     ),
     "src/sa3_smoke/audio.py": ("c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24"),
 }
+
+
+def _copy_historical_static_package(destination: Path) -> tuple[dict[str, Any], dict[str, str]]:
+    paths = {
+        *EXPECTED_FROZEN_PATHS.values(),
+        "configs/b2_ace_duration_confirmation_v1.json",
+    }
+    for relative in paths:
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPOSITORY_ROOT / relative, target)
+    registry = destination / "SEED_REGISTRY.md"
+    registry.write_bytes(frozen_b2_seed_registry_prefix(REPOSITORY_ROOT / "SEED_REGISTRY.md"))
+    return validate_static_config(
+        destination / "configs/b2_ace_duration_confirmation_v1.json",
+        repository_root=destination,
+    )
 
 
 def _attach_provenance(path: Path) -> None:
@@ -96,8 +119,19 @@ def test_frozen_v2_package_remains_byte_exact() -> None:
         assert sha256_file(REPOSITORY_ROOT / relative) == expected
 
 
-def test_static_package_is_exactly_one_s0009_job_at_exact_policy() -> None:
-    config, hashes = validate_static_config()
+def test_live_append_only_registry_preserves_confirmation_prefix_but_package_refuses_it() -> None:
+    registry = REPOSITORY_ROOT / "SEED_REGISTRY.md"
+    payload = registry.read_bytes()
+    prefix = frozen_b2_seed_registry_prefix(registry)
+    assert hashlib.sha256(prefix).hexdigest() == FROZEN_B2_SEED_REGISTRY_SHA256
+    assert payload[len(prefix) :] == AUTHORIZED_S0010_SUFFIX
+    assert sha256_file(registry) != FROZEN_B2_SEED_REGISTRY_SHA256
+    with pytest.raises(B2GateError, match="frozen_sources.seed_registry SHA-256 mismatch"):
+        validate_static_config()
+
+
+def test_static_package_is_exactly_one_s0009_job_at_exact_policy(tmp_path: Path) -> None:
+    config, hashes = _copy_historical_static_package(tmp_path)
     assert config["jobs"] == [EXPECTED_JOB]
     assert config["caps"]["exact_model_calls"] == 1
     assert config["caps"]["exact_generated_outputs"] == 1
@@ -232,8 +266,8 @@ def test_silence_and_missing_provenance_are_not_forgiven(tmp_path: Path) -> None
     assert "sample_count" not in failed
 
 
-def test_retained_call_is_read_only_revalidated_under_amendment() -> None:
-    config, _ = validate_static_config()
+def test_retained_call_is_read_only_revalidated_under_amendment(tmp_path: Path) -> None:
+    config, _ = _copy_historical_static_package(tmp_path)
     evidence = validate_prior_consumed_evidence(config)
     sanity = evidence["retained_call_readjudication"]
     assert sanity["pass"] is True
@@ -392,12 +426,19 @@ def test_one_row_ledger_is_canonical_strict_and_tamper_evident(tmp_path: Path) -
         validate_one_row_ledger(ledger)
 
 
-def test_template_is_inert_and_in_repo_completed_auth_is_rejected() -> None:
-    config, hashes = validate_static_config()
-    template = REPOSITORY_ROOT / config["authorization"]["template"]["path"]
+def test_template_is_inert_and_in_repo_completed_auth_is_rejected(tmp_path: Path) -> None:
+    repository = tmp_path / "historical-package"
+    config, hashes = _copy_historical_static_package(repository)
+    template = repository / config["authorization"]["template"]["path"]
     assert read_json(template)["execution_authorized"] is not True
     with pytest.raises(B2GateError, match="outside the repository"):
-        validate_external_authorization(template, config=config, hashes=hashes)
+        validate_external_authorization(
+            template,
+            config=config,
+            hashes=hashes,
+            repository_root=repository,
+            runner_path=repository / EXPECTED_FROZEN_PATHS["confirmation_runner"],
+        )
 
 
 def test_completed_external_authorization_binds_live_package_and_latest_decisions(
@@ -413,6 +454,9 @@ def test_completed_external_authorization_binds_live_package_and_latest_decision
         destination = repository / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPOSITORY_ROOT / relative, destination)
+    (repository / "SEED_REGISTRY.md").write_bytes(
+        frozen_b2_seed_registry_prefix(REPOSITORY_ROOT / "SEED_REGISTRY.md")
+    )
 
     config, hashes = validate_static_config(
         repository / "configs/b2_ace_duration_confirmation_v1.json",
@@ -503,7 +547,7 @@ def read_json(path: Path) -> dict[str, Any]:
 
 
 def test_wrapper_command_is_exactly_one_call_and_unique_paths(tmp_path: Path) -> None:
-    config, _ = validate_static_config()
+    config, _ = _copy_historical_static_package(tmp_path / "historical-package")
     authorization = tmp_path / "authorization.json"
     authorization.write_text("{}\n", encoding="utf-8")
     commands = expected_outer_commands(
@@ -545,7 +589,7 @@ def test_preclaim_failure_and_consumed_failure_have_exclusive_terminal_states(
 
 
 def test_valid_authorization_attempt_is_durable_exclusive_and_terminal(tmp_path: Path) -> None:
-    config, hashes = validate_static_config()
+    config, hashes = _copy_historical_static_package(tmp_path / "historical-package")
     claims = tmp_path / "claims"
     authorization = tmp_path / "authorization.json"
     authorization.write_text("{}\n", encoding="utf-8")

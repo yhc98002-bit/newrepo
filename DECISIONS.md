@@ -1517,3 +1517,197 @@ evaluation, and human-audit packet assembly remain closed.
 `BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
 
 `HUMAN_AUDIT_PACKET_ASSEMBLY = BLOCKED_ON_TIMING_PILOT_INGESTION`
+
+## D-0029 — Automatic endpoint-scoring lane opened on completed shards
+
+- Date: 2026-07-22
+- Status: accepted narrow execution opening
+- Authority: PI scoring-and-state-lanes authorization
+- Supersedes: D-0028 only for automatic scoring of immutable completed core
+  shards; it grants no audio-generation authority
+
+Automatic endpoint scoring may read only terminal, hash-validated completed
+shards. The exact sources are the complete 1,536-row SA3 run
+`benchmark-core-v2-20260720t174500z` and the now-complete 1,536-row ACE run
+`benchmark-core-v2-ace-20260721t091500z`. Active, partial, failed, replaced,
+or uncommitted rows are ineligible. The ACE completion receipt is
+`provenance/core/ace_core_completion_v2.json`, SHA-256
+`813c81219c7bcf3035f377248afd6a4996de1a6c2c3cbc1b5c396888149dc2a0`.
+
+The authorized implementation is `configs/automatic_scoring_v2.json`,
+SHA-256
+`1e03782323d469fe8bcae09aabd9d86aecf740050d54cbe95b26e14d39d1cbdd`.
+It recomputes only the frozen v2 vocal/instrumental, tempo, and integrity
+instruments. Structure/repetition remains exploratory and receives no binary
+success endpoint. Tables must report per-axis/per-backbone automatic
+prevalence with prompt-cluster intervals. The fresh-output evaluator-audit
+table may report operationalization agreement or discordance only; until the
+gated PI packet supplies pooled labels, it makes no accuracy, human-gold, or
+failed-slice claim. Stable Audio Open 1.0 remains an explicit missing primary
+row, not an imputed result.
+
+GPU evaluators run only on live-idle, independently locked an12 physical GPUs
+4–7, TP1 and one evaluator replica per card, with at most four replicas. Each
+worker requires no compute neighbor, at least 60 GB free before load and 20 GB
+free after load. A busy or changed device remains queued. No process is
+signaled, killed, moved, reconfigured, or preempted, and a scorer never shares
+a live generation or state-worker allocation.
+
+`AUTOMATIC_ENDPOINT_SCORING_AUTHORIZED = YES`
+
+`AUTOMATIC_ENDPOINT_SCORING_RUN_ID = automatic-scoring-v2-001`
+
+`AUTOMATIC_ENDPOINT_SCORING_CONFIG_SHA256 = 1e03782323d469fe8bcae09aabd9d86aecf740050d54cbe95b26e14d39d1cbdd`
+
+`AUDIO_GENERATION_AUTHORIZED_BY_SCORING = NO`
+
+`AUTOMATIC_SCORING_COMPLETED_SHARDS_ONLY = YES`
+
+`AUTOMATIC_SCORING_HUMAN_GOLD_CLAIMS = NO`
+
+`QUEUE_DO_NOT_PREEMPT = YES`
+
+## D-0030 — SA3 initial formal state-capture queue opened
+
+- Date: 2026-07-22
+- Status: accepted initial-tier state execution opening
+- Authority: PI scoring-and-state-lanes authorization and D-0020 technical
+  preflight PASS
+- Supersedes: D-0028 only for the SA3 initial formal Section-11 queue
+
+D-0020 satisfies the technical precondition, but is not itself a formal
+eligibility result. The exact formal lane config is
+`configs/sa3_state_capture_v2.json`, SHA-256
+`4bb6d6480dd5167da97e4907193204ac319df090668f976734de7d37da87d02e`.
+Its immutable source is the completed SA3 core queue. The initial tier has
+exactly 36 selected BASE prompts, roots 0–3, and checkpoints 25/50/75%:
+144 prefix groups, 432 `(prompt, root, checkpoint)` units, and 1,296 mapped
+action rows. Preview features come only from that unit's own root. Folds are
+prompt-grouped, and restart outcomes retain the exact
+`RESTART_POOL_SHARED_AT_PROMPT_LEVEL` label. No single-draw oracle or
+outcome-selected mapping is authorized.
+
+The prospective state cap is grounded only in D-0020's measured
+`249.481707109 s` one-group upper-bound residency and a conservative factor
+of two. It is exactly `71,850.731647392 GPU-s` (`19.95853656872 GPU-h`) for
+144 groups. Reservations are `232.6879820972681 s` per prefix group and
+`88.7584773735773 s` per resume unit. This is a hard engineering ceiling, not
+a runtime expectation or p95 claim. Calls are durably claimed with no
+automatic retry. Only disjoint live-idle an12 GPUs 4–7 may be used, TP1/R1,
+up to four concurrent workers; queueing takes precedence over preemption.
+
+The supplemental roots 4–7 tier remains locked. It can open only after the
+frozen initial four-way gate returns `INCONCLUSIVE_UNDERPOWERED` and a new
+decision authorizes the sole doubling. This decision does not declare any
+eligibility outcome.
+
+`SA3_STATE_CAPTURE_INITIAL_AUTHORIZED = YES`
+
+`BENCHMARK_STATE_INITIAL_QUEUE_AUTHORIZED = YES`
+
+`SA3_STATE_CAPTURE_SUPPLEMENTAL_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
+
+`NO_AUTOMATIC_RETRY = YES`
+
+`SA3_STATE_CAPTURE_CONFIG_SHA256 = 4bb6d6480dd5167da97e4907193204ac319df090668f976734de7d37da87d02e`
+
+`SA3_STATE_CAPTURE_INITIAL_GPU_SECONDS_CAP = 71850.731647392`
+
+`SA3_D0020_RESULT_SHA256 = 10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117`
+
+`STATE_CONFIG = configs/sa3_state_capture_v2.json`
+
+`STATE_CONFIG_SHA256 = 4bb6d6480dd5167da97e4907193204ac319df090668f976734de7d37da87d02e`
+
+`INITIAL_STATE_GPU_SECONDS_CAP = 71850.731647392`
+
+`D0020_RESULT_SHA256 = 10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117`
+
+`STATE_PLACEMENT = an12:[4,5,6,7]`
+
+`STATE_MAX_PARALLEL_REPLICAS = 4`
+
+## D-0031 — Sole ACE-Step v1 state-capability preflight opened
+
+- Date: 2026-07-22
+- Status: accepted one-attempt technical preflight opening
+- Authority: PI scoring-and-state-lanes authorization
+- Supersedes: D-0028 only for this non-benchmark ACE technical preflight
+
+The exact one-attempt config is `configs/ace_state_preflight_v2.json`,
+SHA-256
+`7996daa1803a71aeae2f9ac8441b73d8cc487eecd1343eb1ab4075e6cc563ed6`.
+Append-only seed `S-0010 = 73193010` is registered solely for this engineering
+reference/export/resume equivalence run. A complete attempt makes exactly
+four model calls and retains four clips: one uninterrupted reference exporting
+the nearest attainable 25/50/75% states at transitions 9/15/20 (cumulative
+transformer NFE 11/23/33), then three reload-and-continue calls in three
+separate child processes. The absolute envelope remains no more than eight
+generations, one GPU, 30 seconds per clip, 600 GPU-seconds, and zero retries.
+
+The comparison requires identical channels, frames, and sample rate, maximum
+absolute decoded error at most `1e-5`, and SNR at least 80 dB. The pinned ACE
+upstream exposes no native checkpoint/resume API, so the implementation uses
+a source-hash-guarded interposition restricted to the frozen Euler/CFG path;
+that limitation is recorded as technical provenance. It authorizes no
+benchmark endpoint, human-packet item, or formal Section-11 row.
+
+The attempt prioritizes an12 and selects one live-safe physical GPU from 4–7,
+TP1/R1, under the shared no-preempt lock and pre/post-load headroom gates. A
+PASS permits a later exact ACE initial-queue opening. Any new failure sets
+`ACE_STATE_CAPABILITY = NOT_IDENTIFIABLE` terminally and permits no second
+attempt; ordinary ACE core evidence remains valid either way.
+
+`ACE_STATE_PREFLIGHT_V2_AUTHORIZED = YES`
+
+`ACE_STATE_PREFLIGHT_V2_ATTEMPTS = 1`
+
+`ACE_STATE_PREFLIGHT_V2_MAX_GENERATIONS = 8`
+
+`ACE_STATE_PREFLIGHT_V2_MAX_GPU_SECONDS = 600`
+
+`ACE_STATE_PREFLIGHT_V2_RETRIES = 0`
+
+`ACE_STATE_PREFLIGHT_V2_RUN_ID = ace-state-preflight-v2-001`
+
+`ACE_STATE_PREFLIGHT_V2_CONFIG_SHA256 = 7996daa1803a71aeae2f9ac8441b73d8cc487eecd1343eb1ab4075e6cc563ed6`
+
+`ACE_STATE_CAPABILITY = PREFLIGHT_AUTHORIZED_NOT_YET_EXECUTED`
+
+## D-0032 — Human-audit packet autoassembly armed behind both gates
+
+- Date: 2026-07-22
+- Status: accepted fail-closed automation arm
+- Authority: PI scoring-and-state-lanes authorization
+- Supersedes: D-0028 only for the automatic gate watcher; it does not waive
+  timing-pilot ingestion or scored-strata completeness
+
+The exact arm config is `configs/human_packet_autoassembly_v2.json`, SHA-256
+`519f71753ee8340320a9a32e0c8dd72a577e8e48aa57154f20379382520dd4db`.
+It watches only the already-offered blinded timing-pilot receipt and the exact
+automatic-scoring candidate/status paths. Assembly occurs once, no-clobber,
+only after the pilot receipt validates and scored candidates satisfy every
+frozen v2 sampling stratum for all three primary human-audited backbones.
+Until then it emits a heartbeat and performs no assembly.
+
+Stable Audio Open 1.0 is still `BLOCKED_ON_LICENSE`; missing SAO strata cannot
+be silently filled from SA3 or ACE. Thus a valid timing response alone cannot
+produce a two-backbone packet. A future access decision or a prospective
+sampling amendment is required before all-three-backbone strata can be
+complete. Model-level voice fields retain the targeted-stress-audit wording,
+and automatic scoring does not become human gold through transport into the
+candidate index.
+
+The packet builder now enforces D-0026's inclusive per-backbone 30-second
+duration tolerance (`abs(duration - 30) <= 0.25 s`), so native ACE clips at
+`29.9073125 s` remain valid without loosening SA3 in practice.
+
+`HUMAN_AUDIT_PACKET_AUTOASSEMBLY = ARMED`
+
+`HUMAN_AUDIT_PACKET_AUTOASSEMBLY_CONFIG_SHA256 = 519f71753ee8340320a9a32e0c8dd72a577e8e48aa57154f20379382520dd4db`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA`
+
+`HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO`

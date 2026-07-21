@@ -14,3 +14,4 @@ never edited or removed; a new row may supersede one only by identifier.
 | S-0007 | 73193007 | Smoke E, uninterrupted and resumed paths | none |
 | S-0008 | 73193008 | B2 ACE-Step v1 mini-smoke job 1, non-benchmark cost calibration | none |
 | S-0009 | 73193009 | B2 ACE-Step v1 mini-smoke job 2, non-benchmark resident-call cost calibration | none |
+| S-0010 | 73193010 | ACE-Step v1 state preflight reference/export/resume equivalence, non-benchmark | none |

@@ -1,0 +1,18 @@
+{
+  "amendment": {
+    "decision": "D-0026",
+    "duration_rule": "abs(decoded_duration_seconds - 30.0) <= 0.25",
+    "effect": "Packet assembly accepts native ACE-Step v1 29.9073125-second outputs and retains the same inclusive tolerance for SA3.",
+    "scope": "candidate audio duration validation only"
+  },
+  "files": {
+    "audio_duration_policy.py": "54268349d62a35e86b55127c374219749e33c66995aeded6750b26944efb568e",
+    "build_human_packet.py": "1a9dcced5770968897991541b6f0384389789c65fd2d259d4437ecdad895905a"
+  },
+  "schema_version": 1,
+  "status": "FROZEN_POST_V2_DURATION_AMENDMENT",
+  "supersedes_for_duration_validation_only": {
+    "path": "rater/freeze_manifest_v2.json",
+    "sha256": "3fc506db647b4b1690866abe39f23f786c256376de3f304845a3fae294edc232"
+  }
+}

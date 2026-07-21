@@ -1,0 +1,301 @@
+{
+  "axes": {
+    "confirmatory": [
+      "vocal_instrumental",
+      "tempo",
+      "integrity"
+    ],
+    "exploratory_only": [
+      "structure_exploratory"
+    ]
+  },
+  "backbones": [
+    {
+      "backbone": "stable-audio-3-medium-base",
+      "model_id": "stabilityai/stable-audio-3-medium-base",
+      "source_mode": "FULL",
+      "status": "COMPLETED_SOURCE_READY"
+    },
+    {
+      "backbone": "stable-audio-open-1.0",
+      "model_id": "stabilityai/stable-audio-open-1.0",
+      "source_mode": "NONE",
+      "status": "MISSING_BLOCKED_ON_LICENSE"
+    },
+    {
+      "backbone": "ACE-Step v1",
+      "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+      "source_mode": "INCREMENTAL_ADDITION",
+      "status": "COMPLETED_SOURCE_READY"
+    }
+  ],
+  "execution": {
+    "authorization": {
+      "decision_id": "D-0029",
+      "exact_cli_ack_required": true,
+      "requires_live_config_sha256": true,
+      "required_assignments": [
+        "AUTOMATIC_ENDPOINT_SCORING_AUTHORIZED = YES",
+        "AUTOMATIC_ENDPOINT_SCORING_RUN_ID = automatic-scoring-v2-001",
+        "AUDIO_GENERATION_AUTHORIZED_BY_SCORING = NO",
+        "QUEUE_DO_NOT_PREEMPT = YES"
+      ]
+    },
+    "axis_shards": {
+      "integrity": 8,
+      "tempo": 4,
+      "vocal_instrumental": 4
+    },
+    "placement": {
+      "candidate_physical_gpu_ids": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "maximum_parallel_gpu_workers": 4,
+      "node": "an12",
+      "replica_count_per_worker": 1,
+      "tensor_parallel_width": 1,
+      "why": "Four independent TP1 evaluator workers maximize throughput; every worker takes one live-idle card and queues without preempting generation or state neighbors."
+    },
+    "prepare_scores_endpoints": false,
+    "queue_policy": "QUEUE_DONT_PREEMPT"
+  },
+  "feature_contract": {
+    "beat_this_source": {
+      "commit": "ad7974846029835307ba19a3d5cefbf40b243041",
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/source/beat_this-v1.1.0-ad797484",
+      "tree": "da41753ac43c6faea116d953009452154c9a3331"
+    },
+    "binding_status": "EXACT_RUNTIME_BOUND",
+    "expected_evaluator_identities": {
+      "integrity": {
+        "implementation": "src/instruments/integrity.py",
+        "implementation_sha256": "b8d7f22d9b958c5a08a345ccbfba8d7fac09b8b77e51bb762f0f3bedc9a9da5d",
+        "synthetic_validation_sha256": "4e1b124ad2247eced85d21f049ad5b3849a4e1dd1a395689c235ec3d998a4dab"
+      },
+      "tempo": {
+        "beat_this_checkpoint_sha256": "8c328b45f59d8dd3dff219253ff6a8d6482be57d0133a29140e2febbf8eb8331",
+        "beat_this_commit": "ad7974846029835307ba19a3d5cefbf40b243041",
+        "beat_this_postprocessor": "minimal",
+        "beat_this_tree": "da41753ac43c6faea116d953009452154c9a3331",
+        "librosa_version": "0.11.0",
+        "window_seconds": [
+          [
+            2,
+            14
+          ],
+          [
+            16,
+            28
+          ]
+        ]
+      },
+      "voice": {
+        "demucs_behavior_source_sha256": "08da9d35d632025280a6dbaf690e4d562a64c949f13d5fb75ea1f1879689f028",
+        "demucs_model": "htdemucs",
+        "demucs_version": "4.0.1",
+        "demucs_weight_sha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4",
+        "old_reference_implementation_sha256": "3aa68674b9ce919d407f25070a93ca73f14ed39af36f41090a4db000b5df1524",
+        "panns_checkpoint": "Cnn14_mAP=0.431.pth",
+        "panns_inference_version": "0.1.1",
+        "panns_weight_sha256": "0dc499e40e9761ef5ea061ffc77697697f277f6a960894903df3ada000e34b31",
+        "readout": "PROMOTED_OR_AUTOMATIC_INSTRUMENT_OUTCOME"
+      }
+    },
+    "external_artifacts": [
+      {
+        "id": "beat_this_final0",
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/evaluators/beat-this-v1.1.0/final0.ckpt",
+        "sha256": "8c328b45f59d8dd3dff219253ff6a8d6482be57d0133a29140e2febbf8eb8331",
+        "size_bytes": 81058141
+      },
+      {
+        "id": "demucs_htdemucs",
+        "path": "/HOME/paratera_xy/pxy1289/.cache/torch/hub/checkpoints/955717e8-8726e21a.th",
+        "sha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4",
+        "size_bytes": 84141911
+      },
+      {
+        "id": "panns_cnn14",
+        "path": "/HOME/paratera_xy/pxy1289/panns_data/Cnn14_mAP=0.431.pth",
+        "sha256": "0dc499e40e9761ef5ea061ffc77697697f277f6a960894903df3ada000e34b31",
+        "size_bytes": 327428481
+      },
+      {
+        "id": "old_demucs_behavior_source",
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/AudioDiffusion/src/mprm/rewards/demucs.py",
+        "sha256": "08da9d35d632025280a6dbaf690e4d562a64c949f13d5fb75ea1f1879689f028",
+        "size_bytes": 2778
+      },
+      {
+        "id": "old_promoted_or_reference",
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/AudioDiffusion/orbit-research/adsr_phase2_20260604/paper_prep/w2_contingency_20260711/w2_instruments.py",
+        "sha256": "3aa68674b9ce919d407f25070a93ca73f14ed39af36f41090a4db000b5df1524",
+        "size_bytes": 13447
+      }
+    ],
+    "human_gold_labels_allowed": false,
+    "interpreter": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/environments/scoring-v2/bin/python",
+    "package_versions": {
+      "demucs": "4.0.1",
+      "librosa": "0.11.0",
+      "numpy": "2.2.6",
+      "panns-inference": "0.1.1",
+      "rotary-embedding-torch": "0.6.4",
+      "scipy": "1.15.3",
+      "soundfile": "0.13.1",
+      "torch": "2.7.1",
+      "torchaudio": "2.7.1"
+    },
+    "raw_features_only": true
+  },
+  "frozen_inputs": [
+    {
+      "path": "BENCHMARK_PREREG_v2.md",
+      "sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa"
+    },
+    {
+      "path": "configs/statistics_v2.json",
+      "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+    },
+    {
+      "path": "prompts/v2/manifest.json",
+      "sha256": "171d6c757ff3ecec1918d2f032206c2b570b3302dc5ed0100da0db5d22708089"
+    },
+    {
+      "path": "prompts/v2/vocal_instrumental.json",
+      "sha256": "602c4e0fb419d7a300116eb5fb76c30a8e19364aaef566aec05425caffed9f90"
+    },
+    {
+      "path": "prompts/v2/tempo.json",
+      "sha256": "16e31c155e1d535f2211fcd85c8d666c9ba7a6636e4487fd43ea2fd5fa0e36ab"
+    },
+    {
+      "path": "prompts/v2/integrity.json",
+      "sha256": "be0e7c65fa8dfad8c7fdbf4456b2c1ad7e6f4fe0bbeb67eba2fcbf96b5f16d03"
+    },
+    {
+      "path": "prompts/v2/structure_exploratory.json",
+      "sha256": "6e9ca89c20ebb43313d9b492140970d876a5cfc657cf123cfe44b7d89e974af8"
+    },
+    {
+      "path": "prompts/v2/seed_registry.json",
+      "sha256": "2115d7e70a6c3f4dd19f38503861b8aeb3595a8f64dd1fc839d7a209e80724eb"
+    },
+    {
+      "path": "provenance/b1/T6_PROMOTION_RESULT.json",
+      "sha256": "2ec9f12fd9008dae0e32675fcdaaf9e7a22fe0ed7006dd310b665b1e82be2ff2"
+    },
+    {
+      "path": "provenance/b1/voice_source_manifest.json",
+      "sha256": "422f5509b12ae101c4bfa96db96254717c3a454f350e1907d05fc6e72eab8df0"
+    },
+    {
+      "path": "provenance/b1/tempo_evaluator_pins.json",
+      "sha256": "375df3abe0daf13cc50741db16db8d0347ba3074b874c3434402d54593476447"
+    },
+    {
+      "path": "provenance/b1/integrity_synthetic_fixture.json",
+      "sha256": "ec1fe4292dea823a4cfca29b83302b04c8a31151c9e5218157982c1fc342aaad"
+    },
+    {
+      "path": "provenance/b1/integrity_synthetic_validation.json",
+      "sha256": "4e1b124ad2247eced85d21f049ad5b3849a4e1dd1a395689c235ec3d998a4dab"
+    },
+    {
+      "path": "src/instruments/voice.py",
+      "sha256": "b952580ec06e8b88cde704a1ad6f8597fd2d15c2f1c4b6e37c90a3a2c2378469"
+    },
+    {
+      "path": "src/instruments/tempo.py",
+      "sha256": "c6cadcb3d65225bccd32ae34c4f5fd9f4881269e738336d3892f0ff7fb614f22"
+    },
+    {
+      "path": "src/instruments/integrity.py",
+      "sha256": "b8d7f22d9b958c5a08a345ccbfba8d7fac09b8b77e51bb762f0f3bedc9a9da5d"
+    },
+    {
+      "path": "rater/schema_v2.json",
+      "sha256": "0edb492fbf00355aec3e9f059d3b17557814f58b203c963f1c420f0c92ccde76"
+    }
+  ],
+  "gpu_guard": {
+    "candidates": [
+      {
+        "node": "an12",
+        "physical_gpu_ids": [
+          4,
+          5,
+          6,
+          7
+        ]
+      }
+    ],
+    "excluded_generation_allocations": [],
+    "generation_allocation_rule": "EXCLUDE_ANY_LIVE_GENERATION_OR_STATE_ALLOCATION_BY_SHARED_LOCK_AND_NVIDIA_SMI_PROCESS_CHECK; HISTORICAL_RELEASED_ALLOCATIONS_ARE_NOT_EXCLUDED",
+    "generation_lock_roots": [
+      "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/locks/core-v2"
+    ],
+    "maximum_idle_utilization_percent": 5,
+    "minimum_free_vram_bytes": 60000000000,
+    "policy": "QUEUE_DONT_PREEMPT",
+    "post_load_reserve_bytes": 20000000000,
+    "required_gpu_name_substring": "A800",
+    "scoring_lock_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/locks/scoring-v2"
+  },
+  "output": {
+    "candidate_index": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-001/tables/human-audit-candidate-index.json",
+    "root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-001",
+    "scoring_status": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-001/scoring-status.json"
+  },
+  "primary_backbones": [
+    "stable-audio-3-medium-base",
+    "stable-audio-open-1.0",
+    "ACE-Step v1"
+  ],
+  "run_id": "automatic-scoring-v2-001",
+  "schema_version": 1,
+  "sources": [
+    {
+      "backbone": "stable-audio-3-medium-base",
+      "completion_mode": "FULL",
+      "expected_completed_rows": 1536,
+      "expected_completed_shards": 384,
+      "expected_queue_rows": 1536,
+      "expected_hashes": {
+        "heartbeat": "e43dc2ff05ee0c69a981c4c321de9438799790ffaba889eeae23b9c4c10a4c04",
+        "ledger": "1c4e8937bd5eb4f94836bbb0b5a7e205bfc714ad2fdba81bfc3802ff9e4e192f",
+        "ledger_tail": "83ccc0d171f6f2418aafb8dfd93c9cabcfeda65e10c78d0d23c19c7d976b3eda",
+        "queue": "afedee0bb422c27c2cad64e7be9dc960384f706f8f9201bbea95e8f2418c7bf4",
+        "run_manifest": "e3d6e8a11bc4a0dd47cd454823463cb699c76b79671ec4aadc09b4799428f56c"
+      },
+      "model_id": "stabilityai/stable-audio-3-medium-base",
+      "model_slug": "sa3-medium-base",
+      "run_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z",
+      "run_id": "benchmark-core-v2-20260720t174500z",
+      "worker_slug": "sa3-medium-base"
+    },
+    {
+      "backbone": "ACE-Step v1",
+      "completion_mode": "INCREMENTAL_ADDITION",
+      "expected_completed_rows": 1536,
+      "expected_completed_shards": 384,
+      "expected_queue_rows": 1536,
+      "expected_hashes": {
+        "heartbeat": "bd6c3a007d32fccf7a274819a56b4c840f6a78ca6aa6c6482308e772bd1aff8d",
+        "ledger": "7f63aac18b4c503b4f17a6c03d0239715229a9d7751cb6db1531e2bd592b76d9",
+        "ledger_tail": "50c5579d247d8fdb34470a647d5438d10b980cbee5b305918f6bb37e1da81306",
+        "queue": "db4ce65dabee9219e30a5c22c0eb56ed7b0a6f9e3ebaf98302f725cb8e8fd37f",
+        "run_manifest": "776cf4ed9bd14a6bc1712d3edc85cf21c27694861810fd8353d3895882aab64d"
+      },
+      "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+      "model_slug": "ace-step-v1",
+      "run_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z",
+      "run_id": "benchmark-core-v2-ace-20260721t091500z",
+      "worker_slug": "ace-step-v1"
+    }
+  ],
+  "status": "IMPLEMENTED_NOT_LAUNCHED"
+}

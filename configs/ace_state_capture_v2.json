@@ -1,0 +1,163 @@
+{
+  "authorization_contract": {
+    "automatic_retry_allowed": false,
+    "execution_authorized_by_this_config_alone": false,
+    "required_decision_assignments": [
+      "ACE_STATE_CAPABILITY = PASS",
+      "ACE_STATE_CAPTURE_INITIAL_AUTHORIZED = YES",
+      "ACE_STATE_CAPTURE_SUPPLEMENTAL_AUTHORIZED = NO",
+      "NO_AUTOMATIC_RETRY = YES"
+    ],
+    "required_decision_id": "D-0033",
+    "required_initial_gpu_cap_assignment": "ACE_STATE_CAPTURE_INITIAL_GPU_SECONDS_CAP",
+    "required_preflight_terminal_path_assignment": "ACE_STATE_PREFLIGHT_TERMINAL",
+    "required_preflight_terminal_sha256_assignment": "ACE_STATE_PREFLIGHT_TERMINAL_SHA256",
+    "sole_preflight_terminal": {
+      "attempt_id": "ace-state-preflight-v2-attempt-001",
+      "claim_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/ace-state-preflight-v2",
+      "expected_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/ace-state-preflight-v2/ace-state-preflight-v2-one-attempt.terminal.json",
+      "result_sha256_binding": "READ_FROM_THE_VALIDATED_PASS_TERMINAL_THEN_BOUND_BY_D0033_AND_THE_OUTPUT_MANIFEST",
+      "run_id": "ace-state-preflight-v2-001",
+      "status_required": "PASS"
+    },
+    "supplemental_queue_status": "LOCKED_UNLESS_INITIAL_GATE_IS_INCONCLUSIVE_UNDERPOWERED_AND_A_SEPARATE_AMENDMENT_OPENS_THE_SINGLE_DOUBLING"
+  },
+  "checkpoint_mapping": {
+    "budget_unit": "MEASURED_ACE_TRANSFORMER_DECODE_CALLS",
+    "capture_fractions": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "completed_scheduler_transitions": [
+      9,
+      15,
+      20
+    ],
+    "cumulative_transformer_nfe": [
+      11,
+      23,
+      33
+    ],
+    "mapping_rule": "For each fraction of the frozen 45-call transformer budget, select the post-transition state with minimum absolute cumulative-NFE distance; ties select the earlier state.",
+    "total_scheduler_transitions": 30,
+    "total_transformer_nfe": 45
+  },
+  "execution_status": "CLOSED_PENDING_SOLE_PREFLIGHT_PASS_AND_D0033",
+  "frozen_design": {
+    "actions": [
+      "KEEP",
+      "RESTART_BASE",
+      "RESTART_FIXED"
+    ],
+    "axes": [
+      "vocal_instrumental",
+      "tempo",
+      "integrity"
+    ],
+    "capture_mode": "SEPARATE_LEDGERED_STATE_CAPTURE_QUEUE",
+    "condition": "BASE",
+    "eligibility_unit": [
+      "prompt",
+      "root",
+      "checkpoint"
+    ],
+    "expected_action_rows": 1296,
+    "expected_initial_units": 432,
+    "expected_prefix_groups": 144,
+    "fold_count": 6,
+    "initial_root_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "preview_source": "ONLY_THE_SAME_UNITS_ROOT_LOCAL_PRE_ACTION_DECODED_PREVIEW",
+    "prompt_count_per_axis": 12,
+    "restart_outcome_label": "RESTART_POOL_SHARED_AT_PROMPT_LEVEL",
+    "restart_pool_root_indices": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "source_queue_rule": "DERIVE_FRESH_FROM_THE_COMPLETED_ACE_CORE_GENERATION_QUEUE; NEVER_REUSE_THE_SA3_DERIVED_STATE_QUEUE",
+    "supplemental_root_indices": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "tier": "INITIAL"
+  },
+  "frozen_sources": {
+    "benchmark_prereg_v2": {
+      "path": "BENCHMARK_PREREG_v2.md",
+      "sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa"
+    },
+    "incremental_core_config": {
+      "path": "configs/benchmark_core_v2_ace_incremental.json",
+      "sha256": "6e4886b235474ea08083b9a01d24d6cddaad8443ce3e0ab3fef49dedfe5ef23f"
+    },
+    "statistics_v2": {
+      "path": "configs/statistics_v2.json",
+      "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+    }
+  },
+  "lane_id": "ace-step-v1-state-capture-v2",
+  "mapping": {
+    "checkpoint_token_rule": "SHORTEST_DECIMAL_JSON_NUMBER",
+    "fold_namespace": "benchmark-v2-eligibility-folds-20260720",
+    "restart_namespace": "benchmark-v2-restart-map-20260720",
+    "rotation_direction": "LEFT"
+  },
+  "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+  "output": {
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2"
+  },
+  "placement": {
+    "allowed_nodes": [
+      "an12"
+    ],
+    "allowed_physical_gpu_ids": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "maximum_parallel_replicas": 4,
+    "placement_justification": "Prefer four independent TP1 replicas on the four realtime-idle an12 GPUs; every later worker must re-probe and fail closed rather than risk a neighbor OOM.",
+    "replica_count_per_worker": 1,
+    "tp_width": 1
+  },
+  "schema_version": 1,
+  "source_core_run": {
+    "artifact_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/artifacts",
+    "generation_queue": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/queues/generation/queue.jsonl",
+      "row_count": 1536,
+      "sha256": "db4ce65dabee9219e30a5c22c0eb56ed7b0a6f9e3ebaf98302f725cb8e8fd37f"
+    },
+    "generation_queue_manifest": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/queues/generation/queue-manifest.json",
+      "sha256": "bb3078eae829a76d0a883b0c6e45467b69cdf6b058b84f98a9dba23d2cbacdb2"
+    },
+    "legacy_initial_state_queue": {
+      "disposition": "REJECT_MODEL_ID_IS_SA3_NOT_ACE",
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/queues/state-capture-initial/state-capture-queue.jsonl",
+      "sha256": "bc03a333e9cb096747ca7d9392a1a33a1c781315b1c1c698b20c888f74ca00c8"
+    },
+    "ledger": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/ledger.jsonl",
+      "row_count": 4608,
+      "sha256": "7f63aac18b4c503b4f17a6c03d0239715229a9d7751cb6db1531e2bd592b76d9",
+      "tail_sha256": "50c5579d247d8fdb34470a647d5438d10b980cbee5b305918f6bb37e1da81306"
+    },
+    "run_id": "benchmark-core-v2-ace-20260721t091500z",
+    "run_manifest": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/run-manifest.json",
+      "sha256": "776cf4ed9bd14a6bc1712d3edc85cf21c27694861810fd8353d3895882aab64d"
+    }
+  },
+  "tier": "INITIAL"
+}

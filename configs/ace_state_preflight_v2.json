@@ -1,0 +1,169 @@
+{
+  "authorization": {
+    "authorization_id": "ACE-STATE-PREFLIGHT-V2-ONE-ATTEMPT",
+    "execution_authorized_by_this_config_alone": false,
+    "external_authorization_max_age_seconds": 86400,
+    "required_execute_phrase": "I_UNDERSTAND_THIS_CONSUMES_THE_ONLY_ACE_STATE_PREFLIGHT_ATTEMPT",
+    "requires_clean_main_equal_origin_main": true,
+    "requires_postfreeze_decision": true,
+    "requires_seed_registry_row": true
+  },
+  "caps": {
+    "exact_model_calls_if_completed": 4,
+    "exact_retained_audio_outputs_if_completed": 4,
+    "max_clip_seconds_requested": 30.0,
+    "max_generations_absolute": 8,
+    "max_gpu_seconds": 600.0,
+    "max_gpus": 1,
+    "max_model_calls": 4,
+    "max_retries": 0,
+    "max_state_exports": 3,
+    "tensor_parallel_width": 1,
+    "replica_count": 1
+  },
+  "checkpoint_contract": {
+    "budget_unit": "MEASURED_ACE_TRANSFORMER_DECODE_CALLS",
+    "capture_fractions": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "completed_scheduler_transitions": [
+      9,
+      15,
+      20
+    ],
+    "cumulative_transformer_nfe": [
+      11,
+      23,
+      33
+    ],
+    "export_dtype": "float32",
+    "guidance_end_index_exclusive": 22,
+    "guidance_start_index_inclusive": 7,
+    "mapping_rule": "For each fraction of the 45-call frozen transformer budget, select the post-transition state with minimum absolute cumulative-NFE distance; ties select the earlier state.",
+    "next_scheduler_indices": [
+      9,
+      15,
+      20
+    ],
+    "total_scheduler_transitions": 30,
+    "total_transformer_nfe": 45
+  },
+  "engine": {
+    "checkpoint_tree_sha256": "124f8267d6c19f992e8b79880cc59e1ec1104439e6150312ebc94d7563d260fc",
+    "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+    "production_factory": "state_capture.ace_engine:production_engine_factory",
+    "resume_child_module": "state_capture.ace_child",
+    "source_commit": "1bee4c9f5b43e30995f8d4d33b3919197ce1bd68",
+    "source_tree": "a526413e5791e8b3bca32c0246701adaf7626f2b",
+    "upstream_pipeline_relative_path": "acestep/pipeline_ace_step.py",
+    "upstream_pipeline_sha256": "2f6982dcf331bbe92bdb51d2bb9e657dc76cfca4437335d4388a992ec0652ba2",
+    "upstream_scheduler_relative_path": "acestep/schedulers/scheduling_flow_match_euler_discrete.py",
+    "upstream_scheduler_sha256": "d3d724dec32d4f2d3df62d4dc9de30c1b74c0d2602e19063ec00031e2f7ebe8d"
+  },
+  "equivalence": {
+    "comparison_dtype": "float64",
+    "max_absolute_error": 1e-05,
+    "minimum_snr_db": 80.0,
+    "reference_target": "THE_SINGLE_UNINTERRUPTED_REFERENCE_WAV",
+    "require_exact_channels_frames_sample_rate": true,
+    "require_separate_process_per_checkpoint": true,
+    "tolerance_provenance": "D-0020 Smoke E technical-foundation tolerance, prospectively reused for this ACE engineering preflight"
+  },
+  "frozen_generation": {
+    "audio_duration_seconds": 30.0,
+    "cfg_type": "cfg",
+    "format": "wav",
+    "guidance_interval": 0.5,
+    "guidance_interval_decay": 0.0,
+    "guidance_scale": 5.0,
+    "inference_steps": 30,
+    "lyrics": "",
+    "min_guidance_scale": 3.0,
+    "omega_scale": 10.0,
+    "sample_rate": 48000,
+    "scheduler_shift": 3.0,
+    "scheduler_type": "euler",
+    "use_erg_diffusion": false,
+    "use_erg_lyric": false,
+    "use_erg_tag": false
+  },
+  "frozen_sources": {
+    "ace_adapter": {
+      "path": "src/backbones/ace_step_v1.py",
+      "sha256": "a18aeb11d199656b46a18793e1e75bf03a54d0c135894db46738da0f18d8b0d7"
+    },
+    "ace_backbone_config": {
+      "path": "configs/backbones/ace_step_v1.json",
+      "sha256": "b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879"
+    },
+    "benchmark_prereg_v2": {
+      "path": "BENCHMARK_PREREG_v2.md",
+      "sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa"
+    },
+    "incremental_core_config": {
+      "path": "configs/benchmark_core_v2_ace_incremental.json",
+      "sha256": "6e4886b235474ea08083b9a01d24d6cddaad8443ce3e0ab3fef49dedfe5ef23f"
+    },
+    "phase_b_terminal_amendment": {
+      "path": "provenance/b2/build_status_terminal_v2_ace_amendment.json",
+      "sha256": "619eb06b21012624b446dfa0d41dc6602c060889406ec431ff52d5a9cb879a34"
+    },
+    "statistics_v2": {
+      "path": "configs/statistics_v2.json",
+      "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+    }
+  },
+  "placement": {
+    "allowed_nodes": [
+      "an12",
+      "an29"
+    ],
+    "candidate_physical_gpu_ids": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "cooperative_lock_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/locks/core-v2",
+    "logical_gpu_id": 0,
+    "maximum_idle_utilization_percent": 5,
+    "minimum_free_vram_bytes": 60000000000,
+    "nonpreemption_policy": "WAIT_OR_FAIL_WITHOUT_SIGNALING_KILLING_MIGRATING_OR_RECONFIGURING_ANY_NEIGHBOR",
+    "node_priority": [
+      "an12",
+      "an29"
+    ],
+    "post_load_reserve_bytes": 20000000000,
+    "required_gpu_name_substring": "A800"
+  },
+  "protocol_status": "PREPARED_NOT_AUTHORIZED",
+  "proposed_reference_request": {
+    "prompt": "A continuous instrumental engineering passage with warm acoustic guitar, steady bass, and light hand percussion; no vocals; clean sustained ending.",
+    "prompt_id": "ace-state-preflight-v2-engineering-reference",
+    "registration_status": "REGISTERED_AS_S0010_FOR_D0031_ONE_ATTEMPT_PREFLIGHT",
+    "seed": 73193010,
+    "seed_id": "S-0010"
+  },
+  "run": {
+    "attempt_claim_filename": "ace-state-preflight-v2-one-attempt.claim.json",
+    "attempt_id": "ace-state-preflight-v2-attempt-001",
+    "authorization_scope": "ACE_STEP_V1_STATE_PREFLIGHT_NON_BENCHMARK",
+    "claim_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/ace-state-preflight-v2",
+    "heartbeat_interval_seconds": 30,
+    "run_id": "ace-state-preflight-v2-001",
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/ace-state-preflight-v2",
+    "terminal_filename": "terminal.json"
+  },
+  "schema_version": 1,
+  "scope": "ACE_STEP_V1_STATE_PREFLIGHT_NON_BENCHMARK",
+  "scientific_boundary": {
+    "benchmark_endpoint": false,
+    "formal_section_11_capture": false,
+    "human_packet_member": false,
+    "instrument_evaluation_allowed": false,
+    "pass_effect": "TECHNICAL_CAPABILITY_ONLY_REQUIRES_SEPARATE_PREREGISTERED_STATE_SCREEN",
+    "state_queue_access": "FORBIDDEN"
+  }
+}

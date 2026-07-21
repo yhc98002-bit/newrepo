@@ -1,0 +1,1 @@
+"""Automatic-scoring fixture tests."""

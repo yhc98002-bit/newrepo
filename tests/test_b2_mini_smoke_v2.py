@@ -34,10 +34,28 @@ from scripts.run_b2_mini_smoke_v2 import (
     validate_ledger_chain,
     validate_static_config,
 )
+from tests.seed_registry_history import (
+    AUTHORIZED_S0010_SUFFIX,
+    FROZEN_B2_SEED_REGISTRY_SHA256,
+    frozen_b2_seed_registry_prefix,
+)
 
 
-def test_static_package_is_exactly_two_unscored_30_second_registered_seed_jobs() -> None:
-    config, hashes = validate_static_config()
+def test_live_append_only_registry_preserves_b2_prefix_but_consumed_package_refuses_it() -> None:
+    registry = REPOSITORY_ROOT / "SEED_REGISTRY.md"
+    payload = registry.read_bytes()
+    prefix = frozen_b2_seed_registry_prefix(registry)
+    assert hashlib.sha256(prefix).hexdigest() == FROZEN_B2_SEED_REGISTRY_SHA256
+    assert payload[len(prefix) :] == AUTHORIZED_S0010_SUFFIX
+    assert sha256_file(registry) != FROZEN_B2_SEED_REGISTRY_SHA256
+    with pytest.raises(B2GateError, match="frozen_sources.seed_registry SHA-256 mismatch"):
+        validate_static_config()
+
+
+def test_static_package_is_exactly_two_unscored_30_second_registered_seed_jobs(
+    tmp_path: Path,
+) -> None:
+    config, hashes = _copy_static_package(tmp_path)
     assert config["scoring"] == {
         "benchmark_endpoints_scored": False,
         "human_packet_member": False,
@@ -53,12 +71,12 @@ def test_static_package_is_exactly_two_unscored_30_second_registered_seed_jobs()
         EXPECTED_SEEDS
     )
     assert all(job["duration_seconds"] == 30.0 for job in config["jobs"])
-    assert hashes["seed_registry"] == sha256_file(REPOSITORY_ROOT / "SEED_REGISTRY.md")
+    assert hashes["seed_registry"] == FROZEN_B2_SEED_REGISTRY_SHA256
 
 
-def test_committed_authorization_template_is_inert() -> None:
-    config, hashes = validate_static_config()
-    template = REPOSITORY_ROOT / config["authorization"]["template"]["path"]
+def test_committed_authorization_template_is_inert(tmp_path: Path) -> None:
+    config, hashes = _copy_static_package(tmp_path)
+    template = tmp_path / config["authorization"]["template"]["path"]
     with pytest.raises(B2GateError, match="template|placeholder"):
         validate_external_authorization(
             template,
@@ -106,6 +124,8 @@ def _copy_static_package(destination: Path) -> tuple[dict[str, Any], dict[str, s
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(REPOSITORY_ROOT / relative, target)
+    registry = destination / "SEED_REGISTRY.md"
+    registry.write_bytes(frozen_b2_seed_registry_prefix(REPOSITORY_ROOT / "SEED_REGISTRY.md"))
     (destination / "scripts" / "run_b2_mini_smoke_v2_with_timeout.py").chmod(0o755)
     (destination / "prompts" / "v2").mkdir(parents=True)
     return validate_static_config(
@@ -453,7 +473,7 @@ def test_frozen_wrapper_builds_exact_gnu_timeout_boundary(
 def test_runner_proves_parent_timeout_argv_and_records_both_commands(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    config, _hashes = validate_static_config()
+    config, _hashes = _copy_static_package(tmp_path / "historical-package")
     authorization = tmp_path / "authorization.json"
     authorization.write_text("{}\n", encoding="utf-8")
     commands = expected_outer_commands(

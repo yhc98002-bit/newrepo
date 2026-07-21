@@ -19,6 +19,7 @@ from rater.build_human_packet import (
     assemble_human_packet,
     packet_gate,
     select_human_packet,
+    validate_packet_audio_duration,
 )
 from rater.build_timing_pilot import build, collect_build_inputs
 from rater.bundle_common import StrictJSONError, sha256_file
@@ -899,3 +900,14 @@ def test_gated_future_assembler_builds_public_private_packet(tmp_path: Path) -> 
             tmp_path / "human-public",
             tmp_path / "human-private",
         )
+
+
+def test_packet_duration_uses_d0026_per_backbone_tolerance() -> None:
+    validate_packet_audio_duration(30.0)
+    validate_packet_audio_duration(29.9073125)
+    validate_packet_audio_duration(29.75)
+    validate_packet_audio_duration(30.25)
+    with pytest.raises(ValueError, match="amended 30-second"):
+        validate_packet_audio_duration(29.749999)
+    with pytest.raises(ValueError, match="amended 30-second"):
+        validate_packet_audio_duration(30.250001)

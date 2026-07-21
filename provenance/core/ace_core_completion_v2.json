@@ -1,0 +1,51 @@
+{
+  "completed_calls": 1536,
+  "completed_shards": 384,
+  "config_sha256": "6e4886b235474ea08083b9a01d24d6cddaad8443ce3e0ab3fef49dedfe5ef23f",
+  "failed_calls": 0,
+  "generation_queue": {
+    "manifest_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/queues/generation/queue-manifest.json",
+    "manifest_sha256": "bb3078eae829a76d0a883b0c6e45467b69cdf6b058b84f98a9dba23d2cbacdb2",
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/queues/generation/queue.jsonl",
+    "row_count": 1536,
+    "sha256": "db4ce65dabee9219e30a5c22c0eb56ed7b0a6f9e3ebaf98302f725cb8e8fd37f"
+  },
+  "git_commit": "79d9193b7e67944242395600576d0a3762503ea6",
+  "heartbeat": {
+    "completed": 1536,
+    "failed": 0,
+    "last_ledger_sha256": "50c5579d247d8fdb34470a647d5438d10b980cbee5b305918f6bb37e1da81306",
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/workers/ace-step-v1/heartbeat.json",
+    "sha256": "bd6c3a007d32fccf7a274819a56b4c840f6a78ca6aa6c6482308e772bd1aff8d",
+    "state": "COMPLETE",
+    "updated_at_utc": "2026-07-21T10:53:42.403561+00:00"
+  },
+  "ledger": {
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z/ledger.jsonl",
+    "row_count": 4608,
+    "sha256": "7f63aac18b4c503b4f17a6c03d0239715229a9d7751cb6db1531e2bd592b76d9",
+    "tail_sha256": "50c5579d247d8fdb34470a647d5438d10b980cbee5b305918f6bb37e1da81306"
+  },
+  "measured_execution": {
+    "cumulative_synchronized_gpu_seconds": 4063.758026678115,
+    "node": "an12",
+    "peak_allocated_bytes": 8547905024,
+    "peak_reserved_bytes": 10085203968,
+    "physical_gpu_id": 4,
+    "replica_count": 1,
+    "tensor_parallel_width": 1
+  },
+  "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+  "prompt_manifest_sha256": "171d6c757ff3ecec1918d2f032206c2b570b3302dc5ed0100da0db5d22708089",
+  "retained_counts": {
+    "commit_records": 1536,
+    "heartbeat_snapshots": 384,
+    "request_claims": 1536,
+    "shard_records": 384,
+    "wav_files": 1536
+  },
+  "run_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-ace-20260721t091500z",
+  "run_id": "benchmark-core-v2-ace-20260721t091500z",
+  "schema_version": 1,
+  "status": "COMPLETE"
+}

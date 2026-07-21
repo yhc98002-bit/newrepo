@@ -1,0 +1,218 @@
+{
+  "authorization_contract": {
+    "automatic_retry_allowed": false,
+    "expected_initial_prefix_group_claims": 144,
+    "expected_initial_resume_unit_claims": 432,
+    "maximum_doublings": 1,
+    "ordinary_core_claims_are_not_authority": true,
+    "required_decision_flag": "SA3_STATE_CAPTURE_INITIAL_AUTHORIZED = YES",
+    "required_external_claim_status": "AUTHORIZED_SEPARATE_SA3_STATE_CAPTURE_INITIAL",
+    "supplemental_queue_status": "LOCKED_UNLESS_INITIAL_GATE_IS_INCONCLUSIVE_UNDERPOWERED"
+  },
+  "d0020_capability_evidence": {
+    "interpretation": "technical foundation PASS only; formal v2 25/50/75 rows remain separate",
+    "path": "/HOME/paratera_xy/pxy1289/sa3_foundation_runtime/smoke-e-retry-runs/sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24/result.json",
+    "sha256": "10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117"
+  },
+  "execution": {
+    "expected_channels": 2,
+    "expected_sample_rate": 44100,
+    "heartbeat_interval_seconds": 30,
+    "heartbeat_stale_after_seconds": 90,
+    "max_duration_seconds": 30.0,
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2",
+    "state_gpu_budget": {
+      "d0020_cold_load_plus_reference_seconds": 116.34399104863405,
+      "d0020_group_gpu_residency_upper_bound_seconds": 249.481707109,
+      "evidence_status": "MEASURED_D0020_SINGLE_GROUP_CONSERVATIVE_TIMES_TWO",
+      "factor": 2.0,
+      "initial_group_count": 144,
+      "initial_gpu_hour_cap": 19.95853656872,
+      "initial_gpu_seconds_cap": 71850.731647392,
+      "prefix_group_reservation_seconds": 232.6879820972681,
+      "resume_unit_reservation_seconds": 88.7584773735773,
+      "resume_units_per_group": 3
+    },
+    "waveform_equivalence": {
+      "max_abs_tolerance": 1e-05,
+      "minimum_snr_db": 80.0,
+      "zero_error_is_pass": true
+    }
+  },
+  "execution_status": "CLOSED_AWAITING_SEPARATE_STATE_AUTHORIZATION",
+  "feature_contract": {
+    "axis_evaluator_groups": {
+      "integrity": [
+        "DEFECT_SPECIFIC_CLIPPING_DROPOUT_SILENCE_CRACKLE_VALUES"
+      ],
+      "tempo": [
+        "BEAT_THIS_AND_LIBROSA_FROZEN_DISAGREEMENT_VALUES",
+        "OCTAVE_INVARIANT_ERROR_PRIMARY_5_PERCENT_AND_SENSITIVITY_10_PERCENT",
+        "FIRST_AND_SECOND_WINDOW_DRIFT_REPORTED_SEPARATELY"
+      ],
+      "vocal_instrumental": [
+        "PROMOTED_OR_AUTOMATIC_INSTRUMENT_VALUES"
+      ]
+    },
+    "decoder_metadata_fields": [
+      "checkpoint_fraction",
+      "checkpoint_completed_steps",
+      "transformer_budget_nfe",
+      "checkpoint_sha256",
+      "latent_dtype",
+      "latent_shape",
+      "schedule_sha256",
+      "decoder_sample_rate",
+      "decoder_channels",
+      "decoder_chunked",
+      "preview_sha256"
+    ],
+    "forbidden_sources": [
+      "OTHER_ROOT_PREVIEWS",
+      "ACTION_OUTCOMES",
+      "TERMINAL_AUDIO_FEATURES",
+      "HUMAN_GOLD",
+      "HELD_OUT_FITTED_VALUES"
+    ],
+    "required_feature_groups": [
+      "AXIS_EVALUATOR_VALUES",
+      "INTEGRITY_VALUES",
+      "WITHIN_PREVIEW_SUMMARIES",
+      "FROZEN_DECODER_METADATA"
+    ],
+    "within_preview_summary_fields": [
+      "duration_seconds",
+      "rms",
+      "peak_absolute",
+      "crest_factor",
+      "dc_offset_per_channel",
+      "active_fraction",
+      "zero_crossing_rate",
+      "spectral_centroid_hz",
+      "spectral_rolloff_95_hz"
+    ]
+  },
+  "frozen_design": {
+    "actions": [
+      "KEEP",
+      "RESTART_BASE",
+      "RESTART_FIXED"
+    ],
+    "axes": [
+      "vocal_instrumental",
+      "tempo",
+      "integrity"
+    ],
+    "capture_mode": "SEPARATE_LEDGERED_STATE_CAPTURE_QUEUE",
+    "checkpoint_fractions": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "condition": "BASE",
+    "eligibility_unit": [
+      "prompt",
+      "root",
+      "checkpoint"
+    ],
+    "expected_action_rows": 1296,
+    "expected_initial_units": 432,
+    "expected_prefix_groups": 144,
+    "fold_count": 6,
+    "initial_root_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "preview_source": "ONLY_THE_SAME_UNITS_ROOT_LOCAL_PRE_ACTION_DECODED_PREVIEW",
+    "prompt_count_per_axis": 12,
+    "restart_outcome_label": "RESTART_POOL_SHARED_AT_PROMPT_LEVEL",
+    "restart_pool_root_indices": [
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "frozen_sources": {
+    "latent": {
+      "path": "src/sa3_smoke/latent.py",
+      "sha256": "9aeb23557be929907548655a9a8deccaec027b6d789132d64f9d729eaa6c43f2"
+    },
+    "prereg_v2": {
+      "path": "BENCHMARK_PREREG_v2.md",
+      "sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa"
+    },
+    "resume_child": {
+      "path": "src/sa3_smoke/resume_child.py",
+      "sha256": "5fd11c39aed4e753662a7a7388107a054ed55ec0737b93f0fae58a38f3209a13"
+    },
+    "smoke_e": {
+      "path": "src/sa3_smoke/smoke_e.py",
+      "sha256": "1c3f50c7af3534e036794844e190cce7f193515a81d525161b0e996cf9b62fbd"
+    },
+    "statistics_v2": {
+      "path": "configs/statistics_v2.json",
+      "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+    }
+  },
+  "lane_id": "sa3-state-capture-v2",
+  "mapping": {
+    "checkpoint_token_rule": "SHORTEST_DECIMAL_JSON_NUMBER",
+    "fold_namespace": "benchmark-v2-eligibility-folds-20260720",
+    "restart_namespace": "benchmark-v2-restart-map-20260720",
+    "rotation_direction": "LEFT"
+  },
+  "model_id": "stabilityai/stable-audio-3-medium-base",
+  "placement": {
+    "allowed_nodes": [
+      "an12"
+    ],
+    "allowed_physical_gpu_ids": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "maximum_idle_utilization_percent": 5,
+    "minimum_free_vram_bytes": 60000000000,
+    "post_load_reserve_bytes": 20000000000,
+    "maximum_parallel_replicas": 4,
+    "replica_count_per_worker": 1,
+    "required_gpu_name_substring": "A800",
+    "shared_core_lock_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/locks/core-v2",
+    "tp_width": 1
+  },
+  "sa3_checkpoint_mapping": {
+    "completed_steps": [
+      13,
+      25,
+      38
+    ],
+    "rounding_rule": "ROUND_HALF_UP_FRACTION_TIMES_FROZEN_NFE",
+    "transformer_budget_nfe": 50
+  },
+  "schema_version": 1,
+  "source_core_run": {
+    "artifact_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/artifacts",
+    "generation_queue": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/queues/generation/queue.jsonl",
+      "sha256": "afedee0bb422c27c2cad64e7be9dc960384f706f8f9201bbea95e8f2418c7bf4"
+    },
+    "initial_state_queue": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/queues/state-capture-initial/state-capture-queue.jsonl",
+      "sha256": "bc03a333e9cb096747ca7d9392a1a33a1c781315b1c1c698b20c888f74ca00c8"
+    },
+    "ledger": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/ledger.jsonl",
+      "sha256": "1c4e8937bd5eb4f94836bbb0b5a7e205bfc714ad2fdba81bfc3802ff9e4e192f"
+    },
+    "run_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z",
+    "run_manifest": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2/benchmark-core-v2-20260720t174500z/run-manifest.json",
+      "sha256": "e3d6e8a11bc4a0dd47cd454823463cb699c76b79671ec4aadc09b4799428f56c"
+    }
+  },
+  "tier": "INITIAL"
+}

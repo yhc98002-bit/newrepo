@@ -22,6 +22,7 @@ from typing import Any
 
 import soundfile as sf
 
+from audio_duration_policy import duration_within_tolerance
 from instruments.integrity import (
     DropoutCandidateMetrics,
     score_integrity_raw_metrics,
@@ -52,6 +53,8 @@ AXIS_TO_TASK = {
 CONDITIONS = frozenset({"BASE", "FIXED", "NEGATION_DIAGNOSTIC"})
 DEFECTS = ("clipping", "dropout", "silence", "crackle")
 TEMPO_THRESHOLD = math.log2(1.05)
+PACKET_AUDIO_REQUESTED_SECONDS = 30.0
+PACKET_AUDIO_DURATION_TOLERANCE_SECONDS = 0.25
 CANDIDATE_INDEX_KEYS = {
     "primary_backbones",
     "rows",
@@ -953,6 +956,19 @@ def _resolve_audio(candidate_path: Path, raw_path: str) -> Path:
     return path.resolve()
 
 
+def validate_packet_audio_duration(duration_seconds: float) -> None:
+    """Apply the D-0026 per-backbone duration rule at packet assembly."""
+
+    if not duration_within_tolerance(
+        duration_seconds,
+        PACKET_AUDIO_REQUESTED_SECONDS,
+        PACKET_AUDIO_DURATION_TOLERANCE_SECONDS,
+    ):
+        raise ValueError(
+            "candidate audio is outside the amended 30-second +/-0.25-second rule"
+        )
+
+
 def assemble_human_packet(
     bundle_dir: Path,
     receipt_path: Path,
@@ -997,8 +1013,10 @@ def assemble_human_packet(
         if sha256_file(source) != row["audio_sha256"]:
             raise ValueError(f"candidate audio hash mismatch: {row['row_id']}")
         info = sf.info(source)
-        if abs(float(info.duration) - 30.0) > 1e-6:
-            raise ValueError(f"candidate audio is not exactly 30 seconds: {row['row_id']}")
+        try:
+            validate_packet_audio_duration(float(info.duration))
+        except ValueError as error:
+            raise ValueError(f"{error}: {row['row_id']}") from error
         validated_sources[row["row_id"]] = source
     public_dir.mkdir(parents=True, exist_ok=False)
     private_dir.mkdir(parents=True, exist_ok=False, mode=0o700)

@@ -147,6 +147,10 @@ BUILD_COMPANION_IDENTITIES = {
     ),
 }
 
+AMENDED_SEED_REGISTRY_SHA256 = (
+    "c6267a855c804b65a69430b01c9739b887fb05cf4d97664a0d002a710b9626f1"
+)
+
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -263,8 +267,22 @@ def test_build_companion_identities_are_bound() -> None:
     for relative, expected in BUILD_COMPANION_IDENTITIES.items():
         path = ROOT / relative
         assert path.is_file()
-        assert sha256(path) == expected
         assert f"`{expected}`" in PREREG
+        if relative == "SEED_REGISTRY.md":
+            # D-0031 authorizes one append-only non-benchmark preflight seed.
+            # The exact v2-frozen prefix must remain byte-identical; v2 itself
+            # is never rewritten to pretend the later row was preregistered.
+            lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+            assert lines[-1] == (
+                "| S-0010 | 73193010 | ACE-Step v1 state preflight "
+                "reference/export/resume equivalence, non-benchmark | none |\n"
+            )
+            frozen_prefix = "".join(lines[:-1]).encode("utf-8")
+            assert hashlib.sha256(frozen_prefix).hexdigest() == expected
+            assert sha256(path) == AMENDED_SEED_REGISTRY_SHA256
+            assert "## D-0031" in (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+        else:
+            assert sha256(path) == expected
 
 
 def test_backbone_tiering_and_v15_scope_deferral() -> None:

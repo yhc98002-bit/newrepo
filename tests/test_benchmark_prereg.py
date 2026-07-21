@@ -228,7 +228,9 @@ class BenchmarkPreregistrationTests(unittest.TestCase):
         audio_files = sorted(
             path.relative_to(ROOT)
             for path in ROOT.rglob("*")
-            if ".git" not in path.parts and path.is_file() and path.suffix.lower() in AUDIO_SUFFIXES
+            if not {".git", ".venv"}.intersection(path.parts)
+            and path.is_file()
+            and path.suffix.lower() in AUDIO_SUFFIXES
         )
         self.assertEqual(audio_files, [])
 
