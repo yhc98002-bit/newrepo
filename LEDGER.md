@@ -476,3 +476,49 @@ manifest and artifacts are named here with SHA-256 digests.
   call, ledger row, or audio
 - Supersedes: L-0013 only as the latest ordinary-core operational status; the
   failed run and its evidence remain retained
+
+## L-0015 — ACE-Step v1 duration confirmation PASS
+
+- Time: 2026-07-21T16:49:13+08:00
+- Kind: completed terminal B2 engineering confirmation; not a benchmark
+- Authority: D-0026 sole duration-confirmation call; no retry
+- Git: `549f6942599047a579d7561af823adc20154a8d5`, clean and equal to
+  `origin/main` at execution
+- Node: `an12`; physical GPU ID: `4` exposed as logical GPU `0`; TP: 1;
+  replicas: 1
+- Placement: GPU 4 was an idle A800 with 81,226 MiB free, no compute PID,
+  and 0% utilization immediately before execution; the measured peak
+  allocated/reserved VRAM was `8,371,731,968 / 10,085,203,968 B`
+- Seed: S-0009 = `73193009`; prompt ID
+  `b2-mini-smoke-engineering-ace-02`
+- Run: `b2-ace-v1-duration-confirmation-v1-001`
+- Result: `PASS` — the 30-second request decoded to 1,435,551 stereo frames
+  at 48 kHz (`29.9073125 s`), an exact `0.0926875 s` deviation within the
+  inclusive per-backbone `0.25 s` tolerance; all other frozen sanity checks
+  passed
+- Measured cost: actual NFE `45`; CUDA-synchronized call wall
+  `30.9385858848691 s`; load wall `241.99800701066852 s`; one-GPU residency
+  `281.0608921535313 s`
+- Authorization / authorized-attempt / global / call claim SHA-256s:
+  `d0a166c349eb30298d61679f2645b2b5a79b326494363c424fa9facfc3253530` /
+  `be7c10cfd2f8240e15b70ccd89957955ee6c18f75a2acf4388004c47fc50e4ef` /
+  `bdbde44981fdca3578580dd64256089c6b53b7f7530931ac282940d5e138de25` /
+  `2ce0b8c1da213e86fa388ae3e2d64f30c924b5b2d5ce8699dfd26315149e64c5`
+- Manifest / generation ledger / terminal result / operational-log SHA-256s:
+  `a0ecd2229575e2702dc55c9bc1bb4b679300ddb7a9ec8d8ba6933b4a25af1ce1` /
+  `714c40d22ee6f8285feb64e0102d03eef5923d4face628b2c0fb957f913d562e` /
+  `213ab5fa2937ae263a1c2fbee1276774755a69d60a0e0032f388ed7677720f75` /
+  `34cfe3ba1cf785eebc52ae57ad3fa29e41fb0cf74ca4f8741ad74e7d08308e72`
+- Retained WAV / provenance SHA-256s:
+  `5070dc1b8916cc0cdc7d8fdf533968e72b5fe4198829546bd01fed4525b3a052` /
+  `b1c141a59d3eebded4f7cf587d9325c46328bf4fc9d4d459af10321cec08fe67`
+- Budget: exactly one model call, one retained output, one GPU, a 30-second
+  request, 281.061 GPU-seconds, and zero retries; all D-0026 caps were
+  respected and the authorization is now consumed
+- Terminal calibration across both valid ACE observations:
+  `u_m = 30.9385858848691 s`, `c_m = 272.93659289553762 s`, and the
+  conservative 1,536-call cap is `95,254.39525944367462 GPU-s`
+  (`26.459554238734354 GPU-h`)
+- Supersedes: L-0012 only for ACE-Step v1 queue eligibility; its original
+  exact-frame failure record remains immutable and is re-adjudicated under
+  D-0026 rather than rewritten
