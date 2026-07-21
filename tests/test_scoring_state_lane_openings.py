@@ -36,7 +36,7 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
 
     suffix = data[suffix_start:].decode("utf-8")
     headings = re.findall(r"(?m)^## (D-\d+)\b", suffix)
-    assert headings == ["D-0029", "D-0030", "D-0031", "D-0032"]
+    assert headings == ["D-0029", "D-0030", "D-0031", "D-0032", "D-0033"]
 
 
 def test_four_openings_are_separate_and_hash_bound() -> None:
@@ -87,6 +87,22 @@ def test_openings_preserve_scientific_and_execution_boundaries() -> None:
     assert "HUMAN_AUDIT_PACKET_AUTOASSEMBLY = ARMED" in packet
     assert "ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA" in packet
     assert "HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO" in packet
+
+
+def test_ace_pass_branch_opens_only_the_initial_formal_queue() -> None:
+    ace_pass = _decision_block("D-0033")
+    assert "ACE_STATE_CAPABILITY = PASS" in ace_pass
+    assert "ACE_STATE_CAPTURE_INITIAL_AUTHORIZED = YES" in ace_pass
+    assert "ACE_STATE_CAPTURE_SUPPLEMENTAL_AUTHORIZED = NO" in ace_pass
+    assert "NO_AUTOMATIC_RETRY = YES" in ace_pass
+    assert (
+        "ACE_STATE_CAPTURE_CONFIG_SHA256 = "
+        "7797efee802aa9380c3953cfd89d05b852692f284d129c07745e46e584dcf8a3"
+    ) in ace_pass
+    assert (
+        "ACE_STATE_PREFLIGHT_TERMINAL_SHA256 = "
+        "69afb2851dbe5b90e6c4c71cc5c4581740bce4b88a4aaab42a410c69c7f8bb7d"
+    ) in ace_pass
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

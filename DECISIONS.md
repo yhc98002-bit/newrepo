@@ -1711,3 +1711,78 @@ duration tolerance (`abs(duration - 30) <= 0.25 s`), so native ACE clips at
 `HUMAN_AUDIT_PACKET_ASSEMBLY = ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA`
 
 `HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO`
+
+## D-0033 — ACE-Step v1 state preflight PASS and initial formal queue opened
+
+- Date: 2026-07-22
+- Status: accepted terminal capability result and initial-tier execution opening
+- Authority: PI scoring-and-state-lanes authorization, conditional PASS branch
+- Supersedes: D-0031 for ACE state-capability status and attempt availability;
+  D-0028 only for the ACE initial formal Section-11 queue
+
+The sole authorized ACE-Step v1 state preflight ran once on `an12`, physical
+GPU 4, TP1/R1, from clean Git
+`b734a9e1bfdb8db65310f31ed37056636a519db0`, equal to `origin/main`. It
+completed exactly four model calls and retained four clips: one uninterrupted
+reference with exports at transitions 9/15/20 and one separately loaded child
+process for each 25/50/75% resume. No retry occurred or remains available.
+
+The terminal status is `PASS`. All four outputs are finite, non-silent,
+48-kHz stereo and `29.9073125 s`, within the inclusive 0.25-second ACE rule.
+Each resumed waveform has the reference's exact shape and sample rate,
+maximum absolute error `0.0`, and infinite SNR, satisfying the frozen
+`1e-5` / 80-dB equivalence rule. Actual NFE was 45 for the reference and
+34/22/12 for the three resumed suffixes. This is a technical state-capability
+result, not an automatic endpoint or human-gold claim.
+
+Measured cumulative synchronized GPU time was
+`309.50720739737153 s`; exclusive one-GPU occupancy was
+`364.1350744701922 s`; peak allocated/reserved VRAM was
+`8,371,733,504 / 10,085,203,968 B`. The initial formal ACE ceiling uses the
+same prospective conservative rule as the SA3 lane: two times the measured
+one-group exclusive occupancy times 144 groups, exactly
+`104,870.9014474153536 GPU-s` (`29.130805957615376 GPU-h`). It is a hard
+engineering ceiling, not an expected cost or p95 claim.
+
+The exact initial-lane implementation is
+`configs/ace_state_capture_v2.json`, SHA-256
+`7797efee802aa9380c3953cfd89d05b852692f284d129c07745e46e584dcf8a3`.
+It must derive a fresh ACE queue from the complete ACE ordinary-core source,
+not reuse the earlier SA3-derived placeholder: 144 prefix groups, 432
+`(prompt, root, checkpoint)` units, and 1,296 replicated action mappings with
+same-root previews, prompt-grouped folds, and prompt-level restart pools.
+Supplemental roots remain locked, and no automatic retry or single-draw
+oracle is authorized.
+
+The terminal/result/ledger SHA-256s are respectively
+`69afb2851dbe5b90e6c4c71cc5c4581740bce4b88a4aaab42a410c69c7f8bb7d`,
+`700ec8e32bd200d91f1345fb72d76b69c74678849152367f7f1661e2236398b9`,
+and `adbaef777571a2a708f0d2667c332ae58c7a7ade91c771bc7677a88cff957441`.
+The immutable terminal is
+`/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/ace-state-preflight-v2/ace-state-preflight-v2-one-attempt.terminal.json`.
+
+`ACE_STATE_CAPABILITY = PASS`
+
+`ACE_STATE_CAPTURE_INITIAL_AUTHORIZED = YES`
+
+`ACE_STATE_CAPTURE_SUPPLEMENTAL_AUTHORIZED = NO`
+
+`NO_AUTOMATIC_RETRY = YES`
+
+`ACE_STATE_CAPTURE_CONFIG = configs/ace_state_capture_v2.json`
+
+`ACE_STATE_CAPTURE_CONFIG_SHA256 = 7797efee802aa9380c3953cfd89d05b852692f284d129c07745e46e584dcf8a3`
+
+`ACE_STATE_PREFLIGHT_TERMINAL = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/ace-state-preflight-v2/ace-state-preflight-v2-one-attempt.terminal.json`
+
+`ACE_STATE_PREFLIGHT_TERMINAL_SHA256 = 69afb2851dbe5b90e6c4c71cc5c4581740bce4b88a4aaab42a410c69c7f8bb7d`
+
+`ACE_STATE_PREFLIGHT_RESULT_SHA256 = 700ec8e32bd200d91f1345fb72d76b69c74678849152367f7f1661e2236398b9`
+
+`ACE_STATE_PREFLIGHT_CONFIG_SHA256 = 7996daa1803a71aeae2f9ac8441b73d8cc487eecd1343eb1ab4075e6cc563ed6`
+
+`ACE_STATE_CAPTURE_CORE_QUEUE_SHA256 = db4ce65dabee9219e30a5c22c0eb56ed7b0a6f9e3ebaf98302f725cb8e8fd37f`
+
+`ACE_STATE_CAPTURE_CORE_LEDGER_SHA256 = 7f63aac18b4c503b4f17a6c03d0239715229a9d7751cb6db1531e2bd592b76d9`
+
+`ACE_STATE_CAPTURE_INITIAL_GPU_SECONDS_CAP = 104870.9014474153536`
