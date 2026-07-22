@@ -12,7 +12,7 @@ from rater.autoassemble_human_packet_v2 import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-ACTIVE_CONFIG = ROOT / "configs" / "human_packet_autoassembly_v2_sao.json"
+ACTIVE_CONFIG = ROOT / "configs" / "human_packet_autoassembly_v2_sao_watermarked.json"
 
 
 def test_committed_arm_is_hash_bound_and_waits_for_pilot() -> None:

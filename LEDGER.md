@@ -815,3 +815,40 @@ manifest and artifacts are named here with SHA-256 digests.
 - Fresh run: `sa3-state-v2-restricted-rerun-003`, an12 GPU4, TP1, one
   replica; supplemental roots remain locked and STOP units prohibited
 - Scientific settings changed: no; completed valid units will not rerun
+
+## L-0026 — SA3 run-003 stopped pre-model; exact run-004 repair opened
+
+- Time: 2026-07-22T17:13:34Z
+- Kind: immutable zero-call engineering failure and targeted scheduler repair
+- Authority: D-0045, D-0055, and D-0056
+- Failed run: `sa3-state-v2-restricted-rerun-003`; unique claim and manifest
+  were published, but no worker, GPU use, model call, ledger, staging payload,
+  or output was created
+- Failure: R1 placement had not been propagated to the worker scheduler,
+  which would have used R4 capacity and covered only a subset of 47 groups
+- Failure receipt / claim / manifest SHA-256s:
+  `a58875bf6e5327437be0ce0eb98bf2a6858045c4851b36e0c69aba1db267c2f7` /
+  `0b78f71420700a70e0bae28adfd760b3c035df2ac500bc7321bb39aceb93ddfd` /
+  `5aa66e467fd6bd93ba81fc1242baccba1bbc7a66b710bab50a574c0177717f29`
+- Repair: propagate exact `execution_replica_count=1`; regression proves all
+  47 remaining groups map to the sole R1 worker
+- Fresh run: `sa3-state-v2-restricted-rerun-004`, an12 GPU4, TP1, one
+  replica; new claim required
+- Calls/outputs/GPU time in run-003: 0 / 0 / 0 seconds
+- Scientific settings changed: no; same completed exclusion, remaining
+  manifest, prompts, roots, checkpoints, actions, features, folds, and costs
+
+## L-0027 — Watermarked packet watcher replacement frozen
+
+- Time: 2026-07-22T17:13:34Z
+- Kind: CPU-only publication-contract and watcher-config repair; no packet
+  assembly and no model call
+- Authority: D-0038, D-0045, and D-0057
+- Fresh automatic tables require watermark
+  `AUTOMATIC-INSTRUMENT OUTCOMES` and reject human-gold/accuracy language
+- New watcher config SHA-256:
+  `008334d32b4e94f9613bf32e8a9167f6b7183271dd351d08344f8d3c3a171060`
+- Gates remain conjunctive: timing-pilot ingestion plus exact three-backbone
+  scored strata with tested cross-instrument disagreement coverage
+- Current gate status: timing-pilot absent and all-primary scoring incomplete;
+  packet assembly remains prohibited

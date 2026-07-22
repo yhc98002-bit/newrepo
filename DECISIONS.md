@@ -3068,3 +3068,122 @@ Exact repair evidence and executable sources are:
 `SA3_STATE_REMAINING_REPAIR_STAGE1_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
 
 `SA3_STATE_REMAINING_REPAIR_ATTEMPT_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sa3-state-restricted-rerun-v2/sa3-state-v2-restricted-rerun-003.claim.json`
+
+## D-0056 — SA3 zero-call scheduler repair and run-004 opened
+
+- Date: 2026-07-22
+- Status: accepted exact remaining-only pre-model engineering repair
+- Authority: PI consolidated repair-governance goal, D-0045, D-0055, and
+  immutable run-003 failure evidence
+
+Run-003 prepared and consumed its unique claim, but an independent pre-model
+audit found that the worker would still shard by the frozen R4 capacity even
+though D-0055 authorized R1. It was stopped before any worker, GPU use, model
+call, ledger, staging payload, or output. The immutable failure receipt is
+SHA-256 `a58875bf6e5327437be0ce0eb98bf2a6858045c4851b36e0c69aba1db267c2f7`.
+Its claim, manifest, plan, D-0055 bytes, and remaining-work package have been
+revalidated, including absence of every execution artifact.
+
+The targeted repair passes the exact authorized execution-replica count to
+the worker. Fresh run `sa3-state-v2-restricted-rerun-004` uses one an12 A800
+on physical GPU 4, TP1, R1 and therefore schedules all 47 remaining groups.
+The completed validation stays excluded; the same 141 units and 423 action
+rows remain in original order. No STOP/cancelled or supplemental unit may
+execute. No prompt, root, checkpoint, action, preview, fold, cost, outcome,
+evaluator, or threshold changed.
+
+| Item | SHA-256 |
+| --- | --- |
+| run-003 failure receipt | `a58875bf6e5327437be0ce0eb98bf2a6858045c4851b36e0c69aba1db267c2f7` |
+| run-003 claim | `0b78f71420700a70e0bae28adfd760b3c035df2ac500bc7321bb39aceb93ddfd` |
+| run-003 manifest | `5aa66e467fd6bd93ba81fc1242baccba1bbc7a66b710bab50a574c0177717f29` |
+| run-003 execution plan | `239e2867e36d3ae8866a003be4355b8edbf49ffbfc1af0da62df09b827f7ff41` |
+| completed exclusion | `b1328f35fe0a96647d90a489f152743dc3716d19ec39921e92275c29c8b88566` |
+| remaining manifest | `fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33` |
+| `src/state_capture/sa3_restricted_rerun.py` | `758309da8a316c5a7afc49d423236ee030542c4de5b51b81118f2ca5bd0f2769` |
+| `src/state_capture/sa3_worker.py` | `425823a15716cb03de8cec7731bef47a95c0b03b83b4335a35c1e72752cb7bd2` |
+| worker script | `adf4eb31cc73535d64a7c92ef5aca8a075c0c34ee896f243442819aaac3ed2de` |
+
+`SA3_STATE_REMAINING_REPAIR_AUTHORIZED = YES`
+
+`SA3_STATE_REMAINING_REPAIR_RUN_ID = sa3-state-v2-restricted-rerun-004`
+
+`SA3_STATE_REMAINING_REPAIR_PREDECESSOR_SHA256 = a58875bf6e5327437be0ce0eb98bf2a6858045c4851b36e0c69aba1db267c2f7`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_EXCLUSION_SHA256 = b1328f35fe0a96647d90a489f152743dc3716d19ec39921e92275c29c8b88566`
+
+`SA3_STATE_REMAINING_REPAIR_MANIFEST_SHA256 = fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33`
+
+`SA3_STATE_REMAINING_REPAIR_PLACEMENT = an12:[4];TP1;R1`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_GROUP_COUNT = 1`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_COUNT = 3`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_GROUP_COUNT = 47`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_UNIT_COUNT = 141`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_ACTION_COUNT = 423`
+
+`SA3_STATE_REMAINING_REPAIR_VALIDATION_RERUN = NO`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_RERUN = NO`
+
+`SA3_STATE_REMAINING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO`
+
+`SA3_STATE_REMAINING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO`
+
+`SA3_STATE_REMAINING_REPAIR_CONFIG_SHA256 = 67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2`
+
+`SA3_STATE_REMAINING_REPAIR_QUEUE_MANIFEST_SHA256 = 5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3`
+
+`SA3_STATE_REMAINING_REPAIR_STAGE1_RESULT_SHA256 = 5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157`
+
+`SA3_STATE_REMAINING_REPAIR_STAGE1_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
+
+`SA3_STATE_REMAINING_REPAIR_ATTEMPT_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sa3-state-restricted-rerun-v2/sa3-state-v2-restricted-rerun-004.claim.json`
+
+## D-0057 — Fresh automatic watermark contract and packet watcher rearmed
+
+- Date: 2026-07-22
+- Status: accepted fail-closed watcher replacement behind both existing gates
+- Authority: PI packet-watcher authorization, D-0038, and D-0045
+
+Fresh scoring publications must carry the exact watermark
+`AUTOMATIC-INSTRUMENT OUTCOMES` and must reject human-gold or evaluator-
+accuracy wording before human labels exist. Historical scoring artifacts
+remain immutable even where they predate this publication contract; they
+will not be silently rewritten or used as the final three-backbone packet
+source.
+
+The replacement watcher uses the separately versioned config
+`configs/human_packet_autoassembly_v2_sao_watermarked.json`. It may assemble
+once only after both the nine-item timing-pilot response/attestation is
+ingested and the exact all-three-primary-backbone scoring root provides
+tested cross-instrument disagreement strata. Until then it emits heartbeat
+state only. It may not downgrade the packet to two backbones and makes no
+human-gold claim.
+
+| Item | SHA-256 |
+| --- | --- |
+| watcher config | `008334d32b4e94f9613bf32e8a9167f6b7183271dd351d08344f8d3c3a171060` |
+| watcher source | `5fc8204ec17caf137dd012ab522f8b690a8e7c806ff23c14971df5b5d98e52ab` |
+| packet builder | `1e486cc0174833350f75c549a2bbab6a724cdd5977ece287a29f5c457748e805` |
+| publication validator | `b0165d5b2b1dade3333e31586d85fb5aadb1fc94aa0118083098734b6b8468b3` |
+
+`HUMAN_AUDIT_PACKET_AUTOASSEMBLY = ARMED`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA`
+
+`HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO`
+
+`HUMAN_AUDIT_PACKET_AUTOASSEMBLY_CONFIG_PATH = configs/human_packet_autoassembly_v2_sao_watermarked.json`
+
+`HUMAN_AUDIT_PACKET_AUTOASSEMBLY_CONFIG_SHA256 = 008334d32b4e94f9613bf32e8a9167f6b7183271dd351d08344f8d3c3a171060`
+
+`FRESH_AUTOMATIC_TABLE_WATERMARK = AUTOMATIC-INSTRUMENT OUTCOMES`
+
+`HUMAN_PACKET_CROSS_INSTRUMENT_DISAGREEMENT_REQUIRED = YES`
+
+`HUMAN_PACKET_THREE_PRIMARY_BACKBONES_REQUIRED = YES`

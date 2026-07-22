@@ -21,7 +21,8 @@ from rater.bundle_common import load_json_strict, sha256_file, write_json_exclus
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-DEFAULT_CONFIG = ROOT / "configs" / "human_packet_autoassembly_v2_sao.json"
+DEFAULT_CONFIG = ROOT / "configs" / "human_packet_autoassembly_v2_sao_watermarked.json"
+AUTHORIZED_DECISION_IDS = {"D-0038", "D-0057"}
 DEFAULT_SCHEMA = HERE / "schema_v2.json"
 DEFAULT_TEMPLATE = HERE / "timing_pilot.html"
 
@@ -97,7 +98,7 @@ def load_config(path: Path, *, decisions_path: Path | None = None) -> dict[str, 
         raise ValueError("arm config schema_version must be 1")
     if config["status"] != "ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA":
         raise ValueError("arm config is not in the frozen armed state")
-    if config["authorization_decision"] != "D-0038":
+    if config["authorization_decision"] not in AUTHORIZED_DECISION_IDS:
         raise ValueError("arm config lacks the dedicated opening decision")
     interval = config["poll_interval_seconds"]
     if isinstance(interval, bool) or not isinstance(interval, int) or interval < 5:
