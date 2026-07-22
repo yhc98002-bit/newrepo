@@ -576,3 +576,41 @@ manifest and artifacts are named here with SHA-256 digests.
   full-run cap `95,254.39525944367462 GPU-s`; no retry or replacement
 - Supersedes: L-0015 only for latest ACE ordinary-core operational status;
   the B2 confirmation evidence remains retained
+
+## L-0017 — Stage-1 bounded outcome screen and exact state partition
+
+- Time: 2026-07-22T14:59:07Z
+- Kind: completed CPU-only automatic-instrument outcome screen; no model or
+  generation call
+- Authority: D-0046 policy freeze on pushed
+  `5d686cb50eb310557d153fb14d8916d84a37c5c5`
+- Node: `ln206`; GPUs: none; TP: none; replicas: none
+- Placement: CPU-only because the gate reads existing immutable automatic
+  outcome rows and creates only statistical/cancellation artifacts
+- Run: `stage1-outcome-gates-v2-001`
+- Command: `.venv/bin/python scripts/run_stage1_outcome_gates.py --config
+  configs/stage1_outcome_gates_v2.json --decisions DECISIONS.md --output-root
+  /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/
+  benchmark_v2_runtime/runs/stage1-outcome-gates-v2/
+  stage1-outcome-gates-v2-001`
+- Config / decision-block SHA-256s:
+  `913a87d8286ba91094d2916b3ac9a601afe7e99fa3701803001b13557cca55eb` /
+  `6e2ba70431d5aad40e78f288161214f003dc2cdcb54058dbda0901b05c1ab566`
+- Result / cancellation-summary / execution-receipt SHA-256s:
+  `5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157` /
+  `7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121` /
+  `3778acf7f495d6036f7a8dabf075996a4d77f34269e264cf27e01be53a559d7c`
+- Result: ACE integrity and SA3 vocal/instrumental
+  `OUTCOME_SCREEN_PASS`; the other four cells `STOP_AXIS_STAGE1`
+- State partition: 144 exact survivor units for ACE, 144 for SA3, and 576
+  immutable `CANCELLED_STAGE1` events prohibiting `EXECUTE` and `SCORE`
+- ACE / SA3 survivor-units SHA-256s:
+  `6ae0d8e13f625bd935e9a285b98c79c24f2469b68706ad7e1ae2e576cb637a1f` /
+  `f5d31edfc177d013f240d83540b3d0274eea0a799f9b76fe0ff02395cff1c600`
+- Cost: 8.46 CPU wall-seconds, 80,572 KiB maximum RSS, zero GPU-seconds,
+  zero model calls, zero generation calls, zero failures, zero repairs
+- Retention: 586 material files, all mode 0444; tree SHA-256 excluding the
+  append lock
+  `e58b6c9722157465cfb922f5a27aa1c67abf05ad64c07dafae3e25815931c958`
+- Scientific wording: `AUTOMATIC-INSTRUMENT OUTCOMES`; no human-gold or
+  evaluator-accuracy claim

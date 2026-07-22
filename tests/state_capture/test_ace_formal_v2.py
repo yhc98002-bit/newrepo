@@ -44,6 +44,16 @@ from tests.stage1.terminal_support import build_terminal, queue_binding, write_j
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "configs" / "ace_state_formal_v2.json"
+ENGINEERING_ASSIGNMENTS = {
+    "ENGINEERING_FAILURES_REPAIRABLE": "YES",
+    "WITHIN_ATTEMPT_RETRY": "NO",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_RUN_ID": "YES",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_CLAIM": "YES",
+    "SCIENTIFIC_RERUNS_FOR_WEAK_RESULTS": "NO",
+    "FROZEN_SCIENTIFIC_DESIGN_CHANGES_AUTHORIZED": "NO",
+    "FAILED_ATTEMPTS_IMMUTABLE": "YES",
+    "STOP_AXIS_UNITS_EXECUTABLE": "NO",
+}
 
 
 def _stage1_fixture(
@@ -99,6 +109,10 @@ def _stage1_fixture(
     decisions.write_text(
         "## D-0036 — ACE formal initial opening\n\n"
         + "\n".join(f"`{key} = {value}`" for key, value in assignments.items())
+        + "\n\n## D-0045 — engineering-attempt governance correction\n\n"
+        + "\n".join(
+            f"`{key} = {value}`" for key, value in ENGINEERING_ASSIGNMENTS.items()
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -157,6 +171,7 @@ def test_d0036_binds_stage1_hashes_at_launch_and_filters_exact_survivors(
     assert authorization.stage1.result_sha256 == sha256_file(authorization.stage1.result_path)
     assert authorization.stage1.summary_sha256 == sha256_file(authorization.stage1.summary_path)
     assert "STAGE1_RESULT_SHA256" not in decisions.read_text(encoding="utf-8")
+    assert len(authorization.engineering_governance_block_sha256) == 64
 
     decisions.write_text(
         decisions.read_text(encoding="utf-8").replace(
@@ -166,6 +181,21 @@ def test_d0036_binds_stage1_hashes_at_launch_and_filters_exact_survivors(
         encoding="utf-8",
     )
     with pytest.raises(AceFormalContractError, match="exact formal assignments"):
+        verify_d0036(config, decisions_path=decisions, bundle=bundle)
+
+
+def test_d0045_is_required_and_cannot_open_stop_units(tmp_path: Path) -> None:
+    config, bundle, _authorization, decisions = _stage1_fixture(tmp_path)
+    text = decisions.read_text(encoding="utf-8")
+    decisions.write_text(text.split("## D-0045", 1)[0], encoding="utf-8")
+    with pytest.raises(AceFormalContractError, match="decision block is absent: D-0045"):
+        verify_d0036(config, decisions_path=decisions, bundle=bundle)
+
+    decisions.write_text(
+        text.replace("STOP_AXIS_UNITS_EXECUTABLE = NO", "STOP_AXIS_UNITS_EXECUTABLE = YES"),
+        encoding="utf-8",
+    )
+    with pytest.raises(AceFormalContractError, match="exact engineering assignments"):
         verify_d0036(config, decisions_path=decisions, bundle=bundle)
 
 
@@ -424,7 +454,9 @@ def test_worker_ledgers_four_distinct_calls_before_success_and_never_scores_stop
     assert {row["request_sha256"] for row in request_rows}.isdisjoint(stopped_ids)
 
 
-def test_new_failure_is_failed_stopped_and_cannot_retry(tmp_path: Path) -> None:
+def test_new_failure_stops_only_current_attempt_and_requires_new_run_claim(
+    tmp_path: Path,
+) -> None:
     config, bundle, authorization, _decisions = _stage1_fixture(tmp_path / "gate")
     filtered = survivor_bundle(bundle, authorization.stage1)
     group = next(row for row in filtered["groups"] if row["group_sequence"] == 1)
@@ -439,11 +471,16 @@ def test_new_failure_is_failed_stopped_and_cannot_retry(tmp_path: Path) -> None:
         engine=engine,
     )
 
-    with pytest.raises(AceFormalWorkerStopped, match="permanently stopped"):
+    with pytest.raises(AceFormalWorkerStopped, match="new run ID and claim"):
         worker.run(groups=[group], units=units, max_new_groups=1)
     terminal = load_json(run_dir / "control" / "formal-terminal-failure.json")
     assert terminal["status"] == "FAILED_STOPPED"
     assert terminal["retry_allowed"] is False
+    assert terminal["within_attempt_retry"] is False
+    assert terminal["engineering_failure_scope"] == "CURRENT_RUN_ATTEMPT_ONLY"
+    assert terminal["engineering_repair_requires_new_run_id"] is True
+    assert terminal["engineering_repair_requires_new_claim"] is True
+    assert terminal["failed_attempt_immutable"] is True
     rows = validate_ledger(run_dir / "formal-state-ledger.jsonl")
     states = [
         row["request_state"]
@@ -454,7 +491,7 @@ def test_new_failure_is_failed_stopped_and_cannot_retry(tmp_path: Path) -> None:
     claims_before = list(
         (run_dir / "control" / "shared-formal-claims" / "group-claims").glob("*.json")
     )
-    with pytest.raises(AceFormalWorkerStopped, match="terminal FAILED_STOPPED"):
+    with pytest.raises(AceFormalWorkerStopped, match="new run ID and claim"):
         worker.run(groups=[group], units=units, max_new_groups=1)
     assert (
         list((run_dir / "control" / "shared-formal-claims" / "group-claims").glob("*.json"))
@@ -515,12 +552,12 @@ def test_peer_failure_blocks_call_start_backend_and_both_commit_surfaces(
         exc=RuntimeError("peer failure"),
     )
 
-    with pytest.raises(AceFormalPeerFailed, match="terminal FAILED_STOPPED"):
+    with pytest.raises(AceFormalPeerFailed, match="new run ID and claim"):
         boundary.start("PREFIX_GROUP", group)
     assert validate_ledger(ledger.path) == []
     assert not list(claims.prefix_call_dir.glob("*.json"))
     with (
-        pytest.raises(AceFormalPeerFailed, match="terminal FAILED_STOPPED"),
+        pytest.raises(AceFormalPeerFailed, match="new run ID and claim"),
         boundary.publish_guard(),
     ):
         raise AssertionError("publish body must never run")
@@ -530,7 +567,7 @@ def test_peer_failure_blocks_call_start_backend_and_both_commit_surfaces(
         nonlocal committed
         committed = True
 
-    with pytest.raises(AceFormalPeerFailed, match="terminal FAILED_STOPPED"):
+    with pytest.raises(AceFormalPeerFailed, match="new run ID and claim"):
         claims.commit_group(group["group_request_sha256"], 1.0, commit_callback)
     assert committed is False
     assert not list(claims.observation_dir.glob("*.json"))

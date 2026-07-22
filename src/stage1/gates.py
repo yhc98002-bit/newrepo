@@ -297,8 +297,14 @@ def verify_policy_decision(
             "Stage-1 policy decision does not bind the complete frozen config: "
             + "; ".join(missing)
         )
+    # The decision is an append-only semantic block. Canonicalize only its
+    # trailing separator so adding the next Markdown heading cannot invalidate
+    # evidence already bound to this block.
+    canonical_block = block.rstrip() + "\n"
     return {
-        "decision_block_sha256": hashlib.sha256(block.encode("utf-8")).hexdigest(),
+        "decision_block_sha256": hashlib.sha256(
+            canonical_block.encode("utf-8")
+        ).hexdigest(),
         "decision_id": frozen_policy.decision_id,
         "decisions_path": str(decisions_path.resolve()),
     }

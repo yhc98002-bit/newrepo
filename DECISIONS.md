@@ -2371,3 +2371,58 @@ records this superseding freeze.
 `STAGE1_CONFIDENCE_LEVEL = 0.95`
 
 `STAGE1_STOP_UNIT_OPERATIONS = CANCELLED_EXECUTE_AND_SCORE`
+
+## D-0047 — Stage-1 terminal verdicts sealed and survivor-only state lanes opened
+
+- Date: 2026-07-22
+- Status: accepted obtained automatic-instrument screen; two initial state cells opened
+- Authority: D-0046 prospective policy and PI consolidated state-execution goal
+
+The CPU-only runner executed from clean pushed
+`5d686cb50eb310557d153fb14d8916d84a37c5c5` after D-0046 was frozen and
+verified. Deep terminal validation independently recomputed all six cells,
+their immutable input bindings, and the complete cancellation chain. The
+machine result, cancellation summary, and execution receipt SHA-256s are
+`5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157`,
+`7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`,
+and `3778acf7f495d6036f7a8dabf075996a4d77f34269e264cf27e01be53a559d7c`.
+
+ACE-Step v1 acoustic integrity and SA3 vocal/instrumental are the only
+`OUTCOME_SCREEN_PASS` cells. Each exact survivor manifest contains 144
+initial `(prompt, root, checkpoint)` units. The four STOP cells contribute
+576 immutable cancellation events; every cancelled unit remains prohibited
+from execution and scoring. Supplemental roots remain locked. The repository
+terminal receipt is
+`provenance/stage1/stage1_outcome_gates_terminal_v2.json`, SHA-256 `3710c09cc494ed1135bab08549fa82987e0cae6fb5299e8f40c71bbcaea78925`.
+
+`STAGE1_OUTCOME_GATE_STATUS = STAGE1_OUTCOME_GATES_COMPLETE`
+
+`STAGE1_RESULT_SHA256 = 5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157`
+
+`STAGE1_CANCELLATION_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
+
+`STAGE1_STOP_CELL_COUNT = 4`
+
+`STAGE1_CANCELLED_UNIT_COUNT = 576`
+
+`STAGE1_CANCELLED_UNIT_OPERATIONS = EXECUTE,SCORE`
+
+`ACE_STATE_SURVIVOR_AXES = integrity`
+
+`ACE_STATE_SURVIVOR_UNIT_COUNT = 144`
+
+`ACE_STATE_SURVIVOR_UNITS_SHA256 = 6ae0d8e13f625bd935e9a285b98c79c24f2469b68706ad7e1ae2e576cb637a1f`
+
+`SA3_STATE_SURVIVOR_AXES = vocal_instrumental`
+
+`SA3_STATE_SURVIVOR_UNIT_COUNT = 144`
+
+`SA3_STATE_SURVIVOR_UNITS_SHA256 = f5d31edfc177d013f240d83540b3d0274eea0a799f9b76fe0ff02395cff1c600`
+
+`STATE_INITIAL_SURVIVOR_EXECUTION_AUTHORIZED = YES`
+
+`STATE_SUPPLEMENTAL_ROOTS_AUTHORIZED = NO`
+
+`STATE_ENGINEERING_GOVERNANCE = D-0045`
+
+`STAGE1_HUMAN_GOLD_CLAIMS = NO`

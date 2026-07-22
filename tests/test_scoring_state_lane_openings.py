@@ -55,6 +55,7 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0044",
         "D-0045",
         "D-0046",
+        "D-0047",
     ]
 
 
@@ -275,6 +276,23 @@ def test_engineering_repair_and_stage1_policy_are_separate_append_only_decisions
         "STAGE1_STOP_UNIT_OPERATIONS = CANCELLED_EXECUTE_AND_SCORE",
     ):
         assert assignment in policy
+
+    terminal = _decision_block("D-0047")
+    receipt = ROOT / "provenance" / "stage1" / "stage1_outcome_gates_terminal_v2.json"
+    for assignment in (
+        "STAGE1_OUTCOME_GATE_STATUS = STAGE1_OUTCOME_GATES_COMPLETE",
+        "STAGE1_STOP_CELL_COUNT = 4",
+        "STAGE1_CANCELLED_UNIT_COUNT = 576",
+        "ACE_STATE_SURVIVOR_AXES = integrity",
+        "ACE_STATE_SURVIVOR_UNIT_COUNT = 144",
+        "SA3_STATE_SURVIVOR_AXES = vocal_instrumental",
+        "SA3_STATE_SURVIVOR_UNIT_COUNT = 144",
+        "STATE_INITIAL_SURVIVOR_EXECUTION_AUTHORIZED = YES",
+        "STATE_SUPPLEMENTAL_ROOTS_AUTHORIZED = NO",
+        f"SHA-256 `{_sha256(receipt)}`",
+        "STAGE1_HUMAN_GOLD_CLAIMS = NO",
+    ):
+        assert assignment in terminal
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

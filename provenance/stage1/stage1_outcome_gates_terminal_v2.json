@@ -1,0 +1,98 @@
+{
+  "automatic_instrument_outcomes_only": true,
+  "cancelled_unit_count": 576,
+  "execution": {
+    "cpu_wall_seconds": 8.46,
+    "engineering_failures": 0,
+    "engineering_repairs": 0,
+    "generation_calls": 0,
+    "gpu_seconds": 0,
+    "max_rss_kib": 80572,
+    "model_calls": 0,
+    "node": "ln206",
+    "receipt_sha256": "3778acf7f495d6036f7a8dabf075996a4d77f34269e264cf27e01be53a559d7c"
+  },
+  "git_commit": "5d686cb50eb310557d153fb14d8916d84a37c5c5",
+  "human_gold_claims": false,
+  "policy": {
+    "config_sha256": "913a87d8286ba91094d2916b3ac9a601afe7e99fa3701803001b13557cca55eb",
+    "decision_block_sha256": "6e2ba70431d5aad40e78f288161214f003dc2cdcb54058dbda0901b05c1ab566",
+    "decision_id": "D-0046",
+    "frozen_before_outcome_read": true
+  },
+  "run": {
+    "cancellation_manifest_sha256": "b0b115721e1b72654bb63dfc0daaa31b04b1176d56ba25c6b327f41c35de0e60",
+    "cancellation_summary_sha256": "7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121",
+    "cancellation_units_sha256": "c230acba809f6df98ce1552db2da8439c197a3147565e86ea57862d036f699e1",
+    "material_file_count": 586,
+    "result_sha256": "5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157",
+    "root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001",
+    "tree_sha256_excluding_append_lock": "e58b6c9722157465cfb922f5a27aa1c67abf05ad64c07dafae3e25815931c958"
+  },
+  "schema_version": 1,
+  "status": "STAGE1_OUTCOME_GATES_COMPLETE",
+  "stop_cell_count": 4,
+  "survivors": {
+    "ACE-Step v1": {
+      "axes": [
+        "integrity"
+      ],
+      "manifest_sha256": "f7d2dcd8acc274625de392f29178926f76bd2f67344713ecef6cec313b29ce67",
+      "unit_count": 144,
+      "units_sha256": "6ae0d8e13f625bd935e9a285b98c79c24f2469b68706ad7e1ae2e576cb637a1f"
+    },
+    "stable-audio-3-medium-base": {
+      "axes": [
+        "vocal_instrumental"
+      ],
+      "manifest_sha256": "df6ddd9730346db172140ad24c6af86d0347a7820c020499bfd92b84b15cee68",
+      "unit_count": 144,
+      "units_sha256": "f5d31edfc177d013f240d83540b3d0274eea0a799f9b76fe0ff02395cff1c600"
+    }
+  },
+  "verdicts": [
+    {
+      "axis": "integrity",
+      "backbone": "ACE-Step v1",
+      "baseline_failure_rate": 0.3333333333333333,
+      "mixed_outcome_prompt_share": 0.5833333333333334,
+      "verdict": "OUTCOME_SCREEN_PASS"
+    },
+    {
+      "axis": "integrity",
+      "backbone": "stable-audio-3-medium-base",
+      "baseline_failure_rate": 0.8229166666666666,
+      "mixed_outcome_prompt_share": 0.6666666666666666,
+      "verdict": "STOP_AXIS_STAGE1"
+    },
+    {
+      "axis": "tempo",
+      "backbone": "ACE-Step v1",
+      "baseline_failure_rate": 0.8958333333333334,
+      "mixed_outcome_prompt_share": 0.5833333333333334,
+      "verdict": "STOP_AXIS_STAGE1"
+    },
+    {
+      "axis": "tempo",
+      "backbone": "stable-audio-3-medium-base",
+      "baseline_failure_rate": 0.7604166666666666,
+      "mixed_outcome_prompt_share": 0.8333333333333334,
+      "verdict": "STOP_AXIS_STAGE1"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "backbone": "ACE-Step v1",
+      "baseline_failure_rate": 0.6458333333333334,
+      "mixed_outcome_prompt_share": 0.75,
+      "verdict": "STOP_AXIS_STAGE1"
+    },
+    {
+      "axis": "vocal_instrumental",
+      "backbone": "stable-audio-3-medium-base",
+      "baseline_failure_rate": 0.5104166666666666,
+      "mixed_outcome_prompt_share": 0.5,
+      "verdict": "OUTCOME_SCREEN_PASS"
+    }
+  ],
+  "watermark": "AUTOMATIC-INSTRUMENT OUTCOMES"
+}

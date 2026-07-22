@@ -274,6 +274,22 @@ def test_policy_decision_binds_exact_config_before_outcome_read(tmp_path: Path) 
         verify_policy_decision(config_path, decisions_path)
 
 
+def test_policy_decision_hash_survives_append_only_suffix(tmp_path: Path) -> None:
+    config_path = ROOT / "configs" / "stage1_outcome_gates_v2.json"
+    decisions_path = tmp_path / "DECISIONS.md"
+    decisions_path.write_text(
+        "## D-0046 — Stage-1 outcome-screen policy freeze\n\n"
+        + "\n".join(policy_decision_assignments(config_path))
+        + "\n",
+        encoding="utf-8",
+    )
+    before = verify_policy_decision(config_path, decisions_path)
+    with decisions_path.open("a", encoding="utf-8") as handle:
+        handle.write("\n\n## D-0047 — Later append-only decision\n\nLater evidence.\n")
+    after = verify_policy_decision(config_path, decisions_path)
+    assert after["decision_block_sha256"] == before["decision_block_sha256"]
+
+
 def test_six_cells_are_deterministic_and_use_selected_base_rows_only() -> None:
     rows = _rows()
     # Non-BASE and non-selected rows may exist but cannot influence the gate.
@@ -426,11 +442,21 @@ def test_survivor_manifests_are_exact_and_hash_bound(tmp_path: Path) -> None:
         assert units_path.stat().st_mode & 0o222 == 0
 
 
-def test_report_and_readiness_do_not_claim_obtained_verdicts() -> None:
+def test_report_seals_obtained_verdicts_and_preserves_historical_readiness() -> None:
     report = (ROOT / "STAGE1_OUTCOME_GATES.md").read_text(encoding="utf-8")
     readiness = load_json(ROOT / "provenance" / "stage1" / "stage1_outcome_gate_readiness.json")
+    terminal = load_json(
+        ROOT / "provenance" / "stage1" / "stage1_outcome_gates_terminal_v2.json"
+    )
     assert readiness["status"] == "BLOCKED_MISSING_FROZEN_THRESHOLDS"
     assert readiness["verdicts_computed"] is False
     assert readiness["cancellation_ledger_created"] is False
-    assert "No Stage-1 cell verdict has been computed" in report
-    assert "No cancellation ledger has been created" in report
+    assert terminal["status"] == "STAGE1_OUTCOME_GATES_COMPLETE"
+    assert terminal["stop_cell_count"] == 4
+    assert terminal["cancelled_unit_count"] == 576
+    assert terminal["human_gold_claims"] is False
+    assert terminal["watermark"] == "AUTOMATIC-INSTRUMENT OUTCOMES"
+    assert "STAGE1_OUTCOME_GATES_COMPLETE" in report
+    assert "OUTCOME_SCREEN_PASS" in report
+    assert "STOP_AXIS_STAGE1" in report
+    assert "automatic-instrument outcome screens" in report

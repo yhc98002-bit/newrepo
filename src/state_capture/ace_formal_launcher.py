@@ -16,7 +16,6 @@ from state_capture.ace_formal_contract import (
     RUN_ID,
     AceFormalConfig,
     AceFormalContractError,
-    D0036Authorization,
     load_formal_config,
     load_source_bundle,
     package_hashes,
@@ -94,6 +93,13 @@ def prepare_formal_run(
         "decision_block_sha256": authorization.decision_block_sha256,
         "decisions_path": str(authorization.decisions_path),
         "decisions_sha256": authorization.decisions_sha256,
+        "engineering_governance_block_sha256": (
+            authorization.engineering_governance_block_sha256
+        ),
+        "engineering_governance_decision_id": "D-0045",
+        "engineering_repair_requires_new_claim": True,
+        "engineering_repair_requires_new_run_id": True,
+        "failed_attempts_immutable": True,
         "git_commit": observed_git.head,
         "git_origin_main": observed_git.origin_main,
         "lane_id": LANE_ID,
@@ -121,12 +127,16 @@ def prepare_formal_run(
         },
         "stop_units_prohibited": ["EXECUTE", "SCORE"],
         "supplemental_authorized": False,
+        "within_attempt_retry": False,
     }
     claim_path = run_dir / "control" / "formal-launch-claim.json"
     write_json_exclusive(claim_path, launch_claim)
     manifest = {
         "config_path": str(config.path),
         "config_sha256": config.sha256,
+        "engineering_governance_block_sha256": (
+            authorization.engineering_governance_block_sha256
+        ),
         "formal_launch_claim_path": str(claim_path),
         "formal_launch_claim_sha256": sha256_file(claim_path),
         "git_commit": observed_git.head,
@@ -183,6 +193,11 @@ def validate_formal_run(
     if (
         claim.get("authorization_status") != "D0036_FORMAL_INITIAL_SURVIVORS_ONLY"
         or claim.get("no_automatic_retry") is not True
+        or claim.get("within_attempt_retry") is not False
+        or claim.get("engineering_governance_decision_id") != "D-0045"
+        or claim.get("engineering_repair_requires_new_run_id") is not True
+        or claim.get("engineering_repair_requires_new_claim") is not True
+        or claim.get("failed_attempts_immutable") is not True
         or claim.get("supplemental_authorized") is not False
         or claim.get("stop_units_prohibited") != ["EXECUTE", "SCORE"]
         or claim.get("package_sha256") != package_hashes(config)
@@ -211,19 +226,18 @@ def validate_formal_run(
         row.get("axis") not in survivors for rows in bundle.values() for row in rows
     ):
         raise AceFormalContractError("STOP rows entered the formal survivor package")
-    authorization = D0036Authorization(
-        decision_block_sha256=str(claim["decision_block_sha256"]),
+    authorization = verify_d0036(
+        config,
         decisions_path=Path(str(claim["decisions_path"])),
-        decisions_sha256=str(claim["decisions_sha256"]),
-        stage1=verify_d0036(
-            config,
-            decisions_path=Path(str(claim["decisions_path"])),
-            bundle=load_source_bundle(config),
-        ).stage1,
+        bundle=load_source_bundle(config),
     )
     if (
         authorization.decision_block_sha256 != claim["decision_block_sha256"]
         or authorization.decisions_sha256 != claim["decisions_sha256"]
+        or authorization.engineering_governance_block_sha256
+        != claim["engineering_governance_block_sha256"]
+        or manifest.get("engineering_governance_block_sha256")
+        != claim["engineering_governance_block_sha256"]
         or authorization.stage1.result_sha256 != claim["stage1"]["result_sha256"]
         or authorization.stage1.summary_sha256 != claim["stage1"]["summary_sha256"]
     ):

@@ -29,6 +29,17 @@ GPU_SECONDS_CAP = 104870.90144741535
 GROUP_RESERVATION_SECONDS = 728.2701489403844
 PASS = "OUTCOME_SCREEN_PASS"
 STOP = "STOP_AXIS_STAGE1"
+ENGINEERING_GOVERNANCE_DECISION_ID = "D-0045"
+ENGINEERING_GOVERNANCE_ASSIGNMENTS = {
+    "ENGINEERING_FAILURES_REPAIRABLE": "YES",
+    "WITHIN_ATTEMPT_RETRY": "NO",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_RUN_ID": "YES",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_CLAIM": "YES",
+    "SCIENTIFIC_RERUNS_FOR_WEAK_RESULTS": "NO",
+    "FROZEN_SCIENTIFIC_DESIGN_CHANGES_AUTHORIZED": "NO",
+    "FAILED_ATTEMPTS_IMMUTABLE": "YES",
+    "STOP_AXIS_UNITS_EXECUTABLE": "NO",
+}
 
 
 class AceFormalContractError(RuntimeError):
@@ -75,6 +86,7 @@ class D0036Authorization:
     decision_block_sha256: str
     decisions_path: Path
     decisions_sha256: str
+    engineering_governance_block_sha256: str
     stage1: Stage1Gate
 
 
@@ -328,6 +340,31 @@ def _decision_block(path: Path, decision_id: str) -> str:
     return match.group(0)
 
 
+def verify_engineering_governance(decisions_path: Path) -> str:
+    """Require the append-only D-0045 attempt-repair correction."""
+
+    path = decisions_path.resolve(strict=True)
+    text = path.read_text(encoding="utf-8")
+    block = _decision_block(path, ENGINEERING_GOVERNANCE_DECISION_ID)
+    assignments: dict[str, str] = {}
+    for key, value in re.findall(r"`?([A-Z0-9_]+)\s*=\s*([^`\n]+?)`?(?=\n|$)", block):
+        if key in assignments:
+            raise AceFormalContractError(f"duplicate D-0045 assignment: {key}")
+        assignments[key] = value.strip()
+    missing = [
+        key
+        for key, value in ENGINEERING_GOVERNANCE_ASSIGNMENTS.items()
+        if assignments.get(key) != value
+    ]
+    if missing:
+        raise AceFormalContractError(f"D-0045 lacks exact engineering assignments: {missing}")
+    d0036 = text.find("## D-0036")
+    d0045 = text.find("## D-0045")
+    if d0036 < 0 or d0045 <= d0036:
+        raise AceFormalContractError("D-0045 must append after the D-0036 scientific opening")
+    return hashlib.sha256(block.encode()).hexdigest()
+
+
 def verify_d0036(
     config: AceFormalConfig,
     *,
@@ -337,6 +374,7 @@ def verify_d0036(
     """Require exact survivor-only, STOP-deny, queue, cap and Stage-1 bindings."""
 
     block = _decision_block(decisions_path, "D-0036")
+    engineering_governance_block_sha256 = verify_engineering_governance(decisions_path)
     assignments: dict[str, str] = {}
     for key, value in re.findall(r"`?([A-Z0-9_]+)\s*=\s*([^`\n]+?)`?(?=\n|$)", block):
         if key in assignments:
@@ -390,6 +428,7 @@ def verify_d0036(
         decision_block_sha256=hashlib.sha256(block.encode()).hexdigest(),
         decisions_path=decisions_path.resolve(strict=True),
         decisions_sha256=sha256_file(decisions_path),
+        engineering_governance_block_sha256=engineering_governance_block_sha256,
         stage1=stage1,
     )
 
@@ -452,6 +491,7 @@ def validate_formal_engine_claim(path: Path) -> dict[str, Any]:
     for key in (
         "config_sha256",
         "decision_block_sha256",
+        "engineering_governance_block_sha256",
         "group_request_sha256",
         "preflight_config_sha256",
         "stage1_result_sha256",
@@ -499,6 +539,7 @@ def validate_formal_call_claim(
         raise AceFormalContractError("formal per-call claim boundary drifted")
     for key in (
         "claim_identity_sha256",
+        "engineering_governance_block_sha256",
         "group_claim_sha256",
         "group_request_sha256",
         "request_sha256",
@@ -529,6 +570,8 @@ def validate_formal_backend_invocation(
         sha256_file(group_path) != context.get("formal_claim_sha256")
         or sha256_file(call_path) != context.get("formal_call_claim_sha256")
         or call["group_claim_sha256"] != sha256_file(group_path)
+        or call["engineering_governance_block_sha256"]
+        != group["engineering_governance_block_sha256"]
         or call["group_request_sha256"] != group["group_request_sha256"]
         or call["stage1_result_sha256"] != group["stage1_result_sha256"]
         or call["physical_gpu_id"] != group["physical_gpu_id"]
@@ -595,4 +638,5 @@ __all__ = [
     "validate_formal_call_claim",
     "validate_stage1_gate",
     "verify_d0036",
+    "verify_engineering_governance",
 ]

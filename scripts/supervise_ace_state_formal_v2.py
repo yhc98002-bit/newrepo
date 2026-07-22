@@ -71,7 +71,10 @@ def main() -> int:
     run_dir = args.run_dir.resolve(strict=True)
     validate_formal_run(run_dir, config=config, git_state=git_state)
     if (run_dir / "control" / "formal-terminal-failure.json").exists():
-        raise RuntimeError("ACE formal lane is permanently FAILED_STOPPED")
+        raise RuntimeError(
+            "this ACE formal attempt is FAILED_STOPPED; engineering repair requires "
+            "a new run ID and claim"
+        )
     assignment_path = run_dir / "control" / "formal-supervisor-assignment.json"
     assignments: list[dict[str, int]] = []
     probes: list[dict[str, object]] = []

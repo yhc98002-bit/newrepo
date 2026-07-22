@@ -52,7 +52,7 @@ class AceFormalGroupEngine(Protocol):
 
 
 class AceFormalWorkerStopped(RuntimeError):
-    """A no-retry claim, prior terminal failure, or new failure stopped work."""
+    """A no-retry claim or failure stopped the current immutable attempt."""
 
 
 class FailureLatch:
@@ -69,7 +69,8 @@ class FailureLatch:
             self.claims.require_lane_clear()
         except RuntimeError as exc:
             raise AceFormalWorkerStopped(
-                "ACE formal lane has a terminal FAILED_STOPPED latch"
+                "ACE formal attempt is FAILED_STOPPED; engineering repair requires "
+                "a new run ID and claim"
             ) from exc
 
     def stop(self, *, identity: str, replica_index: int, exc: BaseException) -> dict[str, Any]:
@@ -508,7 +509,8 @@ class AceFormalWorker:
                             )
                             heartbeat.flush()
                             raise AceFormalWorkerStopped(
-                                f"new ACE formal failure at {identity}; permanently stopped"
+                                f"ACE formal attempt failed at {identity}; within-attempt retry "
+                                "is forbidden and repair requires a new run ID and claim"
                             ) from exc
                         completed += 1
                         cumulative += float(result["gpu_seconds"])

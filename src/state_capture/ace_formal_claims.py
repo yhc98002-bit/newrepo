@@ -36,7 +36,7 @@ class AceFormalHardCapReached(RuntimeError):
 
 
 class AceFormalPeerFailed(RuntimeError):
-    """Another replica durably terminalized the shared formal lane."""
+    """Another replica durably terminalized the current formal attempt."""
 
 
 def _utc_now() -> str:
@@ -107,20 +107,30 @@ class AceFormalClaimStore:
 
     def _require_clear_locked(self) -> None:
         if self.failure_latch_path.exists():
-            raise AceFormalPeerFailed("ACE formal lane has a terminal FAILED_STOPPED latch")
+            raise AceFormalPeerFailed(
+                "ACE formal attempt has a FAILED_STOPPED latch; engineering repair "
+                "requires a new run ID and claim"
+            )
 
     def _latch_locked(
         self, *, identity: str, replica_index: int, exc: BaseException
     ) -> dict[str, Any]:
         record = {
+            "engineering_failure_repairable": True,
+            "engineering_failure_scope": "CURRENT_RUN_ATTEMPT_ONLY",
+            "engineering_repair_requires_new_claim": True,
+            "engineering_repair_requires_new_run_id": True,
             "error_class": type(exc).__name__,
             "error_message": str(exc)[:2000],
+            "failed_attempt_immutable": True,
             "failed_at_utc": _utc_now(),
             "group_request_sha256": identity,
             "replica_index": replica_index,
             "retry_allowed": False,
             "schema_version": 1,
+            "scientific_rerun_for_weak_result_allowed": False,
             "status": "FAILED_STOPPED",
+            "within_attempt_retry": False,
         }
         if not self.failure_latch_path.exists():
             _write_exclusive(self.failure_latch_path, record)
@@ -188,6 +198,9 @@ class AceFormalClaimStore:
                 "claimed_at_utc": _utc_now(),
                 "config_sha256": self.config.sha256,
                 "decision_block_sha256": authorization.decision_block_sha256,
+                "engineering_governance_block_sha256": (
+                    authorization.engineering_governance_block_sha256
+                ),
                 "git_commit": git_commit,
                 "group_request_sha256": identity,
                 "lane_request_sha256s": list(group["lane_request_sha256s"]),
@@ -261,6 +274,9 @@ class AceFormalClaimStore:
             "claim_type": "ACE_FORMAL_INITIAL_MODEL_CALL",
             "claimed_at_utc": _utc_now(),
             "group_claim_sha256": str(group_claim["sha256"]),
+            "engineering_governance_block_sha256": parent[
+                "engineering_governance_block_sha256"
+            ],
             "group_request_sha256": parent["group_request_sha256"],
             "model_id": MODEL_ID,
             "physical_gpu_id": physical_gpu_id,

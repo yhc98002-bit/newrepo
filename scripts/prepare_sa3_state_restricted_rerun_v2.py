@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare the sole D-0035 SA3 survivor-only rerun; make no model calls."""
+"""Prepare one D-0035/D-0045 SA3 survivor-only attempt; make no model calls."""
 
 from __future__ import annotations
 

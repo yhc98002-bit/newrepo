@@ -21,12 +21,23 @@ from state_capture.sa3_restricted_rerun import (
     load_restricted_rerun_config,
     mark_validation_pass,
     prepare_restricted_rerun,
+    verify_engineering_governance,
     verify_rerun_decision,
 )
 from tests.stage1.terminal_support import build_terminal, queue_binding, write_jsonl
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "configs" / "sa3_state_restricted_rerun_v2.json"
+ENGINEERING_ASSIGNMENTS = {
+    "ENGINEERING_FAILURES_REPAIRABLE": "YES",
+    "WITHIN_ATTEMPT_RETRY": "NO",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_RUN_ID": "YES",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_CLAIM": "YES",
+    "SCIENTIFIC_RERUNS_FOR_WEAK_RESULTS": "NO",
+    "FROZEN_SCIENTIFIC_DESIGN_CHANGES_AUTHORIZED": "NO",
+    "FAILED_ATTEMPTS_IMMUTABLE": "YES",
+    "STOP_AXIS_UNITS_EXECUTABLE": "NO",
+}
 
 
 def _digest(label: str) -> str:
@@ -217,6 +228,30 @@ def test_d0035_uses_prospective_stage1_paths_and_no_third_repair(tmp_path: Path)
         )
 
 
+def test_d0045_supersedes_global_stop_but_keeps_attempt_fail_closed(tmp_path: Path) -> None:
+    decisions = tmp_path / "DECISIONS.md"
+    decisions.write_text(
+        "## D-0035 — scientific opening\n\n"
+        "NO_THIRD_REPAIR = YES\n\n"
+        "## D-0045 — engineering-attempt governance correction\n\n"
+        + "\n".join(f"`{key} = {value}`" for key, value in ENGINEERING_ASSIGNMENTS.items())
+        + "\n",
+        encoding="utf-8",
+    )
+    block, digest = verify_engineering_governance(decisions)
+    assert block.startswith("## D-0045")
+    assert len(digest) == 64
+
+    decisions.write_text(
+        decisions.read_text(encoding="utf-8").replace(
+            "STOP_AXIS_UNITS_EXECUTABLE = NO", "STOP_AXIS_UNITS_EXECUTABLE = YES"
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(RestrictedRerunError, match="exact engineering assignments"):
+        verify_engineering_governance(decisions)
+
+
 def test_stage1_plan_exactly_cancels_stop_axis_and_selects_failed_root(tmp_path: Path) -> None:
     config, bundle, _ = _stage1_fixture(tmp_path)
     plan = rerun_module._stage1_plan(config, bundle)
@@ -276,7 +311,7 @@ def test_cancellation_chain_tamper_is_rejected(tmp_path: Path) -> None:
         rerun_module._stage1_plan(config, bundle)
 
 
-def test_continuation_requires_full_one_root_success_and_failure_is_permanent(
+def test_continuation_requires_success_and_failure_stops_only_current_attempt(
     tmp_path: Path,
 ) -> None:
     config, bundle, _ = _stage1_fixture(tmp_path)
@@ -318,8 +353,12 @@ def test_continuation_requires_full_one_root_success_and_failure_is_permanent(
         (control / "restricted-rerun-failure.terminal.json").read_text(encoding="utf-8")
     )
     assert terminal["status"] == "FAILED_STOPPED"
-    assert terminal["no_third_repair"] is True
-    with pytest.raises(RestrictedRerunError, match="permanently FAILED_STOPPED"):
+    assert terminal["within_attempt_retry"] is False
+    assert terminal["engineering_failure_scope"] == "CURRENT_RUN_ATTEMPT_ONLY"
+    assert terminal["engineering_repair_requires_new_run_id"] is True
+    assert terminal["engineering_repair_requires_new_claim"] is True
+    assert terminal["failed_attempt_immutable"] is True
+    with pytest.raises(RestrictedRerunError, match="new run ID and claim"):
         continuation.require_open()
 
 
@@ -368,7 +407,7 @@ def test_failure_latch_is_atomic_against_publication_and_blocks_later_work(
 
     prohibited = run_dir / "post-failure-publication"
     with (
-        pytest.raises(RestrictedRerunError, match="permanently FAILED_STOPPED"),
+        pytest.raises(RestrictedRerunError, match="new run ID and claim"),
         scope.atomic_open(),
     ):
         prohibited.write_text("must not exist", encoding="utf-8")

@@ -33,6 +33,17 @@ from state_capture.sa3_contract import (
 AUTHORIZATION_STATUS = "AUTHORIZED_D0035_STAGE1_SURVIVORS_ONLY"
 PREPARED_STATUS = "PREPARED_RESTRICTED_RERUN_NO_MODEL_CALLS"
 SA3_BACKBONE = "stable-audio-3-medium-base"
+ENGINEERING_GOVERNANCE_DECISION_ID = "D-0045"
+ENGINEERING_GOVERNANCE_ASSIGNMENTS = {
+    "ENGINEERING_FAILURES_REPAIRABLE": "YES",
+    "WITHIN_ATTEMPT_RETRY": "NO",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_RUN_ID": "YES",
+    "ENGINEERING_REPAIR_REQUIRES_NEW_CLAIM": "YES",
+    "SCIENTIFIC_RERUNS_FOR_WEAK_RESULTS": "NO",
+    "FROZEN_SCIENTIFIC_DESIGN_CHANGES_AUTHORIZED": "NO",
+    "FAILED_ATTEMPTS_IMMUTABLE": "YES",
+    "STOP_AXIS_UNITS_EXECUTABLE": "NO",
+}
 
 
 class RestrictedRerunError(RuntimeError):
@@ -71,6 +82,30 @@ def _decision_block(text: str, decision_id: str) -> str:
     if match is None:
         raise RestrictedRerunError(f"decision block is absent: {decision_id}")
     return match.group(0)
+
+
+def verify_engineering_governance(decisions_path: Path) -> tuple[str, str]:
+    """Bind D-0045 without weakening any D-0035 scientific restriction."""
+
+    text = decisions_path.resolve(strict=True).read_text(encoding="utf-8")
+    block = _decision_block(text, ENGINEERING_GOVERNANCE_DECISION_ID)
+    assignments: dict[str, str] = {}
+    for key, value in re.findall(r"`?([A-Z0-9_]+)\s*=\s*([^`\n]+?)`?(?=\n|$)", block):
+        if key in assignments:
+            raise RestrictedRerunError(f"duplicate D-0045 assignment: {key}")
+        assignments[key] = value.strip()
+    missing = [
+        key
+        for key, value in ENGINEERING_GOVERNANCE_ASSIGNMENTS.items()
+        if assignments.get(key) != value
+    ]
+    if missing:
+        raise RestrictedRerunError(f"D-0045 lacks exact engineering assignments: {missing}")
+    d0035 = text.find("## D-0035")
+    d0045 = text.find("## D-0045")
+    if d0035 < 0 or d0045 <= d0035:
+        raise RestrictedRerunError("D-0045 must append after the D-0035 scientific opening")
+    return block, hashlib.sha256(block.encode()).hexdigest()
 
 
 def _resolve(repo_root: Path, value: Any, context: str) -> Path:
@@ -344,7 +379,10 @@ def _stage1_plan(config: RestrictedRerunConfig, bundle: dict[str, Any]) -> dict[
             else "CANCELLED_STAGE1_NO_RERUN"
         ),
         "folds_sha256": config.raw["source_run"]["queue"]["folds"]["sha256"],
-        "no_third_repair": True,
+        "engineering_failure_scope": "CURRENT_RUN_ATTEMPT_ONLY",
+        "engineering_repair_requires_new_claim": True,
+        "engineering_repair_requires_new_run_id": True,
+        "within_attempt_retry": False,
         "original_failed_lane_request_sha256": failed_id,
         "original_queue_bytes_reused_without_rewrite": True,
         "prefix_groups_sha256": config.raw["source_run"]["queue"]["prefix_groups"]["sha256"],
@@ -371,7 +409,7 @@ def prepare_restricted_rerun(
     decision_id: str,
     repo_root: Path,
 ) -> dict[str, Any]:
-    """Materialize the sole D-0035 rerun scope; never import a model or probe CUDA."""
+    """Materialize one D-0035 execution attempt; never import a model or probe CUDA."""
 
     config = load_restricted_rerun_config(config_path, repo_root=repo_root)
     bundle = _audit_source_run(config)
@@ -381,10 +419,14 @@ def prepare_restricted_rerun(
         decision_id=decision_id,
         config=config,
     )
+    _, engineering_block_sha = verify_engineering_governance(decisions_path)
     git_state = observe_clean_origin_main(repo_root)
     run_dir = (config.run_root / config.run_id).resolve()
     if config.attempt_claim_path.exists() or run_dir.exists():
-        raise RestrictedRerunError("D-0035 one-attempt run/claim already exists; no third repair")
+        raise RestrictedRerunError(
+            "this immutable SA3 attempt run/claim already exists; an engineering repair "
+            "requires a new run ID and claim"
+        )
     run_dir.mkdir(parents=True, exist_ok=False)
     _fsync_directory(run_dir.parent)
     plan_path = run_dir / "control" / "stage1-survivor-execution-plan.json"
@@ -396,9 +438,14 @@ def prepare_restricted_rerun(
         "config_sha256": config.source_sha256,
         "decision_block_sha256": block_sha,
         "decision_id": decision_id,
+        "engineering_governance_block_sha256": engineering_block_sha,
+        "engineering_governance_decision_id": ENGINEERING_GOVERNANCE_DECISION_ID,
+        "engineering_governance_decisions_path": str(decisions_path.resolve(strict=True)),
+        "engineering_repair_requires_new_claim": True,
+        "engineering_repair_requires_new_run_id": True,
+        "failed_attempts_immutable": True,
         "git_commit": git_state.head,
         "git_origin_main": git_state.origin_main,
-        "no_third_repair": True,
         "one_root_validation_required": plan["validation_group_request_sha256"] is not None,
         "run_dir": str(run_dir),
         "run_id": config.run_id,
@@ -411,6 +458,7 @@ def prepare_restricted_rerun(
         "stage1_result_sha256": plan["stage1_result_sha256"],
         "stage1_runtime_sha256_binding": "VERIFIED_AND_RECORDED_AT_LAUNCH",
         "survivors_only": True,
+        "within_attempt_retry": False,
     }
     _write_json_exclusive(config.attempt_claim_path, claim)
     manifest = {
@@ -418,6 +466,7 @@ def prepare_restricted_rerun(
         "attempt_claim_path": str(config.attempt_claim_path),
         "attempt_claim_sha256": sha256_file(config.attempt_claim_path),
         "config_sha256": config.source_sha256,
+        "engineering_governance_block_sha256": engineering_block_sha,
         "git_commit": git_state.head,
         "queue_manifest_path": str(config.queue_manifest_path),
         "queue_manifest_sha256": config.raw["source_run"]["queue"]["manifest"]["sha256"],
@@ -464,13 +513,31 @@ def validate_restricted_run(
     ):
         raise RestrictedRerunError("restricted-rerun attempt claim drifted")
     claim = load_json(claim_path)
+    _, live_engineering_block_sha = verify_engineering_governance(
+        Path(
+            str(
+                claim.get(
+                    "engineering_governance_decisions_path",
+                    config.repo_root / "DECISIONS.md",
+                )
+            )
+        )
+    )
     if (
         claim.get("stage1_result_sha256") != sha256_file(config.stage1_result_path)
         or claim.get("stage1_cancellation_summary_sha256")
         != sha256_file(config.stage1_summary_path)
         or claim.get("stage1_runtime_sha256_binding") != "VERIFIED_AND_RECORDED_AT_LAUNCH"
+        or claim.get("engineering_governance_decision_id")
+        != ENGINEERING_GOVERNANCE_DECISION_ID
+        or claim.get("engineering_governance_block_sha256") != live_engineering_block_sha
+        or manifest.get("engineering_governance_block_sha256") != live_engineering_block_sha
+        or claim.get("engineering_repair_requires_new_run_id") is not True
+        or claim.get("engineering_repair_requires_new_claim") is not True
+        or claim.get("failed_attempts_immutable") is not True
+        or claim.get("within_attempt_retry") is not False
     ):
-        raise RestrictedRerunError("restricted-rerun Stage-1 launch binding drifted")
+        raise RestrictedRerunError("restricted-rerun Stage-1/governance launch binding drifted")
     plan_path = Path(str(manifest.get("stage1_plan_path", ""))).resolve(strict=True)
     try:
         plan_path.relative_to(root)
@@ -523,7 +590,10 @@ class RestrictedExecutionScope:
 
     def require_open(self) -> None:
         if (self.run_dir / "control" / "restricted-rerun-failure.terminal.json").exists():
-            raise RestrictedRerunError("restricted rerun is permanently FAILED_STOPPED")
+            raise RestrictedRerunError(
+                "this restricted-rerun attempt is FAILED_STOPPED; repair requires a new "
+                "run ID and claim"
+            )
 
     def require_scoreable(self, lane_request_sha256: str) -> None:
         """Reject STOP units at the state-result scoring boundary."""
@@ -583,15 +653,21 @@ class RestrictedExecutionScope:
     def record_failure(self, *, identity: str | None, kind: str, error: BaseException) -> None:
         path = self.run_dir / "control" / "restricted-rerun-failure.terminal.json"
         payload = {
+            "engineering_failure_repairable": True,
+            "engineering_failure_scope": "CURRENT_RUN_ATTEMPT_ONLY",
+            "engineering_repair_requires_new_claim": True,
+            "engineering_repair_requires_new_run_id": True,
             "error_message": str(error)[:2000],
             "error_type": type(error).__name__,
+            "failed_attempt_immutable": True,
             "failed_at_utc": _utc_now(),
             "identity": identity,
             "kind": kind,
-            "no_third_repair": True,
             "phase": self.phase,
+            "scientific_rerun_for_weak_result_allowed": False,
             "schema_version": 1,
             "status": "FAILED_STOPPED",
+            "within_attempt_retry": False,
         }
         with self._transition_lock(require_open=False):
             try:
@@ -600,7 +676,10 @@ class RestrictedExecutionScope:
                 existing = load_json(path)
                 if (
                     existing.get("status") != "FAILED_STOPPED"
-                    or existing.get("no_third_repair") is not True
+                    or existing.get("failed_attempt_immutable") is not True
+                    or existing.get("within_attempt_retry") is not False
+                    or existing.get("engineering_repair_requires_new_run_id") is not True
+                    or existing.get("engineering_repair_requires_new_claim") is not True
                 ):
                     raise RestrictedRerunError(
                         "restricted-rerun failure terminal is invalid"
@@ -687,4 +766,5 @@ __all__ = [
     "validate_restricted_run",
     "validate_validation_pass",
     "verify_rerun_decision",
+    "verify_engineering_governance",
 ]
