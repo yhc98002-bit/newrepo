@@ -29,6 +29,9 @@ def main() -> int:
     parser.add_argument("--attempt-claim-path", type=Path)
     parser.add_argument("--physical-gpu-id", action="append", type=int)
     parser.add_argument("--predecessor-failure", type=Path)
+    parser.add_argument("--completed-exclusion", type=Path)
+    parser.add_argument("--remaining-manifest", type=Path)
+    parser.add_argument("--repair-decision-id")
     args = parser.parse_args()
     result = prepare_restricted_rerun(
         args.config,
@@ -39,6 +42,9 @@ def main() -> int:
         attempt_claim_path=args.attempt_claim_path,
         physical_gpu_ids=tuple(args.physical_gpu_id or (4, 5, 6, 7)),
         predecessor_failure_path=args.predecessor_failure,
+        completed_exclusion_path=args.completed_exclusion,
+        remaining_manifest_path=args.remaining_manifest,
+        repair_decision_id=args.repair_decision_id,
     )
     print(json.dumps(result, allow_nan=False, sort_keys=True))
     return 0

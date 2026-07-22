@@ -153,10 +153,17 @@ def _repair_predecessor(
     base_run_id: str,
     next_run_id: str,
     expected_scientific_bindings: Mapping[str, str],
+    completed_exclusion_path: Path | None = None,
+    remaining_manifest_path: Path | None = None,
+    config: RestrictedRerunConfig | None = None,
+    bundle: Mapping[str, Any] | None = None,
+    source_plan: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     if next_run_id == base_run_id:
         if path is not None:
             raise RestrictedRerunError("base attempt may not name a repair predecessor")
+        if completed_exclusion_path is not None or remaining_manifest_path is not None:
+            raise RestrictedRerunError("base attempt may not name a remaining-work package")
         return None
     next_match = SA3_ATTEMPT_ID_PATTERN.fullmatch(next_run_id)
     base_match = SA3_ATTEMPT_ID_PATTERN.fullmatch(base_run_id)
@@ -172,14 +179,11 @@ def _repair_predecessor(
         if isinstance(predecessor_run_id, str)
         else None
     )
-    if (
+    common_invalid = (
         record.get("schema_version") != 1
         or predecessor_match is None
         or int(predecessor_match.group(1)) < int(base_match.group(1))
         or int(next_match.group(1)) != int(predecessor_match.group(1)) + 1
-        or record.get("status") != "FAILED_PRE_MODEL_ENGINEERING"
-        or record.get("model_calls") != 0
-        or record.get("generated_outputs") != 0
         or record.get("failure_classification") != "ENGINEERING_BUG"
         or record.get("scientific_design_changed") is not False
         or record.get("scientific_outputs_retained") is not True
@@ -187,12 +191,102 @@ def _repair_predecessor(
         or record.get("repair_requires_new_run_id") is not True
         or record.get("repair_requires_new_claim") is not True
         or record.get("scientific_bindings") != dict(expected_scientific_bindings)
-    ):
+    )
+    if common_invalid:
         raise RestrictedRerunError(
-            "SA3 predecessor is not the immediately prior immutable zero-call failure "
+            "SA3 predecessor is not the immediately prior immutable engineering failure "
             "with identical science bindings"
         )
-    return {"path": str(source), "sha256": sha256_file(source), "status": record["status"]}
+    status = record.get("status")
+    remaining_repair: dict[str, Any] | None = None
+    if status == "FAILED_PRE_MODEL_ENGINEERING":
+        if (
+            record.get("model_calls") != 0
+            or record.get("generated_outputs") != 0
+            or completed_exclusion_path is not None
+            or remaining_manifest_path is not None
+        ):
+            raise RestrictedRerunError("zero-call predecessor has a remaining-work package")
+    elif status == "FAILED_ENGINEERING_ATTEMPT":
+        if (
+            record.get("model_calls") != 4
+            or record.get("generated_outputs") != 4
+            or record.get("valid_completed_units_rerun") is not False
+            or config is None
+            or bundle is None
+            or source_plan is None
+            or completed_exclusion_path is None
+            or remaining_manifest_path is None
+        ):
+            raise RestrictedRerunError(
+                "post-call predecessor lacks the exact completed exclusion/remaining package"
+            )
+        from state_capture.sa3_remaining_repair import validate_remaining_repair_package
+
+        remaining_repair = validate_remaining_repair_package(
+            remaining_manifest_path,
+            exclusion_path=completed_exclusion_path,
+            config=config,
+            bundle=bundle,
+            source_plan=source_plan,
+        )
+        if (
+            remaining_repair["predecessor_run_id"] != predecessor_run_id
+            or record.get("completed_exclusion_path")
+            != remaining_repair["completed_exclusion_path"]
+            or record.get("completed_exclusion_sha256")
+            != remaining_repair["completed_exclusion_sha256"]
+            or record.get("remaining_manifest_path") != remaining_repair["remaining_manifest_path"]
+            or record.get("remaining_manifest_sha256")
+            != remaining_repair["remaining_manifest_sha256"]
+        ):
+            raise RestrictedRerunError("post-call predecessor repair-package binding drifted")
+    else:
+        raise RestrictedRerunError("SA3 predecessor failure status is not repairable")
+    result = {
+        "path": str(source),
+        "sha256": sha256_file(source),
+        "status": status,
+    }
+    if remaining_repair is not None:
+        result["remaining_repair"] = remaining_repair
+    return result
+
+
+def _plan_for_attempt(
+    source_plan: Mapping[str, Any], predecessor: Mapping[str, Any] | None
+) -> dict[str, Any]:
+    plan = dict(source_plan)
+    repair = predecessor.get("remaining_repair") if predecessor is not None else None
+    if repair is None:
+        return plan
+    completed_groups = list(repair["completed_group_request_sha256s"])
+    completed_units = list(repair["completed_lane_request_sha256s"])
+    remaining_groups = list(repair["remaining_group_request_sha256s"])
+    remaining_units = list(repair["remaining_lane_request_sha256s"])
+    if (
+        set(completed_groups) | set(remaining_groups) != set(plan["survivor_group_request_sha256s"])
+        or set(completed_groups) & set(remaining_groups)
+        or set(completed_units) | set(remaining_units) != set(plan["survivor_lane_request_sha256s"])
+        or set(completed_units) & set(remaining_units)
+    ):
+        raise RestrictedRerunError("remaining-work plan does not partition Stage-1 survivors")
+    plan.update(
+        {
+            "completed_excluded_group_request_sha256s": completed_groups,
+            "completed_excluded_lane_request_sha256s": completed_units,
+            "completed_units_score_from_predecessor_only": True,
+            "failed_unit_disposition": "COMPLETED_IN_PREDECESSOR_EXCLUDED_FROM_RERUN",
+            "remaining_group_request_sha256s": remaining_groups,
+            "remaining_lane_request_sha256s": remaining_units,
+            "remaining_repair_manifest_path": repair["remaining_manifest_path"],
+            "remaining_repair_manifest_sha256": repair["remaining_manifest_sha256"],
+            "status": "REMAINING_SURVIVORS_SCOPED",
+            "validation_rerun_authorized": False,
+            "validation_satisfied_by_predecessor": repair["validation_marker"],
+        }
+    )
+    return plan
 
 
 @dataclass(frozen=True)
@@ -381,6 +475,72 @@ def verify_rerun_decision(
     return block, hashlib.sha256(block.encode()).hexdigest()
 
 
+def verify_remaining_repair_decision(
+    decisions_path: Path,
+    *,
+    decision_id: str,
+    run_id: str,
+    predecessor: Mapping[str, Any],
+    placement: Mapping[str, Any],
+    scientific_bindings: Mapping[str, str],
+) -> tuple[str, str]:
+    """Require an exact prospective opening for a post-call remaining-only repair."""
+
+    repair = predecessor.get("remaining_repair")
+    if not isinstance(repair, dict):
+        raise RestrictedRerunError("remaining repair decision requires a post-call package")
+    decision_text = decisions_path.resolve(strict=True).read_text(encoding="utf-8")
+    block = _decision_block(decision_text, decision_id)
+    required = (
+        "SA3_STATE_REMAINING_REPAIR_AUTHORIZED = YES",
+        f"SA3_STATE_REMAINING_REPAIR_RUN_ID = {run_id}",
+        f"SA3_STATE_REMAINING_REPAIR_PREDECESSOR_SHA256 = {predecessor['sha256']}",
+        (
+            "SA3_STATE_REMAINING_REPAIR_COMPLETED_EXCLUSION_SHA256 = "
+            f"{repair['completed_exclusion_sha256']}"
+        ),
+        (f"SA3_STATE_REMAINING_REPAIR_MANIFEST_SHA256 = {repair['remaining_manifest_sha256']}"),
+        "SA3_STATE_REMAINING_REPAIR_PLACEMENT = an12:[4];TP1;R1",
+        "SA3_STATE_REMAINING_REPAIR_COMPLETED_GROUP_COUNT = 1",
+        "SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_COUNT = 3",
+        "SA3_STATE_REMAINING_REPAIR_REMAINING_GROUP_COUNT = 47",
+        "SA3_STATE_REMAINING_REPAIR_REMAINING_UNIT_COUNT = 141",
+        "SA3_STATE_REMAINING_REPAIR_REMAINING_ACTION_COUNT = 423",
+        "SA3_STATE_REMAINING_REPAIR_VALIDATION_RERUN = NO",
+        "SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_RERUN = NO",
+        "SA3_STATE_REMAINING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO",
+        "SA3_STATE_REMAINING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO",
+        f"SA3_STATE_REMAINING_REPAIR_CONFIG_SHA256 = {scientific_bindings['config_sha256']}",
+        (
+            "SA3_STATE_REMAINING_REPAIR_QUEUE_MANIFEST_SHA256 = "
+            f"{scientific_bindings['queue_manifest_sha256']}"
+        ),
+        (
+            "SA3_STATE_REMAINING_REPAIR_STAGE1_RESULT_SHA256 = "
+            f"{scientific_bindings['stage1_result_sha256']}"
+        ),
+        (
+            "SA3_STATE_REMAINING_REPAIR_STAGE1_SUMMARY_SHA256 = "
+            f"{scientific_bindings['stage1_summary_sha256']}"
+        ),
+    )
+    missing = [literal for literal in required if literal not in block]
+    if missing:
+        raise RestrictedRerunError(
+            f"{decision_id} lacks exact remaining-repair bindings: {missing}"
+        )
+    if (
+        placement.get("node") != "an12"
+        or placement.get("physical_gpu_ids") != [4]
+        or placement.get("replica_count") != 1
+        or placement.get("tensor_parallel_width") != 1
+    ):
+        raise RestrictedRerunError("remaining repair placement differs from D decision")
+    if re.search(r"\b(?:PLACEHOLDER|PENDING|TBD|ESTIMATE|UNSET)\b", block, re.IGNORECASE):
+        raise RestrictedRerunError("remaining repair decision contains unresolved text")
+    return block, hashlib.sha256(block.encode()).hexdigest()
+
+
 def _stage1_plan(config: RestrictedRerunConfig, bundle: dict[str, Any]) -> dict[str, Any]:
     try:
         terminal = validate_stage1_terminal(
@@ -486,12 +646,15 @@ def prepare_restricted_rerun(
     attempt_claim_path: Path | None = None,
     physical_gpu_ids: Sequence[int] = (4, 5, 6, 7),
     predecessor_failure_path: Path | None = None,
+    completed_exclusion_path: Path | None = None,
+    remaining_manifest_path: Path | None = None,
+    repair_decision_id: str | None = None,
 ) -> dict[str, Any]:
     """Materialize one D-0035 execution attempt; never import a model or probe CUDA."""
 
     config = load_restricted_rerun_config(config_path, repo_root=repo_root)
     bundle = _audit_source_run(config)
-    plan = _stage1_plan(config, bundle)
+    source_plan = _stage1_plan(config, bundle)
     block, block_sha = verify_rerun_decision(
         decisions_path,
         decision_id=decision_id,
@@ -503,16 +666,41 @@ def prepare_restricted_rerun(
     scientific_bindings = {
         "config_sha256": config.source_sha256,
         "queue_manifest_sha256": config.raw["source_run"]["queue"]["manifest"]["sha256"],
-        "stage1_result_sha256": plan["stage1_result_sha256"],
-        "stage1_summary_sha256": plan["stage1_summary_sha256"],
+        "stage1_result_sha256": source_plan["stage1_result_sha256"],
+        "stage1_summary_sha256": source_plan["stage1_summary_sha256"],
     }
     predecessor = _repair_predecessor(
         predecessor_failure_path,
         base_run_id=config.run_id,
         next_run_id=actual_run_id,
         expected_scientific_bindings=scientific_bindings,
+        completed_exclusion_path=completed_exclusion_path,
+        remaining_manifest_path=remaining_manifest_path,
+        config=config,
+        bundle=bundle,
+        source_plan=source_plan,
     )
+    plan = _plan_for_attempt(source_plan, predecessor)
     placement = _attempt_placement(config, physical_gpu_ids=physical_gpu_ids)
+    remaining_decision: dict[str, Any] | None = None
+    if predecessor is not None and predecessor.get("remaining_repair") is not None:
+        if repair_decision_id is None:
+            raise RestrictedRerunError("post-call repair requires its exact opening decision")
+        repair_block, repair_block_sha = verify_remaining_repair_decision(
+            decisions_path,
+            decision_id=repair_decision_id,
+            run_id=actual_run_id,
+            predecessor=predecessor,
+            placement=placement,
+            scientific_bindings=scientific_bindings,
+        )
+        remaining_decision = {
+            "block_sha256": repair_block_sha,
+            "decision_id": repair_decision_id,
+        }
+        del repair_block
+    elif repair_decision_id is not None:
+        raise RestrictedRerunError("zero-call repair may not name a remaining-work decision")
     claim_path = (
         attempt_claim_path.resolve()
         if attempt_claim_path is not None
@@ -549,13 +737,17 @@ def prepare_restricted_rerun(
         "failed_attempts_immutable": True,
         "git_commit": git_state.head,
         "git_origin_main": git_state.origin_main,
-        "one_root_validation_required": plan["validation_group_request_sha256"] is not None,
+        "one_root_validation_required": (
+            plan["validation_group_request_sha256"] is not None
+            and (predecessor is None or predecessor.get("remaining_repair") is None)
+        ),
         "placement": placement,
         "predecessor_failure": predecessor,
         "run_dir": str(run_dir),
         "run_id": actual_run_id,
         "schema_version": 1,
         "scientific_bindings": scientific_bindings,
+        "remaining_repair_decision": remaining_decision,
         "stage1_cancellation_summary_path": str(config.stage1_summary_path),
         "stage1_cancellation_summary_sha256": plan["stage1_summary_sha256"],
         "stage1_plan_path": str(plan_path),
@@ -581,6 +773,7 @@ def prepare_restricted_rerun(
         "run_id": actual_run_id,
         "schema_version": 1,
         "scientific_bindings": scientific_bindings,
+        "remaining_repair_decision": remaining_decision,
         "stage1_cancellation_summary_sha256": plan["stage1_summary_sha256"],
         "stage1_plan_path": str(plan_path),
         "stage1_plan_sha256": sha256_file(plan_path),
@@ -596,6 +789,12 @@ def prepare_restricted_rerun(
         "run_manifest_sha256": sha256_file(manifest_path),
         "status": PREPARED_STATUS,
         "survivor_group_count": len(plan["survivor_group_request_sha256s"]),
+        "remaining_group_count": len(
+            plan.get(
+                "remaining_group_request_sha256s",
+                plan["survivor_group_request_sha256s"],
+            )
+        ),
         "validation_group_request_sha256": plan["validation_group_request_sha256"],
     }
 
@@ -654,12 +853,30 @@ def validate_restricted_run(
     predecessor_raw = claim.get("predecessor_failure")
     if isinstance(predecessor_raw, dict) and isinstance(predecessor_raw.get("path"), str):
         predecessor_path = Path(predecessor_raw["path"])
+    bundle = _audit_source_run(config)
+    source_plan = _stage1_plan(config, bundle)
+    repair_raw = (
+        predecessor_raw.get("remaining_repair") if isinstance(predecessor_raw, dict) else None
+    )
+    completed_exclusion_path = None
+    remaining_manifest_path = None
+    if isinstance(repair_raw, dict):
+        if isinstance(repair_raw.get("completed_exclusion_path"), str):
+            completed_exclusion_path = Path(repair_raw["completed_exclusion_path"])
+        if isinstance(repair_raw.get("remaining_manifest_path"), str):
+            remaining_manifest_path = Path(repair_raw["remaining_manifest_path"])
     predecessor = _repair_predecessor(
         predecessor_path,
         base_run_id=config.run_id,
         next_run_id=run_id,
         expected_scientific_bindings=scientific_bindings,
+        completed_exclusion_path=completed_exclusion_path,
+        remaining_manifest_path=remaining_manifest_path,
+        config=config,
+        bundle=bundle,
+        source_plan=source_plan,
     )
+    plan = _plan_for_attempt(source_plan, predecessor)
     if (
         predecessor_raw != predecessor
         or manifest.get("predecessor_failure") != predecessor
@@ -667,6 +884,27 @@ def validate_restricted_run(
         or manifest.get("scientific_bindings") != scientific_bindings
     ):
         raise RestrictedRerunError("restricted-rerun predecessor binding drifted")
+    remaining_decision = claim.get("remaining_repair_decision")
+    if predecessor is not None and predecessor.get("remaining_repair") is not None:
+        if not isinstance(remaining_decision, dict) or not isinstance(
+            remaining_decision.get("decision_id"), str
+        ):
+            raise RestrictedRerunError("remaining repair decision binding is absent")
+        _, live_repair_block_sha = verify_remaining_repair_decision(
+            Path(str(claim["engineering_governance_decisions_path"])),
+            decision_id=remaining_decision["decision_id"],
+            run_id=run_id,
+            predecessor=predecessor,
+            placement=placement,
+            scientific_bindings=scientific_bindings,
+        )
+        if (
+            remaining_decision.get("block_sha256") != live_repair_block_sha
+            or manifest.get("remaining_repair_decision") != remaining_decision
+        ):
+            raise RestrictedRerunError("remaining repair live decision bytes drifted")
+    elif remaining_decision is not None or manifest.get("remaining_repair_decision") is not None:
+        raise RestrictedRerunError("nonremaining attempt names a remaining repair decision")
     _, live_engineering_block_sha = verify_engineering_governance(
         Path(
             str(
@@ -689,6 +927,11 @@ def validate_restricted_run(
         or claim.get("engineering_repair_requires_new_claim") is not True
         or claim.get("failed_attempts_immutable") is not True
         or claim.get("within_attempt_retry") is not False
+        or claim.get("one_root_validation_required")
+        is not (
+            plan["validation_group_request_sha256"] is not None
+            and (predecessor is None or predecessor.get("remaining_repair") is None)
+        )
     ):
         raise RestrictedRerunError("restricted-rerun Stage-1/governance launch binding drifted")
     plan_path = Path(str(manifest.get("stage1_plan_path", ""))).resolve(strict=True)
@@ -698,9 +941,6 @@ def validate_restricted_run(
         raise RestrictedRerunError("restricted-rerun plan escapes run directory") from exc
     if sha256_file(plan_path) != manifest.get("stage1_plan_sha256"):
         raise RestrictedRerunError("restricted-rerun plan bytes drifted")
-    _audit_source_run(config)
-    bundle = load_sa3_state_capture_bundle(config.queue_manifest_path, config=config.state_config)
-    plan = _stage1_plan(config, bundle)
     if plan != load_json(plan_path):
         raise RestrictedRerunError("restricted-rerun survivor plan no longer matches Stage-1")
     return {
@@ -761,6 +1001,10 @@ class RestrictedExecutionScope:
             raise RestrictedRerunError("CANCELLED_STAGE1 unit may never be scored")
         if lane_request_sha256 not in set(self.plan["survivor_lane_request_sha256s"]):
             raise RestrictedRerunError("state-result identity is outside the immutable queue")
+        if lane_request_sha256 in set(self.plan.get("completed_excluded_lane_request_sha256s", [])):
+            raise RestrictedRerunError(
+                "completed predecessor unit must be scored from its bound predecessor artifact"
+            )
 
     def select(
         self,
@@ -784,8 +1028,23 @@ class RestrictedExecutionScope:
             or survivor_groups & cancelled_groups
         ):
             raise RestrictedRerunError("scope does not partition the exact immutable group queue")
-        selected_ids = survivor_groups
+        completed_groups = set(self.plan.get("completed_excluded_group_request_sha256s", []))
+        completed_units = set(self.plan.get("completed_excluded_lane_request_sha256s", []))
+        remaining_groups = set(self.plan.get("remaining_group_request_sha256s", survivor_groups))
+        remaining_units = set(self.plan.get("remaining_lane_request_sha256s", survivor_units))
+        if (
+            completed_groups | remaining_groups != survivor_groups
+            or completed_groups & remaining_groups
+            or completed_units | remaining_units != survivor_units
+            or completed_units & remaining_units
+        ):
+            raise RestrictedRerunError("scope remaining/completed survivor partition drifted")
+        selected_ids = remaining_groups
         if self.phase == "validation":
+            if completed_groups:
+                raise RestrictedRerunError(
+                    "completed predecessor validation may not be rerun in a repair attempt"
+                )
             validation = self.plan["validation_group_request_sha256"]
             if validation is None:
                 raise RestrictedRerunError(
@@ -861,6 +1120,23 @@ def load_execution_scope(
 
 
 def validate_validation_pass(run_dir: Path, plan: dict[str, Any]) -> dict[str, Any]:
+    predecessor_marker = plan.get("validation_satisfied_by_predecessor")
+    if isinstance(predecessor_marker, dict):
+        path = Path(str(predecessor_marker.get("path", ""))).resolve(strict=True)
+        marker = load_json(path)
+        if (
+            sha256_file(path) != predecessor_marker.get("sha256")
+            or marker.get("status") != "ONE_ROOT_VALIDATION_PASS"
+            or marker.get("validation_group_request_sha256")
+            != plan["validation_group_request_sha256"]
+            or set(marker.get("succeeded_request_sha256s", []))
+            != {
+                *plan["completed_excluded_group_request_sha256s"],
+                *plan["completed_excluded_lane_request_sha256s"],
+            }
+        ):
+            raise RestrictedRerunError("predecessor one-root validation marker drifted")
+        return marker
     path = run_dir / "control" / "one-root-validation.pass.json"
     marker = load_json(path)
     if (
@@ -924,4 +1200,5 @@ __all__ = [
     "validate_validation_pass",
     "verify_rerun_decision",
     "verify_engineering_governance",
+    "verify_remaining_repair_decision",
 ]

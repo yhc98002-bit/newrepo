@@ -503,7 +503,7 @@ def test_repair_attempt_requires_exact_placement_and_immutable_predecessor(
     post_call["generated_outputs"] = 4
     post_call_path = tmp_path / "post-call-failure.json"
     post_call_path.write_text(json.dumps(post_call) + "\n", encoding="utf-8")
-    with pytest.raises(RestrictedRerunError, match="zero-call"):
+    with pytest.raises(RestrictedRerunError, match="completed exclusion/remaining package"):
         rerun_module._repair_predecessor(
             post_call_path,
             base_run_id="sa3-state-v2-restricted-rerun-001",
