@@ -21,7 +21,7 @@ from rater.bundle_common import load_json_strict, sha256_file, write_json_exclus
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-DEFAULT_CONFIG = ROOT / "configs" / "human_packet_autoassembly_v2.json"
+DEFAULT_CONFIG = ROOT / "configs" / "human_packet_autoassembly_v2_sao.json"
 DEFAULT_SCHEMA = HERE / "schema_v2.json"
 DEFAULT_TEMPLATE = HERE / "timing_pilot.html"
 
@@ -43,6 +43,9 @@ REQUIRED_DECISION_ASSIGNMENTS = (
     "HUMAN_AUDIT_PACKET_ASSEMBLY = ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA",
     "HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO",
 )
+
+VOICE_DISAGREEMENT_SLOTS_PER_REQUEST = 2
+TEMPO_DISAGREEMENT_OR_INVALID_SLOTS = 10
 
 
 def _utc_now() -> str:
@@ -94,16 +97,14 @@ def load_config(path: Path, *, decisions_path: Path | None = None) -> dict[str, 
         raise ValueError("arm config schema_version must be 1")
     if config["status"] != "ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA":
         raise ValueError("arm config is not in the frozen armed state")
-    if config["authorization_decision"] != "D-0032":
+    if config["authorization_decision"] != "D-0038":
         raise ValueError("arm config lacks the dedicated opening decision")
     interval = config["poll_interval_seconds"]
     if isinstance(interval, bool) or not isinstance(interval, int) or interval < 5:
         raise ValueError("poll_interval_seconds must be an integer of at least five")
     expected = config["frozen_inputs"]
     observed = {
-        "autoassemble_human_packet_sha256": sha256_file(
-            HERE / "autoassemble_human_packet_v2.py"
-        ),
+        "autoassemble_human_packet_sha256": sha256_file(HERE / "autoassemble_human_packet_v2.py"),
         "build_human_packet_sha256": sha256_file(HERE / "build_human_packet.py"),
         "prereg_sha256": sha256_file(ROOT / "BENCHMARK_PREREG_v2.md"),
         "rater_schema_sha256": sha256_file(DEFAULT_SCHEMA),
@@ -128,6 +129,86 @@ def load_config(path: Path, *, decisions_path: Path | None = None) -> dict[str, 
     return config
 
 
+def cross_instrument_disagreement_coverage(
+    selection: dict[str, Any], primary_backbones: list[str]
+) -> dict[str, Any]:
+    """Verify that every primary-backbone packet slice retains v2 disagreements.
+
+    Voice has two Demucs/PANNs disagreement slots in each request direction.
+    Tempo has ten combined disagreement/invalid slots; at least one must be an
+    actual Beat This!/librosa disagreement so the combined stratum cannot be
+    satisfied entirely by invalid estimates.
+    """
+
+    selected = selection.get("selected")
+    if not isinstance(selected, list):
+        raise ValueError("packet selection lacks selected rows")
+    per_backbone: dict[str, Any] = {}
+    all_ready = True
+    for backbone in primary_backbones:
+        rows = [row for row in selected if row.get("backbone") == backbone]
+        voice_slots: dict[str, int] = {}
+        voice_actual: dict[str, int] = {}
+        for request in ("vocal", "instrumental"):
+            prefix = f"{request}:detector_disagreement:"
+            slots = [
+                row
+                for row in rows
+                if row.get("axis") == "voice"
+                and str(row.get("selector_stratum", "")).startswith(prefix)
+            ]
+            voice_slots[request] = len(slots)
+            voice_actual[request] = sum(
+                isinstance(row.get("demucs_present"), bool)
+                and isinstance(row.get("panns_present"), bool)
+                and row["demucs_present"] != row["panns_present"]
+                for row in slots
+            )
+        tempo_slots = [
+            row
+            for row in rows
+            if row.get("axis") == "tempo"
+            and str(row.get("selector_stratum", "")).startswith("disagreement_or_invalid:")
+        ]
+        tempo_actual = sum(
+            row.get("tempo_status") == "ESTIMATOR_DISAGREEMENT" for row in tempo_slots
+        )
+        backbone_ready = (
+            voice_slots
+            == {
+                "vocal": VOICE_DISAGREEMENT_SLOTS_PER_REQUEST,
+                "instrumental": VOICE_DISAGREEMENT_SLOTS_PER_REQUEST,
+            }
+            and voice_actual == voice_slots
+            and len(tempo_slots) == TEMPO_DISAGREEMENT_OR_INVALID_SLOTS
+            and tempo_actual >= 1
+        )
+        all_ready = all_ready and backbone_ready
+        per_backbone[backbone] = {
+            "ready": backbone_ready,
+            "tempo_actual_estimator_disagreement_cells": tempo_actual,
+            "tempo_disagreement_or_invalid_slots": len(tempo_slots),
+            "voice_actual_detector_disagreement_cells": voice_actual,
+            "voice_detector_disagreement_slots": voice_slots,
+        }
+    return {
+        "per_backbone": per_backbone,
+        "ready": all_ready,
+        "requirements": {
+            "tempo_actual_estimator_disagreement_cells_minimum": 1,
+            "tempo_disagreement_or_invalid_slots": TEMPO_DISAGREEMENT_OR_INVALID_SLOTS,
+            "voice_actual_detector_disagreement_cells_per_request": (
+                VOICE_DISAGREEMENT_SLOTS_PER_REQUEST
+            ),
+        },
+        "status": (
+            "CROSS_INSTRUMENT_DISAGREEMENT_STRATA_READY"
+            if all_ready
+            else "INCOMPLETE_CROSS_INSTRUMENT_DISAGREEMENT_STRATA"
+        ),
+    }
+
+
 def inspect_gates(config: dict[str, Any]) -> dict[str, Any]:
     """Inspect both independent inputs without assembling anything."""
 
@@ -140,6 +221,11 @@ def inspect_gates(config: dict[str, Any]) -> dict[str, Any]:
     selection_status = "MISSING_SCORING_STRATA"
     missing_strata: list[dict[str, str]] = []
     selection_counts: dict[str, Any] = {}
+    disagreement_coverage: dict[str, Any] = {
+        "per_backbone": {},
+        "ready": False,
+        "status": "MISSING_SCORING_STRATA",
+    }
     if candidate_path.is_file() and scoring_status_path.is_file():
         status = load_json_strict(scoring_status_path)
         scoring_ready = (
@@ -152,6 +238,9 @@ def inspect_gates(config: dict[str, Any]) -> dict[str, Any]:
             selection = select_human_packet(candidate, schema)
             missing_strata = selection["empty_strata"]
             selection_counts = selection["counts"]
+            disagreement_coverage = cross_instrument_disagreement_coverage(
+                selection, config["primary_backbones"]
+            )
             expected = schema["human_packet"]["unique_items_per_backbone"]
             expected_counts = {
                 backbone: {
@@ -161,11 +250,19 @@ def inspect_gates(config: dict[str, Any]) -> dict[str, Any]:
                 }
                 for backbone in config["primary_backbones"]
             }
-            if not missing_strata and selection_counts == expected_counts:
+            if (
+                not missing_strata
+                and selection_counts == expected_counts
+                and disagreement_coverage["ready"]
+            ):
                 selection_status = "SCORING_STRATA_READY"
             else:
                 scoring_ready = False
-                selection_status = "INCOMPLETE_FROZEN_PRIMARY_BACKBONE_STRATA"
+                selection_status = (
+                    "INCOMPLETE_CROSS_INSTRUMENT_DISAGREEMENT_STRATA"
+                    if not disagreement_coverage["ready"]
+                    else "INCOMPLETE_FROZEN_PRIMARY_BACKBONE_STRATA"
+                )
     ready = timing["PACKET_ASSEMBLY_STATUS"] == "READY_TO_ASSEMBLE" and scoring_ready
     if ready:
         status = "READY_TO_AUTOASSEMBLE"
@@ -175,6 +272,7 @@ def inspect_gates(config: dict[str, Any]) -> dict[str, Any]:
         status = "ARMED_WAITING_ON_SCORING_STRATA"
     return {
         "checked_at_utc": _utc_now(),
+        "cross_instrument_disagreement_coverage": disagreement_coverage,
         "human_gold_claims": False,
         "missing_strata": missing_strata,
         "packet_assembly_status": status,

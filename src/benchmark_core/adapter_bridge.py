@@ -34,7 +34,12 @@ class BackboneCoreBridge:
         result = self.backbone.preflight()
         status = getattr(result, "status", None)
         model_id = getattr(result, "model_id", None)
-        if status != "READY_FOR_MINI_SMOKE" or model_id != self.model_id:
+        expected_status = (
+            "READY_FOR_CORE"
+            if self.model_id == "stabilityai/stable-audio-open-1.0"
+            else "READY_FOR_MINI_SMOKE"
+        )
+        if status != expected_status or model_id != self.model_id:
             raise RuntimeError("B2 adapter preflight is not ready for ordinary core generation")
         return {
             "adapter_config_sha256": getattr(result, "config_sha256", None),
@@ -136,6 +141,7 @@ def build_production_bridge(
         raise ValueError("adapter class identity is invalid")
     allowed = {
         "backbones.stable_audio_3.StableAudio3MediumBaseAdapter",
+        "backbones.stable_audio_open.StableAudioOpenAdapter",
         "backbones.ace_step_v1.AceStepV1Adapter",
     }
     if class_name not in allowed:
@@ -150,6 +156,20 @@ def build_production_bridge(
         kwargs["config_resolution_dir"] = run_dir / "evidence" / model.slug / "config-resolution"
     elif attribute == "AceStepV1Adapter":
         kwargs["evidence_dir"] = run_dir / "evidence" / model.slug
+    elif attribute == "StableAudioOpenAdapter":
+        if model.sao_runtime is None:
+            raise ValueError("SAO core bridge lacks its receipt/authorization binding")
+        kwargs.update(
+            {
+                "evidence_dir": run_dir / "evidence" / model.slug,
+                "snapshot_dir": model.sao_runtime.snapshot_dir,
+                "access_receipt_path": model.sao_runtime.access_receipt_path,
+                "runtime_authorization_path": model.sao_runtime.core_authorization_path,
+                "execution_scope": "BENCHMARK_CORE",
+                "mini_smoke_result_path": model.sao_runtime.mini_smoke_result_path,
+                "mini_smoke_result_sha256": model.sao_runtime.mini_smoke_result_sha256,
+            }
+        )
     backbone = adapter_class(**kwargs)
     return BackboneCoreBridge(
         backbone,

@@ -10,6 +10,12 @@ AUTHORIZED_S0010_SUFFIX = (
     b"| S-0010 | 73193010 | ACE-Step v1 state preflight "
     b"reference/export/resume equivalence, non-benchmark | none |\n"
 )
+AUTHORIZED_SAO_SUFFIX = (
+    b"| S-0011 | 73193011 | Stable Audio Open 1.0 mini-smoke calls 0/1, "
+    b"identical-seed reproducibility pair, non-benchmark | none |\n"
+    b"| S-0012 | 73193012 | Stable Audio Open 1.0 mini-smoke call 2, "
+    b"resident-call cost calibration, non-benchmark | none |\n"
+)
 
 
 def exact_line_bounded_prefix(path: Path, expected_sha256: str) -> bytes:

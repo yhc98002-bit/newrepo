@@ -106,11 +106,34 @@ def _source_counts(snapshot: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _primary_progress(
+    config: dict[str, Any], snapshot: dict[str, Any]
+) -> tuple[list[str], list[str]]:
+    source_by_backbone = {source["backbone"]: source for source in config["sources"]}
+    observed_by_backbone = {source["backbone"]: source for source in snapshot["sources"]}
+    missing = [
+        backbone for backbone in config["primary_backbones"] if backbone not in source_by_backbone
+    ]
+    incomplete: list[str] = []
+    for backbone in config["primary_backbones"]:
+        if backbone in missing:
+            continue
+        declared = source_by_backbone[backbone]
+        observed = observed_by_backbone.get(backbone, {})
+        if (
+            declared["expected_completed_rows"] != declared["expected_queue_rows"]
+            or observed.get("row_count") != declared["expected_queue_rows"]
+        ):
+            incomplete.append(backbone)
+    return missing, incomplete
+
+
 def dry_run(config_path: Path, repo_root: Path) -> dict[str, Any]:
     """Perform every read-only preclaim check without GPU probing or writes."""
 
     config = load_config(config_path, repo_root=repo_root)
     snapshot = build_completed_snapshot(config, repo_root, verify_audio_bytes=False)
+    missing, incomplete = _primary_progress(config, snapshot)
     runtime = runtime_identity(config, require_interpreter=False)
     return {
         "candidate_index_path": config["output"]["candidate_index"],
@@ -118,7 +141,8 @@ def dry_run(config_path: Path, repo_root: Path) -> dict[str, Any]:
         "feature_binding_status": config["feature_contract"]["binding_status"],
         "gpu_probe_performed": False,
         "human_gold_claims": False,
-        "missing_primary_backbones": ["stable-audio-open-1.0"],
+        "missing_primary_backbones": missing,
+        "incomplete_primary_backbones": incomplete,
         "planned_gpu_policy": config["gpu_guard"]["policy"],
         "runtime_identity": runtime,
         "schema_version": 1,
@@ -371,6 +395,16 @@ def finalize_all(config_path: Path, repo_root: Path) -> dict[str, Any]:
     schema = load_json(repo_root / "rater" / "schema_v2.json")
     validate_candidate_index(candidate, schema)
     backbone_counts = Counter(row["backbone"] for row in rows)
+    missing, incomplete = _primary_progress(config, snapshot)
+    if missing:
+        overall_status = "SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE"
+        candidate_status = "INCOMPLETE_FROZEN_PRIMARY_BACKBONE_STRATA"
+    elif incomplete:
+        overall_status = "SCORING_INCREMENTAL_PRIMARY_PREFIX"
+        candidate_status = "INCOMPLETE_FROZEN_PRIMARY_BACKBONE_STRATA"
+    else:
+        overall_status = "SCORING_COMPLETE_ALL_PRIMARY_BACKBONES"
+        candidate_status = "COMPLETE_FROZEN_PRIMARY_BACKBONE_STRATA"
     status = {
         "backbones": [
             {
@@ -381,18 +415,23 @@ def finalize_all(config_path: Path, repo_root: Path) -> dict[str, Any]:
                 "scored_rows": backbone_counts.get(backbone, 0),
                 "status": (
                     "MISSING_BLOCKED_ON_LICENSE"
-                    if backbone == "stable-audio-open-1.0"
-                    else "AUTOMATIC_ENDPOINTS_SCORED"
+                    if backbone in missing
+                    else (
+                        "AUTOMATIC_ENDPOINTS_SCORED_PREFIX"
+                        if backbone in incomplete
+                        else "AUTOMATIC_ENDPOINTS_SCORED"
+                    )
                 ),
             }
             for backbone in config["primary_backbones"]
         ],
-        "candidate_index_status": "INCOMPLETE_FROZEN_PRIMARY_BACKBONE_STRATA",
+        "candidate_index_status": candidate_status,
         "human_gold_claims": False,
-        "missing_primary_backbones": ["stable-audio-open-1.0"],
+        "missing_primary_backbones": missing,
+        "incomplete_primary_backbones": incomplete,
         "schema_version": 1,
         "source_ledger_sha256": snapshot["source_ledger_sha256"],
-        "status": "SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE",
+        "status": overall_status,
     }
     run.write_jsonl("rows/automatic-endpoint-outcomes.jsonl", rows)
     run.write_json(
@@ -426,7 +465,11 @@ def finalize_all(config_path: Path, repo_root: Path) -> dict[str, Any]:
         },
     )
     run.heartbeat(
-        "SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE",
-        {"human_gold_claims": False, "missing_primary_backbones": ["stable-audio-open-1.0"]},
+        overall_status,
+        {
+            "human_gold_claims": False,
+            "missing_primary_backbones": missing,
+            "incomplete_primary_backbones": incomplete,
+        },
     )
     return {"candidate_index": candidate, "event": event, "scoring_status": status}

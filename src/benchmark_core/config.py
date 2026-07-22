@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Any
 
 from audio_duration_policy import duration_within_tolerance
+from backbones.license_gate import validate_access_receipt, validate_core_authorization
+from backbones.sao_mini_smoke import (
+    SaoMiniSmokeEvidenceError,
+    validate_sao_mini_smoke_evidence,
+)
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 READY = "READY"
@@ -177,6 +182,18 @@ class ModelExecutionConfig:
     expected_sample_rate: int | None
     expected_channels: int | None
     duration_tolerance_seconds: float | None = 0.0
+    sao_runtime: SaoRuntimeBinding | None = None
+
+
+@dataclass(frozen=True)
+class SaoRuntimeBinding:
+    snapshot_dir: Path
+    access_receipt_path: Path
+    access_receipt_sha256: str
+    mini_smoke_result_path: Path
+    mini_smoke_result_sha256: str
+    core_authorization_path: Path
+    core_authorization_sha256: str
 
 
 @dataclass(frozen=True)
@@ -436,8 +453,23 @@ def _validate_phase_b_terminal(
             if queue_status != READY or build_status != "MEASURED_READY":
                 raise CoreConfigurationError("SA3 Phase-B terminal state must be MEASURED_READY")
         elif model_id == SAO_MODEL_ID:
-            if queue_status != BLOCKED_ON_LICENSE or build_status != BLOCKED_ON_LICENSE:
-                raise CoreConfigurationError("stable-audio-open-1.0 must remain BLOCKED_ON_LICENSE")
+            if queue_status == BLOCKED_ON_LICENSE:
+                if build_status != BLOCKED_ON_LICENSE:
+                    raise CoreConfigurationError("blocked stable-audio-open build status drifted")
+            elif queue_status == READY:
+                if (
+                    build_status != "MEASURED_READY"
+                    or record.get("mini_smoke_status") != "MEASURED_MINI_SMOKE_PASS"
+                    or record.get("state_capability") != "NOT_ATTEMPTED"
+                    or record.get("eligibility_scope_expanded") is not False
+                ):
+                    raise CoreConfigurationError(
+                        "SAO READY requires measured smoke and generation-only scope"
+                    )
+                for key in ("access_receipt_sha256", "mini_smoke_result_sha256"):
+                    _sha256(record, key)
+            else:
+                raise CoreConfigurationError("SAO must be READY or BLOCKED_ON_LICENSE")
         elif queue_status == READY:
             if (
                 build_status != "MEASURED_READY"
@@ -477,6 +509,82 @@ def _exact_nonnegative_int(record: dict[str, Any], key: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise CoreConfigurationError(f"{key} must be a non-negative integer")
     return value
+
+
+def _validate_sao_runtime(
+    core: dict[str, Any],
+    *,
+    repo_root: Path,
+    adapter_config_sha256: str,
+) -> SaoRuntimeBinding:
+    value = _object(core, "sao_runtime")
+    required = {
+        "snapshot_dir",
+        "access_receipt_path",
+        "access_receipt_sha256",
+        "mini_smoke_result_path",
+        "mini_smoke_result_sha256",
+        "core_authorization_path",
+        "core_authorization_sha256",
+    }
+    if set(value) != required:
+        raise CoreConfigurationError("SAO runtime binding keys are incomplete or unexpected")
+    snapshot_dir = Path(_string(value, "snapshot_dir")).resolve()
+    if not snapshot_dir.is_dir() or snapshot_dir == Path("/"):
+        raise CoreConfigurationError("SAO snapshot_dir is absent or unsafe")
+    access_path = _resolve_repo_path(
+        repo_root,
+        _string(value, "access_receipt_path"),
+        key="sao_runtime.access_receipt_path",
+    )
+    access_sha = _sha256(value, "access_receipt_sha256")
+    if sha256_file(access_path) != access_sha:
+        raise CoreConfigurationError("SAO access receipt hash mismatch")
+    mini_path = _resolve_repo_path(
+        repo_root,
+        _string(value, "mini_smoke_result_path"),
+        key="sao_runtime.mini_smoke_result_path",
+    )
+    mini_sha = _sha256(value, "mini_smoke_result_sha256")
+    if sha256_file(mini_path) != mini_sha:
+        raise CoreConfigurationError("SAO mini-smoke result hash mismatch")
+    authorization_path = _resolve_repo_path(
+        repo_root,
+        _string(value, "core_authorization_path"),
+        key="sao_runtime.core_authorization_path",
+    )
+    authorization_sha = _sha256(value, "core_authorization_sha256")
+    if sha256_file(authorization_path) != authorization_sha:
+        raise CoreConfigurationError("SAO core authorization hash mismatch")
+    receipt = validate_access_receipt(
+        access_path,
+        expected_model_id=SAO_MODEL_ID,
+        expected_snapshot_dir=snapshot_dir,
+    )
+    try:
+        validate_sao_mini_smoke_evidence(
+            mini_path,
+            expected_config_sha256=adapter_config_sha256,
+            expected_receipt=receipt,
+            expected_snapshot_dir=snapshot_dir,
+        )
+    except SaoMiniSmokeEvidenceError as exc:
+        raise CoreConfigurationError(f"SAO mini-smoke evidence is invalid: {exc}") from exc
+    validate_core_authorization(
+        authorization_path,
+        expected_config_sha256=adapter_config_sha256,
+        expected_receipt_sha256=receipt["receipt_sha256"],
+        expected_mini_smoke_result_sha256=mini_sha,
+    )
+    return SaoRuntimeBinding(
+        snapshot_dir=snapshot_dir,
+        access_receipt_path=access_path,
+        access_receipt_sha256=access_sha,
+        mini_smoke_result_path=mini_path,
+        mini_smoke_result_sha256=mini_sha,
+        core_authorization_path=authorization_path,
+        core_authorization_sha256=authorization_sha,
+    )
 
 
 def _completion_external_file(
@@ -773,6 +881,18 @@ def load_core_execution_config(
             )
         # Exercise the shared policy validator at configuration load rather than first audio.
         duration_within_tolerance(30.0, 30.0, duration_tolerance)
+        if model_id == SAO_MODEL_ID:
+            if state_status != "AUTOMATIC_OUTPUT_ONLY":
+                raise CoreConfigurationError("SAO state capability must remain NOT_ATTEMPTED")
+            sao_runtime = _validate_sao_runtime(
+                core,
+                repo_root=root,
+                adapter_config_sha256=adapter_sha,
+            )
+        else:
+            if "sao_runtime" in core:
+                raise CoreConfigurationError("non-SAO model may not carry sao_runtime gates")
+            sao_runtime = None
         models.append(
             ModelExecutionConfig(
                 model_id=model_id,
@@ -786,6 +906,7 @@ def load_core_execution_config(
                 expected_sample_rate=sample_rate,
                 expected_channels=expected_channels,
                 duration_tolerance_seconds=duration_tolerance,
+                sao_runtime=sao_runtime,
             )
         )
     ready_ids = {model.model_id for model in models if model.queue_status == READY}

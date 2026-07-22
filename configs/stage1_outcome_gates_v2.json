@@ -1,0 +1,64 @@
+{
+  "bindings": {
+    "outcome_rows": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-001/rows/automatic-endpoint-outcomes.jsonl",
+      "sha256": "e2961646ad811cab4c917ec9056f2127ff1454ddeaf7dd4b668d3617ba368f63"
+    },
+    "state_queues": [
+      {
+        "backbone": "ACE-Step v1",
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/ace-state-v2-001/queues/initial/initial-units.jsonl",
+        "sha256": "9218cd0ce81bda171230a4bed40c75c67ade08cd359a4da4b569a8365155923f"
+      },
+      {
+        "backbone": "stable-audio-3-medium-base",
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/queues/initial/initial-units.jsonl",
+        "sha256": "64a4e910e2d4e8d57ea96a0d0722f0f5bacf2c297cd320e299f6878767e54603"
+      }
+    ],
+    "statistics_config": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo/configs/statistics_v2.json",
+      "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+    }
+  },
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "replicates": 10000,
+    "seed": 2026072001,
+    "two_stage_order": [
+      "stratified_prompt_cluster",
+      "matched_seed_within_cluster"
+    ]
+  },
+  "decision_id": null,
+  "gate_rule": "OUTCOME_SCREEN_PASS iff point baseline_failure_rate >= frozen minimum AND point mixed_outcome_prompt_share >= frozen minimum; STOP_AXIS_STAGE1 otherwise",
+  "population": {
+    "axes": [
+      "integrity",
+      "tempo",
+      "vocal_instrumental"
+    ],
+    "backbones": [
+      "ACE-Step v1",
+      "stable-audio-3-medium-base"
+    ],
+    "condition": "BASE",
+    "expected_roots": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "prompt_source": "statistics_v2.eligibility.prompt_selection.axis_prompt_ids"
+  },
+  "schema_version": 1,
+  "status": "BLOCKED_MISSING_FROZEN_THRESHOLDS",
+  "thresholds": {
+    "baseline_failure_rate_minimum": null,
+    "mixed_outcome_prompt_share_minimum": null
+  }
+}

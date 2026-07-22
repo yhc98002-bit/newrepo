@@ -1,0 +1,39 @@
+{
+  "authorization_decision": "D-0038",
+  "bundle": {
+    "bundle_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-bundles/benchmark-v2-blinded-timing-pilot-04-51ebc904242e",
+    "bundle_json_sha256": "a25454b31672a435ffeb5cdb10593f0ae99dfbe4426e2ae409f71f2dcd2da537",
+    "bundle_id": "benchmark-v2-blinded-timing-pilot-04"
+  },
+  "candidate_index": {
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-sao-final-001/tables/human-audit-candidate-index.json",
+    "required_status_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-sao-final-001/scoring-status.json",
+    "required_status": "SCORING_COMPLETE_ALL_PRIMARY_BACKBONES"
+  },
+  "frozen_inputs": {
+    "autoassemble_human_packet_sha256": "463bf4f4afd776c82e0ce257d74ae12cf86a759f031701c7b173552b13b51a6e",
+    "build_human_packet_sha256": "1a9dcced5770968897991541b6f0384389789c65fd2d259d4437ecdad895905a",
+    "prereg_sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa",
+    "rater_schema_sha256": "0edb492fbf00355aec3e9f059d3b17557814f58b203c963f1c420f0c92ccde76",
+    "timing_pilot_offer_sha256": "645cca46a001b42aace2f20a95d35921c6e26d7c56665cb7c457b30cf57227cb",
+    "ui_template_sha256": "78bba8a189b7f281888a7607bb8197ac457196501134e9dec8a3996e724e2708"
+  },
+  "output": {
+    "admin_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/human-audit-admin",
+    "heartbeat_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/control/human-packet-autoassembly-v2/heartbeat.json",
+    "output_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/human-audit-packets",
+    "terminal_receipt_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/control/human-packet-autoassembly-v2/terminal-receipt.json"
+  },
+  "pilot_receipt": {
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/newrepo_runtime/timing-pilot-receipts/benchmark-v2-blinded-timing-pilot-04/receipt.json",
+    "required_status": "TIMING_PILOT_INGESTED"
+  },
+  "poll_interval_seconds": 30,
+  "primary_backbones": [
+    "stable-audio-3-medium-base",
+    "stable-audio-open-1.0",
+    "ACE-Step v1"
+  ],
+  "schema_version": 1,
+  "status": "ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA"
+}

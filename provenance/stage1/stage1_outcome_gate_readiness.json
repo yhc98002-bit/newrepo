@@ -1,0 +1,32 @@
+{
+  "audited_inputs": [
+    {
+      "path": "BENCHMARK_PREREG_v2.md",
+      "sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa"
+    },
+    {
+      "path": "configs/statistics_v2.json",
+      "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+    },
+    {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-001/rows/automatic-endpoint-outcomes.jsonl",
+      "sha256": "e2961646ad811cab4c917ec9056f2127ff1454ddeaf7dd4b668d3617ba368f63"
+    }
+  ],
+  "automatic_instrument_outcomes_only": true,
+  "cancellation_ledger_created": false,
+  "execution_authorized": false,
+  "frozen_thresholds_found": {
+    "baseline_failure_rate_minimum": false,
+    "mixed_outcome_prompt_share_minimum": false
+  },
+  "gate_evaluator_status": "IMPLEMENTED_FAIL_CLOSED",
+  "human_gold_claims": false,
+  "missing_specification": "Neither BENCHMARK_PREREG_v2.md nor configs/statistics_v2.json defines the two Stage-1 outcome-screen thresholds.",
+  "required_next_binding": "A PI decision must explicitly freeze both numerical minima and bind them in configs/stage1_outcome_gates_v2.json before the evaluator can read outcomes, emit verdicts, or cancel units.",
+  "schema_version": 1,
+  "state_execution_allowed_before_resolution": false,
+  "status": "BLOCKED_MISSING_FROZEN_THRESHOLDS",
+  "verdicts_computed": false,
+  "watermark": "AUTOMATIC-INSTRUMENT OUTCOMES"
+}

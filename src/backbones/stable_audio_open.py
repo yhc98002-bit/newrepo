@@ -16,13 +16,17 @@ from backbones.contracts import (
     GenerationMeasurement,
     GenerationRequest,
     load_backbone_config,
+    sha256_file,
+    strict_json_object,
 )
 from backbones.license_gate import (
     license_block_from_config,
     validate_access_receipt,
+    validate_core_authorization,
     validate_runtime_authorization,
 )
 from backbones.runtime import CudaTelemetry
+from backbones.sao_mini_smoke import validate_sao_mini_smoke_evidence
 from sa3_smoke.audio import save_float_wav_exclusive
 
 
@@ -37,6 +41,9 @@ class StableAudioOpenAdapter:
         snapshot_dir: str | Path | None = None,
         access_receipt_path: str | Path | None = None,
         runtime_authorization_path: str | Path | None = None,
+        execution_scope: str = "MINI_SMOKE",
+        mini_smoke_result_path: str | Path | None = None,
+        mini_smoke_result_sha256: str | None = None,
         device: str = "cuda",
     ) -> None:
         self.config, self.config_sha256 = load_backbone_config(config_path)
@@ -53,12 +60,20 @@ class StableAudioOpenAdapter:
         self.runtime_authorization_path = (
             Path(runtime_authorization_path) if runtime_authorization_path else None
         )
+        if execution_scope not in {"MINI_SMOKE", "BENCHMARK_CORE"}:
+            raise ValueError("SAO execution_scope must be MINI_SMOKE or BENCHMARK_CORE")
+        self.execution_scope = execution_scope
+        self.mini_smoke_result_path = (
+            Path(mini_smoke_result_path) if mini_smoke_result_path is not None else None
+        )
+        self.mini_smoke_result_sha256 = mini_smoke_result_sha256
         if device != "cuda" and not (device.startswith("cuda:") and device[5:].isdigit()):
             raise ValueError("Stable Audio Open requires device='cuda' or 'cuda:N'")
         self.device = device
         self._preflight: BackbonePreflight | None = None
         self._model: Any | None = None
         self._load_wall_seconds: float | None = None
+        self._weight_file_sha256: str | None = None
 
     def preflight(self) -> BackbonePreflight:
         """Return the adjudicated blocker or verify both later offline gate records."""
@@ -77,19 +92,45 @@ class StableAudioOpenAdapter:
             expected_model_id=self.model_id,
             expected_snapshot_dir=self.snapshot_dir,
         )
-        authorization = validate_runtime_authorization(
-            self.runtime_authorization_path,
-            expected_config_sha256=self.config_sha256,
-            expected_receipt_sha256=receipt["receipt_sha256"],
-        )
+        if self.execution_scope == "MINI_SMOKE":
+            authorization = validate_runtime_authorization(
+                self.runtime_authorization_path,
+                expected_config_sha256=self.config_sha256,
+                expected_receipt_sha256=receipt["receipt_sha256"],
+                expected_decision_id="D-0037",
+                expected_generations=3,
+            )
+            status = "READY_FOR_MINI_SMOKE"
+        else:
+            if self.mini_smoke_result_path is None or self.mini_smoke_result_sha256 is None:
+                raise BackboneConfigurationError(
+                    "SAO core preflight requires a measured mini-smoke result path and SHA-256"
+                )
+            if sha256_file(self.mini_smoke_result_path) != self.mini_smoke_result_sha256:
+                raise BackboneConfigurationError("SAO core mini-smoke result hash mismatch")
+            validate_sao_mini_smoke_evidence(
+                self.mini_smoke_result_path,
+                expected_config_sha256=self.config_sha256,
+                expected_receipt=receipt,
+                expected_snapshot_dir=self.snapshot_dir,
+            )
+            authorization = validate_core_authorization(
+                self.runtime_authorization_path,
+                expected_config_sha256=self.config_sha256,
+                expected_receipt_sha256=receipt["receipt_sha256"],
+                expected_mini_smoke_result_sha256=self.mini_smoke_result_sha256,
+            )
+            status = "READY_FOR_CORE"
         self.license_identifier = receipt["license_identifier"]
         self._preflight = BackbonePreflight(
-            status="READY_FOR_MINI_SMOKE",
+            status=status,
             model_id=self.model_id,
             config_sha256=self.config_sha256,
             details={
                 "receipt": receipt,
                 "runtime_authorization": authorization,
+                "runtime_authorization_path": str(self.runtime_authorization_path.resolve()),
+                "runtime_authorization_sha256": sha256_file(self.runtime_authorization_path),
                 "snapshot_dir": str(self.snapshot_dir.resolve()),
                 "network_downloads_allowed": False,
             },
@@ -102,13 +143,36 @@ class StableAudioOpenAdapter:
         self.preflight()
         assert self.snapshot_dir is not None
         started = time.perf_counter()
+        snapshot = self.snapshot_dir.resolve()
+        config_path = snapshot / "model_config.json"
+        safetensors_path = snapshot / "model.safetensors"
+        checkpoint_path = snapshot / "model.ckpt"
+        if not config_path.is_file():
+            raise BackboneConfigurationError("SAO snapshot lacks model_config.json")
+        candidates = [path for path in (safetensors_path, checkpoint_path) if path.is_file()]
+        if len(candidates) != 1:
+            raise BackboneConfigurationError(
+                "SAO snapshot must contain exactly one of model.safetensors or model.ckpt"
+            )
         try:
-            from stable_audio_tools import get_pretrained_model
+            from stable_audio_tools.models.factory import create_model_from_config
+            from stable_audio_tools.models.utils import load_ckpt_state_dict
         except ImportError as exc:
             raise ImportError(
-                "stable-audio-tools is required after the license gate clears"
+                "stable-audio-tools local model factory is required after the license gate clears"
             ) from exc
-        model, _model_config = get_pretrained_model(str(self.snapshot_dir.resolve()))
+        model_config = strict_json_object(config_path)
+        model = create_model_from_config(model_config)
+        model.load_state_dict(load_ckpt_state_dict(str(candidates[0])))
+        expected_sample_rate = int(self.config["generation"]["sample_rate"])
+        if getattr(model, "sample_rate", None) != expected_sample_rate:
+            raise BackboneConfigurationError("SAO local model sample rate differs from config")
+        weight_relative = candidates[0].relative_to(snapshot).as_posix()
+        verified_files = self._preflight.details["receipt"]["verified_files"]
+        weight_rows = [row for row in verified_files if row["path"] == weight_relative]
+        if len(weight_rows) != 1:
+            raise BackboneConfigurationError("SAO weight is not uniquely bound by receipt")
+        self._weight_file_sha256 = str(weight_rows[0]["sha256"])
         self._model = model.to(self.device).eval()
         self._load_wall_seconds = time.perf_counter() - started
 
@@ -120,6 +184,8 @@ class StableAudioOpenAdapter:
         max_duration = float(self.config["mini_smoke_caps"]["max_clip_seconds"])
         if request.duration_seconds > max_duration:
             raise ValueError(f"request exceeds {max_duration}-second SAO mini-smoke cap")
+        if request.duration_seconds != 30.0:
+            raise ValueError("SAO v2 execution is frozen to exactly 30-second requests")
         self._ensure_loaded()
         try:
             from stable_audio_tools.inference.generation import generate_diffusion_cond
@@ -139,7 +205,6 @@ class StableAudioOpenAdapter:
         try:
             import torch
 
-            generator = torch.Generator(device=self.device).manual_seed(request.seed)
             with telemetry.measured() as measured:
                 output = generate_diffusion_cond(
                     self._model,
@@ -152,7 +217,12 @@ class StableAudioOpenAdapter:
                             "seconds_total": request.duration_seconds,
                         }
                     ],
-                    generator=generator,
+                    batch_size=1,
+                    sample_size=1_323_000,
+                    sample_rate=int(generation["sample_rate"]),
+                    seed=request.seed,
+                    device=self.device,
+                    adapt_duration_to_conditioning=False,
                     sampler_type=generation["sampler_type"],
                 )
         finally:
@@ -186,6 +256,9 @@ class StableAudioOpenAdapter:
             metadata={
                 "load_wall_seconds": self._load_wall_seconds,
                 "config_sha256": self.config_sha256,
+                "execution_scope": self.execution_scope,
+                "requested_sample_size": 1_323_000,
+                "weight_file_sha256": self._weight_file_sha256,
                 "resolved_provider_revision": self._preflight.details["receipt"][
                     "resolved_provider_revision"
                 ],

@@ -492,3 +492,69 @@ PANNs-label fixes and these report edits, the repository-wide suite completed
 with `329 passed, 111 subtests passed in 130.81 s`. A focused run covering the
 lane reports and both changed modules also passed all 17 collected tests, and
 Ruff passed.
+
+## Static-boundary addendum — 2026-07-22 (D-0034 through D-0038)
+
+This latest addendum is limited to authorization and static-build state. It
+does not revise the obtained results recorded above and does not claim any new
+runtime result. In particular, the preceding `BLOCKED_ON_LICENSE` description
+is historical: D-0037 supersedes that gate only by opening the controlled SAO
+acquisition and engineering-smoke sequence; that sequence has not started at
+this boundary.
+
+| Lane | Status at this static boundary |
+| --- | --- |
+| Stage-1 outcome gates | `BLOCKED_MISSING_FROZEN_THRESHOLDS` |
+| SA3 restricted state rerun | `CONDITIONALLY_OPEN; NOT PREPARED; NOT EXECUTED` |
+| ACE formal survivor lane | `CONDITIONALLY_OPEN; NOT PREPARED; NOT EXECUTED` |
+| Decision-grade automatic tables | `STATIC BUILD READY; NOT RUN` |
+| SAO acquisition and mini-smoke | `OPENED BY D-0037; RUNTIME NOT STARTED` |
+| SAO ordinary core | `CLOSED PENDING PASS SMOKE AND EXACT RUN-ID DECISION` |
+| Human-packet watcher | `ARMED BY D-0038; DUAL GATE UNSATISFIED` |
+
+D-0034 authorizes the CPU Stage-1 lane but cannot supply its two missing
+policy values: the minimum BASE failure rate and the minimum mixed-outcome
+prompt share. Both remain `NOT_SPECIFIED`; neither may be inferred from the
+scored data or from another threshold. Consequently, zero axis-by-backbone
+cells have a verdict, no cell is labeled `OUTCOME_SCREEN_PASS` or
+`STOP_AXIS_STAGE1`, no cancellation event or cancellation summary exists, and
+no Stage-1-dependent state package has been prepared or executed. The blocked
+config is `configs/stage1_outcome_gates_v2.json`, SHA-256
+`bc54978d8257e14dd373c34c2401f99beb20be78fc4a7a97f762dad67a1b82bd`.
+
+D-0035 and D-0036 are prospective, survivor-only openings, not launches. The
+SA3 path remains bound to the identical prior queue and verbatim failed unit,
+with one-root validation first and no third repair. The ACE path remains bound
+to the fresh frozen source queue, with STOP units prohibited from execution
+and scoring and the supplemental tier locked. Neither path may prepare or run
+until immutable Stage-1 result and cancellation artifacts exist and validate;
+at this boundary neither has done so.
+
+The decision-grade automatic-table implementation is statically ready to emit
+per-axis/per-backbone prevalence at the preregistered 5% primary and 10%
+sensitivity tempo bands plus instrument-disagreement summaries, all
+watermarked `AUTOMATIC-INSTRUMENT OUTCOMES`. Stage-1-first ordering has kept
+that builder uninvoked, so this addendum reports no new decision-grade table,
+row count, interval, path, hash, or model outcome.
+
+D-0037 opens token-hygienic SAO acquisition followed, only after a validated
+receipt, by exactly three non-benchmark calls: a decoded-waveform hash pair
+and one resident-cost call, each at most 30 seconds on one verified-idle an12
+GPU. No acquisition process, snapshot receipt, mini-smoke attempt, audio call,
+ledger row, or measured cost has occurred at this boundary. The 1,536-row SAO
+core is not opened by D-0037 and still requires a PASS smoke, sealed measured
+evidence, and a separate decision binding one exact run ID. SAO state remains
+`NOT_ATTEMPTED`, and eligibility remains SA3 plus ACE.
+
+D-0038 arms packet autoassembly fail-closed. Before assembly, the candidate
+strata must demonstrate actual cross-instrument disagreement coverage in both
+voice directions and at least one Beat This!/librosa tempo disagreement or
+invalid case. Assembly then requires both independent gates: a valid ingested
+timing-pilot receipt and complete SAO-inclusive scoring strata for all three
+primary backbones. Neither authorization alone nor a partial candidate index
+may assemble a packet; no packet or human-gold result is claimed here.
+
+Static verification subsequently completed with `409 passed, 111 subtests
+passed in 397.94 s`; repository-wide Ruff and `git diff --check` passed. This
+verification made no network request, CUDA call, state execution, endpoint
+score, or packet assembly.

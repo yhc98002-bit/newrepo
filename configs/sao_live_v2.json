@@ -1,0 +1,40 @@
+{
+  "acquisition": {
+    "license_identifier": "Stability AI Community License",
+    "max_download_workers": 4,
+    "provider": "huggingface_hub",
+    "proxy_wrapper": "scripts/with_proxy.sh",
+    "requested_revision": "main",
+    "run_id": "sao-acquisition-v2-001",
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/acquisition",
+    "snapshot_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/models/stable-audio-open-1.0",
+    "token_environment_variable": "HF_TOKEN"
+  },
+  "backbone_config": {
+    "path": "configs/backbones/stable_audio_open_1_0.json",
+    "sha256": "fd3c77b1aa6b07f63d9ca207d795dbfc9c82c103358a2aabff3a6bb48e282e2b"
+  },
+  "core": {
+    "decision_id": "D-0037",
+    "eligibility_scope_expanded": false,
+    "exact_rows": 1536,
+    "max_clip_seconds": 30,
+    "max_gpus_per_worker": 1,
+    "state_capability": "NOT_ATTEMPTED"
+  },
+  "mini_smoke": {
+    "decision_id": "D-0037",
+    "exact_calls": 3,
+    "max_clip_seconds": 30,
+    "max_gpus": 1,
+    "seed_ids": [
+      "S-0011",
+      "S-0011",
+      "S-0012"
+    ],
+    "state_capability": "NOT_ATTEMPTED"
+  },
+  "model_id": "stabilityai/stable-audio-open-1.0",
+  "schema_version": 1,
+  "status": "CLOSED_UNTIL_D0037_LIVE_BINDING"
+}

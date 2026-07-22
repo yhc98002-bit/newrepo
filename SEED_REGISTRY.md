@@ -15,3 +15,5 @@ never edited or removed; a new row may supersede one only by identifier.
 | S-0008 | 73193008 | B2 ACE-Step v1 mini-smoke job 1, non-benchmark cost calibration | none |
 | S-0009 | 73193009 | B2 ACE-Step v1 mini-smoke job 2, non-benchmark resident-call cost calibration | none |
 | S-0010 | 73193010 | ACE-Step v1 state preflight reference/export/resume equivalence, non-benchmark | none |
+| S-0011 | 73193011 | Stable Audio Open 1.0 mini-smoke calls 0/1, identical-seed reproducibility pair, non-benchmark | none |
+| S-0012 | 73193012 | Stable Audio Open 1.0 mini-smoke call 2, resident-call cost calibration, non-benchmark | none |

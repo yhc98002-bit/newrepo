@@ -80,7 +80,14 @@ def _completed_shards(source: dict[str, Any], run_dir: Path) -> list[dict[str, A
     shard_dir = worker_dir / "shards"
     paths = sorted(shard_dir.glob("shard-*.json"))
     expected_count = int(source["expected_completed_shards"])
-    if len(paths) != expected_count:
+    if source["completion_mode"] == "INCREMENTAL_PREFIX":
+        if len(paths) < expected_count:
+            raise ValueError(
+                f"{source['backbone']} completed shard prefix is shorter: "
+                f"{len(paths)} < {expected_count}"
+            )
+        paths = paths[:expected_count]
+    elif len(paths) != expected_count:
         raise ValueError(
             f"{source['backbone']} completed shard count differs: {len(paths)} != {expected_count}"
         )
@@ -141,8 +148,12 @@ def snapshot_source(
         "ledger": run_dir / "ledger.jsonl",
         "heartbeat": run_dir / "workers" / source["worker_slug"] / "heartbeat.json",
     }
-    for key, path in paths.items():
-        _hash_matches(path, expected[key], f"{source['backbone']} {key}")
+    if source["completion_mode"] == "INCREMENTAL_PREFIX":
+        for key in ("run_manifest", "queue"):
+            _hash_matches(paths[key], expected[key], f"{source['backbone']} {key}")
+    else:
+        for key, path in paths.items():
+            _hash_matches(path, expected[key], f"{source['backbone']} {key}")
 
     manifest = load_json(paths["run_manifest"])
     if manifest.get("run_id") != source["run_id"]:
@@ -167,16 +178,19 @@ def snapshot_source(
         for row in ledger
         if row.get("event_kind") == "REQUEST_STATE" and row.get("request_state") == "SUCCEEDED"
     }
-    terminal = validate_heartbeat(load_json(paths["heartbeat"]))
-    if (
-        terminal["state"] != "COMPLETE"
-        or terminal["completed"] < source["expected_completed_rows"]
-        or terminal["failed"] != 0
-        or terminal["last_ledger_sha256"] != expected["ledger_tail"]
-    ):
-        raise ValueError("source terminal heartbeat is not a clean completion")
-
     shards = _completed_shards(source, run_dir)
+    if source["completion_mode"] == "INCREMENTAL_PREFIX":
+        if not shards or shards[-1]["ledger_tail_sha256"] != expected["ledger_tail"]:
+            raise ValueError("incremental source ledger tip differs from its completed shard")
+    else:
+        terminal = validate_heartbeat(load_json(paths["heartbeat"]))
+        if (
+            terminal["state"] != "COMPLETE"
+            or terminal["completed"] < source["expected_completed_rows"]
+            or terminal["failed"] != 0
+            or terminal["last_ledger_sha256"] != expected["ledger_tail"]
+        ):
+            raise ValueError("source terminal heartbeat is not a clean completion")
     selected_requests = [row["request_sha256"] for shard in shards for row in shard["rows"]]
     if len(selected_requests) != source["expected_completed_rows"]:
         raise ValueError("completed shard row count differs from the declared completion")
@@ -228,11 +242,22 @@ def snapshot_source(
                 "source_run_id": source["run_id"],
             }
         )
+    ledger_sha = (
+        sha256_json(
+            {
+                "mode": "INCREMENTAL_PREFIX",
+                "ledger_tail_sha256": expected["ledger_tail"],
+                "selected_requests": selected_requests,
+            }
+        )
+        if source["completion_mode"] == "INCREMENTAL_PREFIX"
+        else expected["ledger"]
+    )
     return {
         "backbone": source["backbone"],
         "completion_mode": source["completion_mode"],
         "completed_shards": len(shards),
-        "ledger_sha256": expected["ledger"],
+        "ledger_sha256": ledger_sha,
         "ledger_tail_sha256": expected["ledger_tail"],
         "model_id": source["model_id"],
         "row_count": len(rows),

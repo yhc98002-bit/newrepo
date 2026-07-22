@@ -75,6 +75,14 @@ class AceStateEngine(Protocol):
         output_path: Path,
     ) -> Mapping[str, Any]: ...
 
+    def decode_preview(
+        self,
+        *,
+        checkpoint_path: Path,
+        checkpoint_sha256: str,
+        output_path: Path,
+    ) -> Mapping[str, Any]: ...
+
     def close(self) -> None: ...
 
 
@@ -713,12 +721,30 @@ class ProductionAceStateEngine:
         )
         if context.get("config_sha256") != self.contract.sha256:
             raise AceEngineError("engine context configuration hash changed")
-        claim_path = Path(str(context["attempt_claim_path"])).resolve(strict=True)
-        claim = validate_attempt_claim(claim_path)
-        if sha256_file(claim_path) != context.get("attempt_claim_sha256"):
-            raise AceEngineError("engine context attempt claim hash changed")
-        if claim.get("config_sha256") != self.contract.sha256:
-            raise AceEngineError("attempt claim configuration differs from engine")
+        execution_scope = context.get("execution_scope", "PREFLIGHT_ONE_SHOT")
+        if execution_scope == "FORMAL_INITIAL_SURVIVOR_GROUP":
+            from state_capture.ace_formal_contract import validate_formal_backend_invocation
+
+            claim, call_claim = validate_formal_backend_invocation(context)
+            if claim.get("preflight_config_sha256") != self.contract.sha256:
+                raise AceEngineError("formal claim preflight-engine configuration differs")
+            self._formal_call_kind: str | None = str(call_claim["call_kind"])
+            self._formal_request_sha256: str | None = str(call_claim["request_sha256"])
+            self._formal_call_consumed = False
+            self._formal_context: dict[str, Any] | None = dict(context)
+        elif execution_scope == "PREFLIGHT_ONE_SHOT":
+            claim_path = Path(str(context["attempt_claim_path"])).resolve(strict=True)
+            claim = validate_attempt_claim(claim_path)
+            if sha256_file(claim_path) != context.get("attempt_claim_sha256"):
+                raise AceEngineError("engine context attempt claim hash changed")
+            if claim.get("config_sha256") != self.contract.sha256:
+                raise AceEngineError("attempt claim configuration differs from engine")
+            self._formal_call_kind = None
+            self._formal_request_sha256 = None
+            self._formal_call_consumed = False
+            self._formal_context = None
+        else:
+            raise AceEngineError("unsupported ACE state-engine execution scope")
         self.repository_root = repository_root
         self.run_dir = Path(str(context["run_dir"])).resolve()
         self._attempt_claim = claim
@@ -951,6 +977,13 @@ class ProductionAceStateEngine:
         output_path: Path,
         state_dir: Path,
     ) -> Mapping[str, Any]:
+        if self._formal_call_kind is not None:
+            if self._formal_call_kind != "PREFIX_GROUP" or self._formal_call_consumed:
+                raise AceEngineError("formal reference lacks its unconsumed prefix-call claim")
+            from state_capture.ace_formal_contract import validate_formal_backend_invocation
+
+            validate_formal_backend_invocation(self._formal_context or {})
+            self._formal_call_consumed = True
         return self._run(
             request=request,
             output_path=output_path,
@@ -965,6 +998,17 @@ class ProductionAceStateEngine:
         checkpoint_path: Path,
         output_path: Path,
     ) -> Mapping[str, Any]:
+        if self._formal_call_kind is not None:
+            if (
+                self._formal_call_kind != "RESUME_UNIT"
+                or self._formal_call_consumed
+                or request.get("request_id") != self._formal_request_sha256
+            ):
+                raise AceEngineError("formal resume lacks its exact unconsumed unit-call claim")
+            from state_capture.ace_formal_contract import validate_formal_backend_invocation
+
+            validate_formal_backend_invocation(self._formal_context or {})
+            self._formal_call_consumed = True
         checkpoint = load_ace_checkpoint(
             checkpoint_path,
             expected_artifact_sha256=request.get("checkpoint_sha256"),
@@ -976,6 +1020,72 @@ class ProductionAceStateEngine:
             state_dir=None,
             resume=checkpoint,
         )
+
+    def decode_preview(
+        self,
+        *,
+        checkpoint_path: Path,
+        checkpoint_sha256: str,
+        output_path: Path,
+    ) -> Mapping[str, Any]:
+        """Decode only this root's exported checkpoint into a pre-action preview."""
+
+        if self._formal_call_kind not in {None, "PREFIX_GROUP"}:
+            raise AceEngineError("formal preview decode must use the root prefix-call engine")
+        if self._formal_context is not None:
+            from state_capture.ace_formal_contract import validate_formal_backend_invocation
+
+            validate_formal_backend_invocation(self._formal_context)
+        if output_path.exists():
+            raise FileExistsError(output_path)
+        checkpoint = load_ace_checkpoint(
+            checkpoint_path,
+            expected_artifact_sha256=checkpoint_sha256,
+            expected_config_sha256=self.contract.sha256,
+        )
+        from backbones.runtime import CudaTelemetry
+
+        telemetry = CudaTelemetry("cuda:0")
+        with telemetry.measured() as measured:
+            pipeline, _load_seconds, _preflight = self._load_pipeline()
+            latent = checkpoint.latent.to(device=pipeline.device, dtype=pipeline.dtype)
+            sample_rate, waveforms = pipeline.music_dcae.decode(latent, sr=48000)
+        if sample_rate != 48000 or not isinstance(waveforms, list) or len(waveforms) != 1:
+            raise AceEngineError("ACE checkpoint preview decode returned an invalid batch")
+        waveform = waveforms[0]
+        if hasattr(waveform, "detach"):
+            waveform = waveform.detach().float().cpu().numpy()
+        import numpy as np
+        import soundfile as sf
+
+        array = np.asarray(waveform, dtype=np.float32)
+        if array.ndim != 2 or array.shape[0] != 2:
+            raise AceEngineError("ACE checkpoint preview must decode to stereo channels-first")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix="ace-preview-", suffix=".wav", dir=output_path.parent
+        )
+        os.close(descriptor)
+        temporary = Path(temporary_name)
+        try:
+            sf.write(temporary, array.T, sample_rate, subtype="FLOAT")
+            write_bytes_exclusive(output_path, temporary.read_bytes())
+        finally:
+            with suppress(FileNotFoundError):
+                temporary.unlink()
+        return {
+            "checkpoint_path": str(checkpoint.path),
+            "checkpoint_sha256": checkpoint.artifact_sha256,
+            "format": "ace-step-v1-root-local-preview-v2",
+            "output_path": str(output_path.resolve()),
+            "output_sha256": sha256_file(output_path),
+            "gpu_seconds": float(measured["wall_seconds"]),
+            "peak_allocated_bytes": int(measured["peak_allocated_bytes"]),
+            "peak_reserved_bytes": int(measured["peak_reserved_bytes"]),
+            "root_local_only": True,
+            "sample_rate": sample_rate,
+            "status": "PASS",
+        }
 
     def close(self) -> None:
         pipeline = self._pipeline
@@ -996,6 +1106,14 @@ class ProductionAceStateEngine:
 def production_engine_factory(context: Mapping[str, Any]) -> ProductionAceStateEngine:
     """Factory referenced by the frozen config and separate child requests."""
 
+    return ProductionAceStateEngine(context)
+
+
+def formal_engine_factory(context: Mapping[str, Any]) -> ProductionAceStateEngine:
+    """D-0036 formal factory; requires a distinct survivor-group claim."""
+
+    if context.get("execution_scope") != "FORMAL_INITIAL_SURVIVOR_GROUP":
+        raise AceEngineError("formal engine factory lacks formal execution scope")
     return ProductionAceStateEngine(context)
 
 

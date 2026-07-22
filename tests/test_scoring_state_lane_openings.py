@@ -36,7 +36,18 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
 
     suffix = data[suffix_start:].decode("utf-8")
     headings = re.findall(r"(?m)^## (D-\d+)\b", suffix)
-    assert headings == ["D-0029", "D-0030", "D-0031", "D-0032", "D-0033"]
+    assert headings == [
+        "D-0029",
+        "D-0030",
+        "D-0031",
+        "D-0032",
+        "D-0033",
+        "D-0034",
+        "D-0035",
+        "D-0036",
+        "D-0037",
+        "D-0038",
+    ]
 
 
 def test_four_openings_are_separate_and_hash_bound() -> None:
@@ -103,6 +114,43 @@ def test_ace_pass_branch_opens_only_the_initial_formal_queue() -> None:
         "ACE_STATE_PREFLIGHT_TERMINAL_SHA256 = "
         "69afb2851dbe5b90e6c4c71cc5c4581740bce4b88a4aaab42a410c69c7f8bb7d"
     ) in ace_pass
+
+
+def test_stage1_and_scoped_state_openings_are_fail_closed_and_hash_bound() -> None:
+    stage1 = _decision_block("D-0034")
+    assert "STAGE1_OUTCOME_GATE_STATUS = BLOCKED_MISSING_FROZEN_THRESHOLDS" in stage1
+    assert "STAGE1_VERDICTS_COMPUTED = NO" in stage1
+    assert "STAGE1_CANCELLATION_LEDGER_CREATED = NO" in stage1
+    assert _sha256(ROOT / "configs/stage1_outcome_gates_v2.json") in stage1
+
+    sa3 = _decision_block("D-0035")
+    assert "SA3_STATE_RESTRICTED_RERUN_AUTHORIZED = YES" in sa3
+    assert "SURVIVORS_ONLY = YES" in sa3
+    assert "ONE_ROOT_VALIDATION_REQUIRED = YES" in sa3
+    assert "NO_THIRD_REPAIR = YES" in sa3
+    assert _sha256(ROOT / "configs/sa3_state_restricted_rerun_v2.json") in sa3
+
+    ace = _decision_block("D-0036")
+    assert "ACE_STATE_FORMAL_SURVIVORS_ONLY = YES" in ace
+    assert "ACE_STATE_FORMAL_STOP_UNITS_PROHIBITED = EXECUTE,SCORE" in ace
+    assert "ACE_STATE_SUPPLEMENTAL_AUTHORIZED = NO" in ace
+    assert _sha256(ROOT / "configs/ace_state_formal_v2.json") in ace
+
+
+def test_sao_live_and_packet_watcher_are_separate_hash_bound_openings() -> None:
+    sao = _decision_block("D-0037")
+    assert "SAO_ACQUISITION_AUTHORIZED = YES" in sao
+    assert "SAO_MINI_SMOKE_EXACT_CALLS = 3" in sao
+    assert "SAO_CORE_EXACT_ROWS = 1536" in sao
+    assert "SAO_STATE_CAPABILITY = NOT_ATTEMPTED" in sao
+    assert "SAO_ELIGIBILITY_SCOPE_EXPANDED = NO" in sao
+    assert _sha256(ROOT / "configs/sao_live_v2.json") in sao
+
+    packet = _decision_block("D-0038")
+    assert "HUMAN_AUDIT_PACKET_AUTOASSEMBLY = ARMED" in packet
+    assert "ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA" in packet
+    assert "HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO" in packet
+    assert _sha256(ROOT / "configs/human_packet_autoassembly_v2_sao.json") in packet
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

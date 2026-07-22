@@ -1786,3 +1786,176 @@ The immutable terminal is
 `ACE_STATE_CAPTURE_CORE_LEDGER_SHA256 = 7f63aac18b4c503b4f17a6c03d0239715229a9d7751cb6db1531e2bd592b76d9`
 
 `ACE_STATE_CAPTURE_INITIAL_GPU_SECONDS_CAP = 104870.9014474153536`
+
+## D-0034 — Stage-1 outcome-gate CPU lane authorized fail-closed
+
+- Date: 2026-07-22
+- Status: authorized but blocked on two absent numerical policy values
+- Authority: PI Stage-1-gates-first authorization
+
+The Stage-1 implementation and its exact scored-outcome, statistics, and state
+queue bindings are fixed by `configs/stage1_outcome_gates_v2.json`, SHA-256
+`bc54978d8257e14dd373c34c2401f99beb20be78fc4a7a97f762dad67a1b82bd`.
+The repository's frozen v2 record does not state numerical minima for either
+`baseline_failure_rate` or `mixed_outcome_prompt_share`. Neither value may be
+inferred from data, examples, the eligibility deviation-share threshold, or a
+different project. Therefore no scored row was read, no cell verdict was
+computed, and no cancellation event was created. A later append-only PI
+decision must state both minima before this CPU lane can run.
+
+`STAGE1_OUTCOME_GATE_CPU_AUTHORIZED = YES`
+
+`STAGE1_OUTCOME_GATE_STATUS = BLOCKED_MISSING_FROZEN_THRESHOLDS`
+
+`STAGE1_BASELINE_FAILURE_RATE_MINIMUM = NOT_SPECIFIED`
+
+`STAGE1_MIXED_OUTCOME_PROMPT_SHARE_MINIMUM = NOT_SPECIFIED`
+
+`STAGE1_VERDICTS_COMPUTED = NO`
+
+`STAGE1_CANCELLATION_LEDGER_CREATED = NO`
+
+`STAGE1_OUTCOME_GATE_CONFIG = configs/stage1_outcome_gates_v2.json`
+
+`STAGE1_OUTCOME_GATE_CONFIG_SHA256 = bc54978d8257e14dd373c34c2401f99beb20be78fc4a7a97f762dad67a1b82bd`
+
+## D-0035 — SA3 survivor-only restricted rerun prospectively opened
+
+- Date: 2026-07-22
+- Status: accepted conditional execution opening
+- Authority: PI scoped-state authorization
+
+This opening binds the sole repaired SA3 rerun to the identical materialized
+queue and the original failed request. Execution is impossible until D-0034
+has produced complete immutable Stage-1 result and cancellation artifacts.
+At launch their bytes are verified and recorded. Only survivor axes may be
+materialized; STOP units prohibit both execution and scoring. The original
+failed unit is replayed verbatim because failure occurred before resume. One
+root validates first. A new failure class permanently ends the lane, and no
+third repair or automatic retry is authorized.
+
+`SA3_STATE_RESTRICTED_RERUN_AUTHORIZED = YES`
+
+`SURVIVORS_ONLY = YES`
+
+`ONE_ROOT_VALIDATION_REQUIRED = YES`
+
+`NO_THIRD_REPAIR = YES`
+
+`RERUN_CONFIG = configs/sa3_state_restricted_rerun_v2.json`
+
+`RERUN_CONFIG_SHA256 = 67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2`
+
+`RERUN_RUN_ID = sa3-state-v2-restricted-rerun-001`
+
+`SOURCE_STATE_MANIFEST_SHA256 = 5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3`
+
+`ORIGINAL_FAILED_REQUEST_SHA256 = 8d21cb321f6cc8be963fa8cf387303a508617ba3dec84475ee09d54f540ec27e`
+
+`ORIGINAL_FAILURE_LEDGER_SHA256 = 68ddc4f56dbbb9518c5f8ba8a91fa4d757acb8d18c80da31be1f99d60f3011a5`
+
+`METADATA_FILENAME_FIX_COMMIT = 61ddecf457ad5902fd9bf529a121411dd41ac043`
+
+`STAGE1_RESULT_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/stage1-outcome-gates.json`
+
+`STAGE1_CANCELLATION_SUMMARY_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/cancellations/summary.json`
+
+`STAGE1_RUNTIME_SHA256_BINDING = VERIFIED_AND_RECORDED_AT_LAUNCH`
+
+## D-0036 — ACE formal initial survivor queue prospectively opened
+
+- Date: 2026-07-22
+- Status: accepted conditional initial-tier execution opening
+- Authority: PI scoped-state authorization
+
+The ACE formal lane is limited to Stage-1 survivor axes from its fresh frozen
+queue. Complete Stage-1 result and cancellation artifacts are mandatory at
+launch and their live hashes are recorded then. STOP units may be neither
+executed nor scored. Supplemental work is locked. Up to four independent TP1
+replicas may use live-idle an12 GPUs 4–7 under the shared non-preemption locks;
+the prospective hard ceiling is the D-0033 measured-cap calculation. No
+automatic retry is authorized.
+
+`ACE_STATE_FORMAL_INITIAL_AUTHORIZED = YES`
+
+`ACE_STATE_FORMAL_SURVIVORS_ONLY = YES`
+
+`ACE_STATE_FORMAL_STOP_UNITS_PROHIBITED = EXECUTE,SCORE`
+
+`ACE_STATE_FORMAL_CONFIG = configs/ace_state_formal_v2.json`
+
+`ACE_STATE_FORMAL_CONFIG_SHA256 = 4cd688c71cff19104d1932386b42c4f1090cce5c5cd20dc61f7881e26a6fba89`
+
+`STAGE1_RESULT_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/stage1-outcome-gates.json`
+
+`STAGE1_CANCELLATION_SUMMARY_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/cancellations/summary.json`
+
+`STAGE1_RUNTIME_SHA256_BINDING = VERIFIED_AND_RECORDED_AT_LAUNCH`
+
+`ACE_STATE_SUPPLEMENTAL_AUTHORIZED = NO`
+
+`NO_AUTOMATIC_RETRY = YES`
+
+`ACE_STATE_FORMAL_PLACEMENT = an12:[4,5,6,7]`
+
+`ACE_STATE_FORMAL_MAX_PARALLEL_REPLICAS = 4`
+
+`ACE_STATE_FORMAL_INITIAL_GPU_SECONDS_CAP = 104870.90144741535`
+
+`ACE_STATE_FORMAL_FRESH_QUEUE_MANIFEST_SHA256 = 62c215ae38f0753198dcfcad36bebb8afeb669b11d170249c4be974ae7dd6e6a`
+
+`ACE_STATE_FORMAL_INITIAL_UNITS_SHA256 = 9218cd0ce81bda171230a4bed40c75c67ade08cd359a4da4b569a8365155923f`
+
+## D-0037 — Stable Audio Open live acquisition and engineering smoke opened
+
+- Date: 2026-07-22
+- Status: accepted live acquisition and exact-three-call smoke opening
+- Authority: PI SAO-live authorization
+
+The accepted read-only Hugging Face credential may exist only in process
+memory during acquisition. It must never enter stdout, stderr, logs, ledgers,
+manifests, commits, or retained environment state. Acquisition records the
+resolved revision, provider provenance, license identifier, and SHA-256 of
+every regular snapshot file. Only after that receipt validates may exactly
+three non-benchmark 30-second calls run on one verified-idle an12 GPU from
+4–7. The pair is compared by decoded-waveform hash; the third call calibrates
+resident cost. Any model-call failure is terminal with no retry.
+
+This decision does not by itself launch the 1,536-row core run: a separate
+exact run-ID decision follows only after a PASS smoke and sealed measured
+receipt. SAO state capability remains untested and eligibility scope remains
+SA3 plus ACE only.
+
+`SAO_ACQUISITION_AUTHORIZED = YES`
+
+`SAO_MINI_SMOKE_EXACT_CALLS = 3`
+
+`SAO_CORE_EXACT_ROWS = 1536`
+
+`SAO_STATE_CAPABILITY = NOT_ATTEMPTED`
+
+`SAO_ELIGIBILITY_SCOPE_EXPANDED = NO`
+
+`SAO_LIVE_CONFIG_SHA256 = 850c27343ff06045a6b19e84f93c10ddc7e0afc9d6d0466497ada532d4452aed`
+
+## D-0038 — SAO-aware human-packet watcher armed behind both gates
+
+- Date: 2026-07-22
+- Status: accepted fail-closed watcher opening
+- Authority: PI packet-watcher authorization
+
+The watcher is bound to the exact final three-backbone scoring root. Before
+assembly it must prove complete per-backbone packet counts and actual
+cross-instrument disagreement coverage: both voice directions contain the
+frozen Demucs/PANNs disagreement cells, and the tempo disagreement-or-invalid
+stratum includes at least one actual Beat This!/librosa disagreement. It may
+assemble once only when the timing-pilot receipt is ingested and SAO scoring
+provides every required stratum. Otherwise it emits heartbeat state only.
+
+`HUMAN_AUDIT_PACKET_AUTOASSEMBLY = ARMED`
+
+`HUMAN_AUDIT_PACKET_ASSEMBLY = ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA`
+
+`HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO`
+
+`HUMAN_AUDIT_PACKET_AUTOASSEMBLY_CONFIG_SHA256 = 68b74081056136ef2b72d90cdd7466b5ae4aafc3da2f4ffac6942d16526ff144`

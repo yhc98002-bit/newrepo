@@ -13,7 +13,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from backbones.sao_operational_claims import (
+    SaoOperationalAuthorizationError,
+    consume_sao_core_run_claim,
+    validate_sao_core_run_claim,
+    verify_exact_sao_core_decision,
+)
 from benchmark_core.config import (
+    SAO_MODEL_ID,
     CoreExecutionConfig,
     load_core_execution_config,
     sha256_file,
@@ -23,6 +30,9 @@ from benchmark_core.state_queue import build_state_capture_queue, load_state_cap
 
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+SAO_OPERATIONAL_CLAIMS_SOURCE = (
+    Path(__file__).resolve().parents[1] / "backbones" / "sao_operational_claims.py"
+)
 
 
 class LaunchAuthorizationError(RuntimeError):
@@ -162,9 +172,12 @@ def create_external_launch_claim(
     frozen_file_sha256: Mapping[str, str],
     run_dir: Path,
     queue_bindings: Mapping[str, Mapping[str, Any]],
+    global_authority_claim: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Bind observed clean Git state after commit without self-reference."""
 
+    if config.authorized_model_ids == (SAO_MODEL_ID,) and global_authority_claim is None:
+        raise LaunchAuthorizationError("SAO launch lacks its global one-shot authority claim")
     claim = {
         "authorized_model_ids": list(config.authorized_model_ids),
         "claimed_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -180,6 +193,9 @@ def create_external_launch_claim(
         "schema_version": 2,
         "status": "AUTHORIZED_CLEAN_ORIGIN_MAIN",
     }
+    if global_authority_claim is not None:
+        claim["global_authority_claim_path"] = str(global_authority_claim["path"])
+        claim["global_authority_claim_sha256"] = str(global_authority_claim["sha256"])
     _write_json_exclusive(path, claim)
     return claim
 
@@ -212,6 +228,36 @@ def validate_external_launch_claim(
             raise LaunchAuthorizationError(f"launch claim mismatch: {key}")
     if value.get("authorized_model_ids") != list(authorized_model_ids):
         raise LaunchAuthorizationError("launch claim authorized-model allowlist mismatch")
+    if tuple(authorized_model_ids) == (SAO_MODEL_ID,):
+        global_path_value = value.get("global_authority_claim_path")
+        global_sha256 = value.get("global_authority_claim_sha256")
+        frozen_identities = value.get("frozen_file_sha256")
+        decision_id = value.get("decision_id")
+        if (
+            not isinstance(global_path_value, str)
+            or not isinstance(global_sha256, str)
+            or not isinstance(frozen_identities, dict)
+            or not isinstance(decision_id, str)
+        ):
+            raise LaunchAuthorizationError("SAO launch claim lacks global authority binding")
+        decision_block_sha256 = frozen_identities.get(f"DECISION_BLOCK::{decision_id}")
+        if not isinstance(decision_block_sha256, str):
+            raise LaunchAuthorizationError("SAO launch claim lacks decision-block identity")
+        global_path = Path(global_path_value)
+        try:
+            if sha256_file(global_path.resolve(strict=True)) != global_sha256:
+                raise LaunchAuthorizationError("SAO global authority claim hash mismatch")
+            validate_sao_core_run_claim(
+                global_path,
+                run_id=run_id,
+                run_dir=run_dir,
+                config_sha256=config_sha256,
+                decision_id=decision_id,
+                decision_block_sha256=decision_block_sha256,
+                git_commit=git_commit,
+            )
+        except (OSError, SaoOperationalAuthorizationError) as exc:
+            raise LaunchAuthorizationError(str(exc)) from exc
     bindings = value.get("queue_bindings")
     if not isinstance(bindings, dict) or set(bindings) != {
         "generation",
@@ -245,6 +291,12 @@ def validate_run_bundle(
         raise LaunchAuthorizationError("run manifest authorized-model allowlist mismatch")
     if launch_claim.get("authorized_model_ids") != expected_authorized:
         raise LaunchAuthorizationError("launch claim authorized-model allowlist mismatch")
+    if tuple(config.authorized_model_ids) == (SAO_MODEL_ID,):
+        for field in ("global_authority_claim_path", "global_authority_claim_sha256"):
+            if manifest.get(field) != launch_claim.get(field):
+                raise LaunchAuthorizationError(
+                    f"SAO run manifest/global authority binding mismatch: {field}"
+                )
     bindings = launch_claim.get("queue_bindings")
     assert isinstance(bindings, dict)  # validated by validate_external_launch_claim
     sources = {
@@ -337,6 +389,8 @@ def prepare_run(
         and model.adapter_config_path is not None
     )
     dynamic_files.extend(binding.path for binding in config.prior_model_completions.values())
+    if config.authorized_model_ids == (SAO_MODEL_ID,):
+        dynamic_files.append(SAO_OPERATIONAL_CLAIMS_SOURCE)
     exact_frozen_files = tuple(
         dict.fromkeys(path.resolve(strict=True) for path in (*dynamic_files, *frozen_files))
     )
@@ -346,6 +400,30 @@ def prepare_run(
         frozen_files=exact_frozen_files,
     )
     run_dir = config.run_root / run_id
+    global_authority_claim: dict[str, Any] | None = None
+    if config.authorized_model_ids == (SAO_MODEL_ID,):
+        decision_identity = identities.get(f"DECISION_BLOCK::{decision_id}")
+        assert decision_identity is not None
+        try:
+            verify_exact_sao_core_decision(
+                decisions_path,
+                decision_id=decision_id,
+                requested_run_id=run_id,
+                expected_decision_block_sha256=decision_identity,
+            )
+            global_authority_claim = consume_sao_core_run_claim(
+                run_id=run_id,
+                run_dir=run_dir,
+                run_root=config.run_root,
+                config_path=config.source_path,
+                config_sha256=config.source_sha256,
+                decisions_path=decisions_path,
+                decision_id=decision_id,
+                decision_block_sha256=decision_identity,
+                git_commit=git_state.head,
+            )
+        except SaoOperationalAuthorizationError as exc:
+            raise LaunchAuthorizationError(str(exc)) from exc
     run_dir.mkdir(parents=True, exist_ok=False)
     for directory in (run_dir, run_dir.parent):
         descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
@@ -425,6 +503,7 @@ def prepare_run(
         frozen_file_sha256=identities,
         run_dir=run_dir,
         queue_bindings=queue_bindings,
+        global_authority_claim=global_authority_claim,
     )
     manifest = {
         "audio_generation_calls": 0,
@@ -439,6 +518,9 @@ def prepare_run(
         "state_capture_supplemental_manifest": supplemental_state_manifest,
         "status": "PREPARED_NO_MODEL_CALLS",
     }
+    if global_authority_claim is not None:
+        manifest["global_authority_claim_path"] = global_authority_claim["path"]
+        manifest["global_authority_claim_sha256"] = global_authority_claim["sha256"]
     _write_json_exclusive(run_dir / "run-manifest.json", manifest)
     validate_external_launch_claim(
         claim_path,

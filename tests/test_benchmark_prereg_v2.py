@@ -148,7 +148,7 @@ BUILD_COMPANION_IDENTITIES = {
 }
 
 AMENDED_SEED_REGISTRY_SHA256 = (
-    "c6267a855c804b65a69430b01c9739b887fb05cf4d97664a0d002a710b9626f1"
+    "a990f2167a4174ebf75c95cf75028393c1d0f60e618b9950e9f0e39a80cc0ff1"
 )
 
 
@@ -269,18 +269,28 @@ def test_build_companion_identities_are_bound() -> None:
         assert path.is_file()
         assert f"`{expected}`" in PREREG
         if relative == "SEED_REGISTRY.md":
-            # D-0031 authorizes one append-only non-benchmark preflight seed.
+            # Later decisions authorize append-only non-benchmark engineering seeds.
             # The exact v2-frozen prefix must remain byte-identical; v2 itself
             # is never rewritten to pretend the later row was preregistered.
             lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
-            assert lines[-1] == (
+            assert lines[-3] == (
                 "| S-0010 | 73193010 | ACE-Step v1 state preflight "
                 "reference/export/resume equivalence, non-benchmark | none |\n"
             )
-            frozen_prefix = "".join(lines[:-1]).encode("utf-8")
+            assert lines[-2] == (
+                "| S-0011 | 73193011 | Stable Audio Open 1.0 mini-smoke calls 0/1, "
+                "identical-seed reproducibility pair, non-benchmark | none |\n"
+            )
+            assert lines[-1] == (
+                "| S-0012 | 73193012 | Stable Audio Open 1.0 mini-smoke call 2, "
+                "resident-call cost calibration, non-benchmark | none |\n"
+            )
+            frozen_prefix = "".join(lines[:-3]).encode("utf-8")
             assert hashlib.sha256(frozen_prefix).hexdigest() == expected
             assert sha256(path) == AMENDED_SEED_REGISTRY_SHA256
-            assert "## D-0031" in (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+            decisions = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+            assert "## D-0031" in decisions
+            assert "## D-0037" in decisions
         else:
             assert sha256(path) == expected
 

@@ -41,6 +41,7 @@ from scripts.run_b2_ace_duration_confirmation_v1 import (
 )
 from tests.seed_registry_history import (
     AUTHORIZED_S0010_SUFFIX,
+    AUTHORIZED_SAO_SUFFIX,
     FROZEN_B2_SEED_REGISTRY_SHA256,
     frozen_b2_seed_registry_prefix,
 )
@@ -124,7 +125,7 @@ def test_live_append_only_registry_preserves_confirmation_prefix_but_package_ref
     payload = registry.read_bytes()
     prefix = frozen_b2_seed_registry_prefix(registry)
     assert hashlib.sha256(prefix).hexdigest() == FROZEN_B2_SEED_REGISTRY_SHA256
-    assert payload[len(prefix) :] == AUTHORIZED_S0010_SUFFIX
+    assert payload[len(prefix) :] == AUTHORIZED_S0010_SUFFIX + AUTHORIZED_SAO_SUFFIX
     assert sha256_file(registry) != FROZEN_B2_SEED_REGISTRY_SHA256
     with pytest.raises(B2GateError, match="frozen_sources.seed_registry SHA-256 mismatch"):
         validate_static_config()

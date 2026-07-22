@@ -6,6 +6,7 @@ import math
 import os
 import time
 from collections.abc import Mapping, Sequence
+from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -54,6 +55,25 @@ class StateEngine(Protocol):
     ) -> StagedResume: ...
 
     def close(self) -> None: ...
+
+
+class StateExecutionScope(Protocol):
+    """Optional fail-closed selector for a separately authorized restricted run."""
+
+    def require_open(self) -> None: ...
+
+    def atomic_open(self) -> AbstractContextManager[None]: ...
+
+    def select(
+        self,
+        *,
+        units: Sequence[Mapping[str, Any]],
+        groups: Sequence[Mapping[str, Any]],
+        replica_index: int,
+        replica_count: int,
+    ) -> list[Mapping[str, Any]]: ...
+
+    def record_failure(self, *, identity: str | None, kind: str, error: BaseException) -> None: ...
 
 
 class StateWorkerStopped(RuntimeError):
@@ -238,11 +258,80 @@ class SA3StateWorker:
         heartbeat.flush()
         return str(last["ledger_row_sha256"])
 
+    def _publish_group(
+        self,
+        *,
+        group: Mapping[str, Any],
+        group_units: Sequence[Mapping[str, Any]],
+        identity: str,
+        staged: StagedPrefixGroup,
+    ) -> Mapping[str, Any]:
+        self.claims.record_observed(
+            identity,
+            kind="PREFIX_GROUP",
+            observed_gpu_seconds=staged.synchronized_gpu_seconds,
+        )
+        group_commit = commit_prefix_group(
+            self.run_dir / "artifacts",
+            group,
+            group_units,
+            staged,
+            config=self.config,
+        )
+        return self.ledger.transition(
+            identity,
+            "SUCCEEDED",
+            {
+                "actual_nfe": staged.actual_nfe,
+                "call_kind": "PREFIX_GROUP",
+                "commit": group_commit,
+                "finished_at_utc": utc_now(),
+                "peak_allocated_bytes": staged.peak_allocated_bytes,
+                "peak_reserved_bytes": staged.peak_reserved_bytes,
+                "synchronized_gpu_seconds": staged.synchronized_gpu_seconds,
+            },
+        )
+
+    def _publish_resume(
+        self,
+        *,
+        group: Mapping[str, Any],
+        identity: str,
+        staged: StagedResume,
+        unit: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        self.claims.record_observed(
+            identity,
+            kind="RESUME_UNIT",
+            observed_gpu_seconds=staged.synchronized_gpu_seconds,
+        )
+        resume_commit = commit_resume(
+            self.run_dir / "artifacts",
+            unit,
+            staged,
+            reference_terminal_relpath=str(group["reference_terminal_relpath"]),
+            config=self.config,
+        )
+        return self.ledger.transition(
+            identity,
+            "SUCCEEDED",
+            {
+                "actual_nfe": staged.actual_nfe,
+                "call_kind": "RESUME_UNIT",
+                "commit": resume_commit,
+                "finished_at_utc": utc_now(),
+                "peak_allocated_bytes": staged.peak_allocated_bytes,
+                "peak_reserved_bytes": staged.peak_reserved_bytes,
+                "synchronized_gpu_seconds": staged.synchronized_gpu_seconds,
+            },
+        )
+
     def run(
         self,
         *,
         units: Sequence[Mapping[str, Any]],
         groups: Sequence[Mapping[str, Any]],
+        execution_scope: StateExecutionScope | None = None,
         max_new_groups: int | None = None,
         test_only_max_wait_cycles: int | None = None,
     ) -> dict[str, Any]:
@@ -251,14 +340,23 @@ class SA3StateWorker:
         if max_new_groups is not None and max_new_groups <= 0:
             raise ValueError("max_new_groups must be positive")
         unit_index = {str(row["lane_request_sha256"]): row for row in units}
-        assigned = [
-            group
-            for group in groups
-            if (int(group["group_sequence"]) - 1) % self.config.placement.maximum_parallel_replicas
-            == self.replica_index
-        ]
-        if len(assigned) != 36:
-            raise ValueError("static four-way state shard must contain exactly 36 groups")
+        if execution_scope is None:
+            assigned = [
+                group
+                for group in groups
+                if (int(group["group_sequence"]) - 1)
+                % self.config.placement.maximum_parallel_replicas
+                == self.replica_index
+            ]
+            if len(assigned) != 36:
+                raise ValueError("static four-way state shard must contain exactly 36 groups")
+        else:
+            assigned = execution_scope.select(
+                units=units,
+                groups=groups,
+                replica_index=self.replica_index,
+                replica_count=self.config.placement.maximum_parallel_replicas,
+            )
         heartbeat = HeartbeatLoop(
             self.worker_root / "heartbeat.json",
             self._heartbeat_payload(),
@@ -289,6 +387,8 @@ class SA3StateWorker:
                     )
                     heartbeat.update(state="RUNNING")
                     for group in assigned:
+                        if execution_scope is not None:
+                            execution_scope.require_open()
                         group_had_new_work = False
                         group_identity = str(group["group_request_sha256"])
                         group_units = [
@@ -297,12 +397,21 @@ class SA3StateWorker:
                         group_complete = self._already_complete_or_raise(group_identity)
                         if not group_complete:
                             group_had_new_work = True
-                            self._claim_and_start(
-                                group,
-                                kind="PREFIX_GROUP",
-                                identity=group_identity,
-                                heartbeat=heartbeat,
-                            )
+                            if execution_scope is None:
+                                self._claim_and_start(
+                                    group,
+                                    kind="PREFIX_GROUP",
+                                    identity=group_identity,
+                                    heartbeat=heartbeat,
+                                )
+                            else:
+                                with execution_scope.atomic_open():
+                                    self._claim_and_start(
+                                        group,
+                                        kind="PREFIX_GROUP",
+                                        identity=group_identity,
+                                        heartbeat=heartbeat,
+                                    )
                             staging = self.run_dir / "staging" / group_identity
                             try:
                                 staged_group = self.engine.capture_group(
@@ -310,33 +419,21 @@ class SA3StateWorker:
                                 )
                                 if not isinstance(staged_group, StagedPrefixGroup):
                                     raise TypeError("state engine returned invalid prefix result")
-                                self.claims.record_observed(
-                                    group_identity,
-                                    kind="PREFIX_GROUP",
-                                    observed_gpu_seconds=staged_group.synchronized_gpu_seconds,
-                                )
-                                group_commit = commit_prefix_group(
-                                    self.run_dir / "artifacts",
-                                    group,
-                                    group_units,
-                                    staged_group,
-                                    config=self.config,
-                                )
-                                last = self.ledger.transition(
-                                    group_identity,
-                                    "SUCCEEDED",
-                                    {
-                                        "actual_nfe": staged_group.actual_nfe,
-                                        "call_kind": "PREFIX_GROUP",
-                                        "commit": group_commit,
-                                        "finished_at_utc": utc_now(),
-                                        "peak_allocated_bytes": staged_group.peak_allocated_bytes,
-                                        "peak_reserved_bytes": staged_group.peak_reserved_bytes,
-                                        "synchronized_gpu_seconds": (
-                                            staged_group.synchronized_gpu_seconds
-                                        ),
-                                    },
-                                )
+                                if execution_scope is None:
+                                    last = self._publish_group(
+                                        group=group,
+                                        group_units=group_units,
+                                        identity=group_identity,
+                                        staged=staged_group,
+                                    )
+                                else:
+                                    with execution_scope.atomic_open():
+                                        last = self._publish_group(
+                                            group=group,
+                                            group_units=group_units,
+                                            identity=group_identity,
+                                            staged=staged_group,
+                                        )
                                 last_ledger = str(last["ledger_row_sha256"])
                                 cumulative += staged_group.synchronized_gpu_seconds
                                 peak_allocated = max(
@@ -344,6 +441,12 @@ class SA3StateWorker:
                                 )
                                 peak_reserved = max(peak_reserved, staged_group.peak_reserved_bytes)
                             except BaseException as exc:
+                                if execution_scope is not None:
+                                    execution_scope.record_failure(
+                                        identity=group_identity,
+                                        kind="PREFIX_GROUP",
+                                        error=exc,
+                                    )
                                 failed += 1
                                 last = self.ledger.transition(
                                     group_identity,
@@ -366,16 +469,27 @@ class SA3StateWorker:
                                     f"prefix group {group_identity} failed without retry"
                                 ) from exc
                         for unit in group_units:
+                            if execution_scope is not None:
+                                execution_scope.require_open()
                             identity = str(unit["lane_request_sha256"])
                             if self._already_complete_or_raise(identity):
                                 continue
                             group_had_new_work = True
-                            self._claim_and_start(
-                                unit,
-                                kind="RESUME_UNIT",
-                                identity=identity,
-                                heartbeat=heartbeat,
-                            )
+                            if execution_scope is None:
+                                self._claim_and_start(
+                                    unit,
+                                    kind="RESUME_UNIT",
+                                    identity=identity,
+                                    heartbeat=heartbeat,
+                                )
+                            else:
+                                with execution_scope.atomic_open():
+                                    self._claim_and_start(
+                                        unit,
+                                        kind="RESUME_UNIT",
+                                        identity=identity,
+                                        heartbeat=heartbeat,
+                                    )
                             checkpoint = (
                                 self.run_dir / "artifacts" / str(unit["checkpoint_relpath"])
                             )
@@ -384,35 +498,21 @@ class SA3StateWorker:
                                 staged_resume = self.engine.resume(unit, checkpoint, staging)
                                 if not isinstance(staged_resume, StagedResume):
                                     raise TypeError("state engine returned invalid resume result")
-                                self.claims.record_observed(
-                                    identity,
-                                    kind="RESUME_UNIT",
-                                    observed_gpu_seconds=staged_resume.synchronized_gpu_seconds,
-                                )
-                                resume_commit = commit_resume(
-                                    self.run_dir / "artifacts",
-                                    unit,
-                                    staged_resume,
-                                    reference_terminal_relpath=str(
-                                        group["reference_terminal_relpath"]
-                                    ),
-                                    config=self.config,
-                                )
-                                last = self.ledger.transition(
-                                    identity,
-                                    "SUCCEEDED",
-                                    {
-                                        "actual_nfe": staged_resume.actual_nfe,
-                                        "call_kind": "RESUME_UNIT",
-                                        "commit": resume_commit,
-                                        "finished_at_utc": utc_now(),
-                                        "peak_allocated_bytes": staged_resume.peak_allocated_bytes,
-                                        "peak_reserved_bytes": staged_resume.peak_reserved_bytes,
-                                        "synchronized_gpu_seconds": (
-                                            staged_resume.synchronized_gpu_seconds
-                                        ),
-                                    },
-                                )
+                                if execution_scope is None:
+                                    last = self._publish_resume(
+                                        group=group,
+                                        identity=identity,
+                                        staged=staged_resume,
+                                        unit=unit,
+                                    )
+                                else:
+                                    with execution_scope.atomic_open():
+                                        last = self._publish_resume(
+                                            group=group,
+                                            identity=identity,
+                                            staged=staged_resume,
+                                            unit=unit,
+                                        )
                                 last_ledger = str(last["ledger_row_sha256"])
                                 completed_units += 1
                                 cumulative += staged_resume.synchronized_gpu_seconds
@@ -431,6 +531,12 @@ class SA3StateWorker:
                                     peak_reserved_bytes=peak_reserved,
                                 )
                             except BaseException as exc:
+                                if execution_scope is not None:
+                                    execution_scope.record_failure(
+                                        identity=identity,
+                                        kind="RESUME_UNIT",
+                                        error=exc,
+                                    )
                                 failed += 1
                                 last = self.ledger.transition(
                                     identity,
@@ -485,18 +591,24 @@ class SA3StateWorker:
                         "replica_index": self.replica_index,
                         "status": "COMPLETE",
                     }
-            except PlacementBlocked:
+            except PlacementBlocked as exc:
                 terminal_state = "PLACEMENT_HEADROOM_BLOCKED"
+                if execution_scope is not None:
+                    execution_scope.record_failure(identity=None, kind="PLACEMENT", error=exc)
                 heartbeat.update(state=terminal_state)
                 heartbeat.flush()
                 raise
-            except StateHardCapReached:
+            except StateHardCapReached as exc:
                 terminal_state = "HARD_CAP_REACHED"
+                if execution_scope is not None:
+                    execution_scope.record_failure(identity=None, kind="HARD_CAP", error=exc)
                 heartbeat.update(state=terminal_state)
                 heartbeat.flush()
                 raise
-            except BaseException:
+            except BaseException as exc:
                 terminal_state = "FAILED_STOPPED"
+                if execution_scope is not None:
+                    execution_scope.record_failure(identity=None, kind="WORKER", error=exc)
                 heartbeat.update(state=terminal_state)
                 heartbeat.flush()
                 raise
@@ -504,4 +616,4 @@ class SA3StateWorker:
                 self.engine.close()
 
 
-__all__ = ["SA3StateWorker", "StateEngine", "StateWorkerStopped"]
+__all__ = ["SA3StateWorker", "StateEngine", "StateExecutionScope", "StateWorkerStopped"]

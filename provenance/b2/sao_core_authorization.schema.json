@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "access_receipt_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "backbone_config_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "decision_id": {
+      "const": "D-0037"
+    },
+    "eligibility_scope_expanded": {
+      "const": false
+    },
+    "exact_generations": {
+      "const": 1536
+    },
+    "max_clip_seconds": {
+      "const": 30
+    },
+    "max_gpus_per_worker": {
+      "const": 1
+    },
+    "mini_smoke_result_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "scope": {
+      "const": "SAO_BENCHMARK_CORE_GENERATION_ONLY"
+    },
+    "state_capability": {
+      "const": "NOT_ATTEMPTED"
+    },
+    "status": {
+      "const": "ACCESS_AND_MINI_SMOKE_VERIFIED_CORE_AUTHORIZED"
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "scope",
+    "decision_id",
+    "backbone_config_sha256",
+    "access_receipt_sha256",
+    "mini_smoke_result_sha256",
+    "exact_generations",
+    "max_clip_seconds",
+    "max_gpus_per_worker",
+    "state_capability",
+    "eligibility_scope_expanded"
+  ],
+  "title": "Stable Audio Open 1.0 ordinary-core authorization",
+  "type": "object"
+}

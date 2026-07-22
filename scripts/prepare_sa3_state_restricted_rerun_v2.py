@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Prepare the sole D-0035 SA3 survivor-only rerun; make no model calls."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+REPOSITORY = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = REPOSITORY / "src"
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
+
+def main() -> int:
+    from state_capture.sa3_restricted_rerun import prepare_restricted_rerun
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=REPOSITORY / "configs" / "sa3_state_restricted_rerun_v2.json",
+    )
+    parser.add_argument("--decision-id", default="D-0035")
+    parser.add_argument("--decisions", type=Path, default=REPOSITORY / "DECISIONS.md")
+    args = parser.parse_args()
+    result = prepare_restricted_rerun(
+        args.config,
+        decisions_path=args.decisions,
+        decision_id=args.decision_id,
+        repo_root=REPOSITORY,
+    )
+    print(json.dumps(result, allow_nan=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

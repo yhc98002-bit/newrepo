@@ -18,6 +18,8 @@ from backbones.contracts import (
 from backbones.io import verify_checkpoint_files
 
 _SECRET_KEY_RE = re.compile(r"token|secret|password|credential|authorization", re.IGNORECASE)
+SAO_CORE_SCOPE = "SAO_BENCHMARK_CORE_GENERATION_ONLY"
+SAO_CORE_STATUS = "ACCESS_AND_MINI_SMOKE_VERIFIED_CORE_AUTHORIZED"
 
 
 def license_block_from_config(config: dict[str, Any]) -> LicenseGateBlocked:
@@ -130,7 +132,25 @@ def validate_access_receipt(
     files = manifest.get("files")
     if not isinstance(files, list) or not files:
         raise BackboneConfigurationError("snapshot manifest must list at least one file")
-    observed = verify_checkpoint_files(expected_snapshot_dir, files, hash_files=True)
+    snapshot_root = Path(expected_snapshot_dir).resolve()
+    declared_paths = [entry.get("path") for entry in files if isinstance(entry, dict)]
+    if len(declared_paths) != len(files) or len(set(declared_paths)) != len(declared_paths):
+        raise BackboneConfigurationError("snapshot manifest paths must be unique strings")
+    actual_paths: list[str] = []
+    for path in sorted(snapshot_root.rglob("*")):
+        if path.is_symlink():
+            raise BackboneConfigurationError(
+                f"snapshot may not contain symlinks: {path.relative_to(snapshot_root)}"
+            )
+        if path.is_file():
+            actual_paths.append(path.relative_to(snapshot_root).as_posix())
+    if set(declared_paths) != set(actual_paths):
+        missing = sorted(set(actual_paths).difference(declared_paths))
+        extra = sorted(set(declared_paths).difference(actual_paths))
+        raise BackboneConfigurationError(
+            f"snapshot manifest is not an exact file closure: unlisted={missing}, absent={extra}"
+        )
+    observed = verify_checkpoint_files(snapshot_root, files, hash_files=True)
     return {
         "receipt_path": str(receipt_file),
         "receipt_sha256": sha256_file(receipt_file),
@@ -147,6 +167,8 @@ def validate_runtime_authorization(
     *,
     expected_config_sha256: str,
     expected_receipt_sha256: str,
+    expected_decision_id: str | None = None,
+    expected_generations: int | None = None,
 ) -> dict[str, Any]:
     """Require a later append-only decision record before SAO generation can run."""
 
@@ -189,4 +211,72 @@ def validate_runtime_authorization(
         raise BackboneConfigurationError("runtime authorization generation cap must be in [1, 10]")
     if not isinstance(record["decision_id"], str) or not record["decision_id"].strip():
         raise BackboneConfigurationError("runtime authorization decision_id must be non-empty")
+    if expected_decision_id is not None and record["decision_id"] != expected_decision_id:
+        raise BackboneConfigurationError("runtime authorization decision_id mismatch")
+    if expected_generations is not None and generations != expected_generations:
+        raise BackboneConfigurationError("runtime authorization generation count mismatch")
+    return record
+
+
+def validate_core_authorization(
+    authorization_path: str | Path,
+    *,
+    expected_config_sha256: str,
+    expected_receipt_sha256: str,
+    expected_mini_smoke_result_sha256: str,
+    expected_decision_id: str = "D-0037",
+) -> dict[str, Any]:
+    """Validate the separate 1,536-call SAO ordinary-core authorization.
+
+    This record is intentionally distinct from the at-most-ten-call engineering
+    mini-smoke authorization. It contains no provider credential and cannot
+    authorize state capture.
+    """
+
+    record = strict_json_object(authorization_path)
+    _reject_secret_fields(record, location="core_runtime_record")
+    required = {
+        "schema_version",
+        "status",
+        "scope",
+        "decision_id",
+        "backbone_config_sha256",
+        "access_receipt_sha256",
+        "mini_smoke_result_sha256",
+        "exact_generations",
+        "max_clip_seconds",
+        "max_gpus_per_worker",
+        "state_capability",
+        "eligibility_scope_expanded",
+    }
+    missing = sorted(required.difference(record))
+    if missing:
+        raise BackboneConfigurationError(f"core authorization is missing fields: {missing}")
+    unexpected = sorted(set(record).difference(required))
+    if unexpected:
+        raise BackboneConfigurationError(
+            f"core authorization has unexpected fields: {unexpected}"
+        )
+    if record["schema_version"] != 1:
+        raise BackboneConfigurationError("core authorization schema_version must equal 1")
+    if record["status"] != SAO_CORE_STATUS or record["scope"] != SAO_CORE_SCOPE:
+        raise BackboneConfigurationError("core authorization status/scope is not executable")
+    if record["decision_id"] != expected_decision_id:
+        raise BackboneConfigurationError("core authorization decision_id mismatch")
+    for key, expected in (
+        ("backbone_config_sha256", expected_config_sha256),
+        ("access_receipt_sha256", expected_receipt_sha256),
+        ("mini_smoke_result_sha256", expected_mini_smoke_result_sha256),
+    ):
+        value = record.get(key)
+        if not isinstance(value, str) or not SHA256_RE.fullmatch(value) or value != expected:
+            raise BackboneConfigurationError(f"core authorization {key} mismatch")
+    if record["exact_generations"] != 1_536:
+        raise BackboneConfigurationError("core authorization must bind exactly 1,536 generations")
+    if record["max_clip_seconds"] != 30 or record["max_gpus_per_worker"] != 1:
+        raise BackboneConfigurationError("core authorization exceeds frozen clip/GPU caps")
+    if record["state_capability"] != "NOT_ATTEMPTED":
+        raise BackboneConfigurationError("SAO state capability must remain NOT_ATTEMPTED")
+    if record["eligibility_scope_expanded"] is not False:
+        raise BackboneConfigurationError("SAO core authorization may not expand eligibility")
     return record

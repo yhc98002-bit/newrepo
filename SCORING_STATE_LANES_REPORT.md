@@ -404,3 +404,132 @@ the repository-wide suite completed with `329 passed, 111 subtests passed in
 modules also passed all 17 collected tests, and repository Ruff passed.
 Stable Audio Open 1.0 remains `BLOCKED_ON_LICENSE`; the exact seven human
 steps in the preceding section are unchanged.
+
+## 2026-07-22 addendum — Stage-1-first and SAO-live static boundary
+
+This addendum records the repository's static control state after PI
+authorizations D-0034 through D-0038. It does not revise the historical
+runtime evidence above and does not claim that any newly authorized model
+call, state unit, scorer, or packet assembly has run.
+
+### Stage-1 outcome screen is specification-blocked
+
+The CPU gate is `BLOCKED_MISSING_FROZEN_THRESHOLDS`. The frozen v2 record does
+not supply numerical minima for either `baseline_failure_rate` or
+`mixed_outcome_prompt_share`, so the fail-closed runner has not read the
+bound scored rows, computed a confidence interval, assigned a verdict, or
+created a cancellation ledger. The six-cell status is therefore:
+
+| Axis | Backbone | BASE failure rate (95% CI) | Mixed-outcome prompt share (95% CI) | Verdict |
+| --- | --- | --- | --- | --- |
+| Integrity | stable-audio-3-medium-base | Not computed | Not computed | Not computed |
+| Integrity | ACE-Step v1 | Not computed | Not computed | Not computed |
+| Tempo, primary 5% band | stable-audio-3-medium-base | Not computed | Not computed | Not computed |
+| Tempo, primary 5% band | ACE-Step v1 | Not computed | Not computed | Not computed |
+| Vocal/instrumental automatic instrument | stable-audio-3-medium-base | Not computed | Not computed | Not computed |
+| Vocal/instrumental automatic instrument | ACE-Step v1 | Not computed | Not computed | Not computed |
+
+“Not computed” is a specification status, not an outcome-gate verdict. No
+cell is currently labeled `OUTCOME_SCREEN_PASS` or `STOP_AXIS_STAGE1`, and no
+state unit is currently labeled `CANCELLED_STAGE1`. The blocked policy and
+immutable runtime bindings are in
+`configs/stage1_outcome_gates_v2.json`, SHA-256
+`bc54978d8257e14dd373c34c2401f99beb20be78fc4a7a97f762dad67a1b82bd`.
+The complete blocked-state rationale is in `STAGE1_OUTCOME_GATES.md`.
+
+### State openings are conditional and have executed zero units
+
+D-0035 prospectively opens only the SA3 Stage-1 survivors under
+`configs/sa3_state_restricted_rerun_v2.json`, SHA-256
+`67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2`.
+That contract binds the identical materialized queue, the original failed
+request, and metadata-filename fix commit
+`61ddecf457ad5902fd9bf529a121411dd41ac043`; it requires one-root validation
+before continuation and permanently stops on any new failure class. Because
+Stage-1 has no survivor set, the restricted rerun has not been launched and
+has executed zero units. The failed unit has not yet been replayed.
+
+D-0036 likewise prospectively opens only ACE Stage-1 survivors under
+`configs/ace_state_formal_v2.json`, SHA-256
+`4cd688c71cff19104d1932386b42c4f1090cce5c5cd20dc61f7881e26a6fba89`.
+Its supplemental queue remains locked, and STOP cells would prohibit both
+execution and scoring. No ACE formal initial worker has been launched under
+this opening, so it too has executed zero units. Both state contracts bind
+the future Stage-1 result at
+`/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/stage1-outcome-gates.json`
+and cancellation summary at
+`/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/cancellations/summary.json`;
+neither artifact exists as an obtained gate result at this boundary.
+
+### Decision-grade automatic tables are implemented but not run
+
+The no-clobber builder at `scripts/build_decision_grade_tables.py`, SHA-256
+`21f1e01c0a4eb5af7a74bd24e8d0d9ff5f9c151833818a7da2ba5d809a470ffd`,
+and implementation at `src/scoring/decision_grade.py`, SHA-256
+`cd0a7b3e3cec9ee74c592ff2e6d8438ce1a5a148ac5957d99b90f390aa197428`,
+are ready to emit condition-specific per-axis prevalence at both the primary
+5% and sensitivity 10% tempo bands, first/second-window drift, and
+instrument-disagreement summaries. Every output is watermarked
+`AUTOMATIC-INSTRUMENT OUTCOMES`; the builder prohibits accuracy or human-gold
+claims. It requires explicit immutable input, scoring-status, scoring-config,
+and completed-snapshot bindings. It has not been run in this authorization
+round because the PI required Stage-1 outcome gates first. Consequently, no
+new decision-grade table path or measured result is claimed here. The current
+automatic-scoring configuration is `configs/automatic_scoring_v2.json`,
+SHA-256
+`1e03782323d469fe8bcae09aabd9d86aecf740050d54cbe95b26e14d39d1cbdd`.
+
+### Stable Audio Open is statically opened, with no acquisition or generation yet
+
+D-0037 opens controlled acquisition and the exact three-call engineering
+smoke under `configs/sao_live_v2.json`, SHA-256
+`850c27343ff06045a6b19e84f93c10ddc7e0afc9d6d0466497ada532d4452aed`.
+A read-only Hugging Face credential is available in the local controlled
+environment. Its value has not been printed, copied into the repository,
+logged, ledgered, or placed in a manifest; the acquisition contract permits
+it only in process memory and requires it to be unset after download. At this
+static boundary no SAO snapshot has been downloaded, no acquisition receipt
+has been obtained, and none of the three smoke generations or 1,536 core rows
+has run. The exact core run remains subject to the post-smoke sealed-receipt
+opening specified by D-0037.
+
+SAO is generation-and-scoring only for this cycle:
+`SAO_STATE_CAPABILITY = NOT_ATTEMPTED`, and eligibility remains restricted to
+SA3 plus ACE. No SAO state preflight, state queue, or eligibility-scope
+expansion is claimed.
+
+### SAO-aware packet watcher is armed behind both gates
+
+D-0038 arms the fail-closed contract in
+`configs/human_packet_autoassembly_v2_sao.json`, SHA-256
+`68b74081056136ef2b72d90cdd7466b5ae4aafc3da2f4ffac6942d16526ff144`.
+Before assembly, it requires the exact final scoring status
+`SCORING_COMPLETE_ALL_PRIMARY_BACKBONES` at
+`/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/scoring-v2/automatic-scoring-v2-sao-final-001/scoring-status.json`
+and its candidate index. Its preassembly validation requires actual
+cross-instrument disagreement coverage in both voice directions for every
+primary backbone and at least one actual Beat This!/librosa disagreement in
+the tempo disagreement-or-invalid stratum. These are evidence checks, not
+merely named slots.
+
+Assembly may fire only after both independent conditions are true: the
+timing-pilot receipt has status `TIMING_PILOT_INGESTED`, and final SAO scoring
+provides every required three-backbone stratum. Neither packet assembly nor a
+human-gold claim is made at this static boundary. This addendum records the
+armed configuration and authorization only; it does not claim a new watcher
+heartbeat or assembled packet.
+
+### Static verification status
+
+Focused and repository-wide verification of this combined change set remain
+pending at this reporting boundary. No new test count or suite-wide PASS is
+claimed in this addendum.
+
+### Verification update after the static boundary
+
+After the static artifacts above were complete, the repository-wide suite
+passed with `409 passed, 111 subtests passed in 397.94 s`; repository-wide
+Ruff and `git diff --check` also passed. The final rerun included the
+append-only seed-registry governance checks for S-0011/S-0012. No network,
+CUDA, state execution, endpoint scoring, or packet assembly occurred during
+these tests.

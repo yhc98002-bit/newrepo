@@ -1,0 +1,72 @@
+{
+  "execution": {
+    "attempt_claim_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sa3-state-restricted-rerun-v2/sa3-state-v2-restricted-rerun-001.claim.json",
+    "run_id": "sa3-state-v2-restricted-rerun-001",
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2"
+  },
+  "lane_id": "sa3-state-capture-v2-restricted-rerun",
+  "metadata_filename_fix": {
+    "commit": "61ddecf457ad5902fd9bf529a121411dd41ac043",
+    "path": "src/state_capture/sa3_artifacts.py",
+    "sha256": "009f4884b8f69dd0b6ce7a4f2e63c7cb645cc6342ade559358898392faa0f8c8"
+  },
+  "original_failure": {
+    "error_message_substring": "checkpoint state metadata names a different file",
+    "error_type": "ChildResumeError",
+    "failed_group_request_sha256": "bbbc3309a9a4df4b56822163e6e8308c1d37cab7070c07c583fb4d541f2f7015",
+    "failed_lane_request_sha256": "8d21cb321f6cc8be963fa8cf387303a508617ba3dec84475ee09d54f540ec27e",
+    "failure_ledger_row_sha256": "05ebbdbe1856d0d32b41fc8db2b3125ef0d6da0b915f0f2686099b0754928950"
+  },
+  "schema_version": 1,
+  "source_run": {
+    "heartbeat": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/workers/replica-00/heartbeat.json",
+      "sha256": "50c0a8320e142151b36581debe48330c6b3209764067f84a4c4cd4003239b38e"
+    },
+    "launch_claim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/control/state-launch-claim.json",
+      "sha256": "196fe5b393c2ba4ed1549eda96134ebbf2886a192012ebd926bb067be126c842"
+    },
+    "ledger": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/state-ledger.jsonl",
+      "sha256": "68ddc4f56dbbb9518c5f8ba8a91fa4d757acb8d18c80da31be1f99d60f3011a5"
+    },
+    "queue": {
+      "action_map": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/queues/initial/replicated-action-map.jsonl",
+        "sha256": "584823de48ce5637f2fedbab49cf2aa2799d6a0f212433fb3de1882e47e762cf"
+      },
+      "folds": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/queues/initial/prompt-grouped-folds.json",
+        "sha256": "f58c74ac64e1229b5b96528d802d858a96beb52810c87932548b54e25b6a5262"
+      },
+      "manifest": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/queues/initial/state-capture-manifest.json",
+        "sha256": "5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3"
+      },
+      "prefix_groups": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/queues/initial/prefix-groups.jsonl",
+        "sha256": "bea2e711cb934a0ba51760b52ec0ae04a1ed88b1772ca639dbf66aa0b43413c7"
+      },
+      "units": {
+        "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/queues/initial/initial-units.jsonl",
+        "sha256": "64a4e910e2d4e8d57ea96a0d0722f0f5bacf2c297cd320e299f6878767e54603"
+      }
+    },
+    "run_id": "sa3-state-v2-001",
+    "run_manifest": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-001/run-manifest.json",
+      "sha256": "1383b52dccf418ecc9db21d6613d533e1ca96a23c198ef3773dbeb883056d2b0"
+    },
+    "state_config": {
+      "path": "configs/sa3_state_capture_v2.json",
+      "sha256": "4bb6d6480dd5167da97e4907193204ac319df090668f976734de7d37da87d02e"
+    }
+  },
+  "stage1": {
+    "backbone": "stable-audio-3-medium-base",
+    "cancellation_summary_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/cancellations/summary.json",
+    "gate_config_path": "configs/stage1_outcome_gates_v2.json",
+    "result_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/stage1-outcome-gates-v2/stage1-outcome-gates-v2-001/stage1-outcome-gates.json"
+  }
+}
