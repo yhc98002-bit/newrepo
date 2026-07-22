@@ -2517,3 +2517,81 @@ byte/hash-bound; every STOP unit and every supplemental root remains locked.
 `ACE_STATE_ENGINEERING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO`
 
 `ACE_STATE_ENGINEERING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO`
+
+## D-0050 — Stable Audio Open offline engineering repair smoke opened
+
+- Date: 2026-07-22
+- Status: accepted exact three-call engineering repair opening
+- Authority: D-0045 and the PI consolidated SAO restoration goal
+
+The official `stabilityai/stable-audio-open-1.0` snapshot remains fixed at
+revision `f21265c1e2710b3bd2386596943f0007f55f802e`. A dedicated offline
+Python 3.10 environment passed the complete CPU import and model-factory gate
+without exposing CUDA, loading the checkpoint, making a generation call,
+accessing the network, or reading any Hugging Face token. The environment
+manifest is SHA-256
+`45a688fc8fb13cb81abc3da1267c0d90d6475244ca342ac30df9173ba2dc4e4f`;
+the repository report and machine receipt are SHA-256
+`f2142dc09dd75800684c2273f67301f6cc67dff12545d38ede730ed00a4dc932`
+and `85fee0b21917aaad30006e3d71bc1ea29bacc8617e1e6251fb54b49527f6f1e6`.
+
+The exact repair retains PyWavelets 1.4.1 and pins NumPy 1.26.4 for its
+matching NumPy 1.x ABI. It also applies the hash-bound inference-only patch
+that makes an absent `pytorch_lightning` training callback optional while
+re-raising every other import error. Model math, weights, prompts, seeds,
+sampler, steps, duration, acceptance rules, and benchmark endpoints are
+unchanged.
+
+One new sequential mini-smoke attempt is opened on exact an12 GPU 7. It is the
+same registered three-call schedule: the fixed-seed 30-second decoded-waveform
+reproducibility pair and one resident-cost call. The prior failed terminal and
+the separate CPU factory failure remain immutable. A later pre-scientific
+engineering bug remains repairable only through another new sequential run,
+claim, and append-only opening; a valid end-to-end capability failure stops
+the scientific lane for PI review.
+
+`SAO_ENGINEERING_REPAIR_AUTHORIZED = YES`
+
+`SAO_ENGINEERING_REPAIR_RUN_ID = sao-mini-smoke-v2-003`
+
+`SAO_ENGINEERING_REPAIR_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sao-live-v2/sao-mini-smoke-v2-003.engineering-repair.claim.json`
+
+`SAO_ENGINEERING_REPAIR_EXACT_CALLS = 3`
+
+`SAO_ENGINEERING_REPAIR_MAX_CLIP_SECONDS = 30`
+
+`SAO_ENGINEERING_REPAIR_MAX_GPUS = 1`
+
+`SAO_ENGINEERING_REPAIR_MODEL_ID = stabilityai/stable-audio-open-1.0`
+
+`SAO_ENGINEERING_REPAIR_OFFICIAL_REVISION = f21265c1e2710b3bd2386596943f0007f55f802e`
+
+`SAO_ENGINEERING_REPAIR_ENVIRONMENT_MANIFEST_SHA256 = 45a688fc8fb13cb81abc3da1267c0d90d6475244ca342ac30df9173ba2dc4e4f`
+
+`SAO_ENGINEERING_REPAIR_PREVIOUS_TERMINAL_SHA256 = 3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097`
+
+`SAO_ENGINEERING_REPAIR_CPU_FAILURE_SHA256 = cb7df87510b2314361b2d5fa177fbc196870d64962d82ce27e994f9781c0a6ac`
+
+`SAO_ENGINEERING_REPAIR_SCIENTIFIC_CONFIGURATION_CHANGED = NO`
+
+`SAO_ENGINEERING_REPAIR_PROMPTS_SEEDS_BUDGETS_CHANGED = NO`
+
+`SAO_ENGINEERING_FAILURES_REPAIRABLE = YES`
+
+`SAO_ENGINEERING_FUTURE_RETRY_REQUIRES_NEW_RUN_AND_CLAIM = YES`
+
+`SAO_ENGINEERING_REPAIR_RUNNER_SHA256 = 53da80ac0d3f7585090fd8f4981391c2ed05b2f3464552c83ca5458731ef3342`
+
+`SAO_ENGINEERING_REPAIR_CLAIMS_SHA256 = f2a8cf2467c4c7198e302472426fc07a76f2bf18033064dbcf6a8603125c3708`
+
+`SAO_ENGINEERING_REPAIR_SMOKE_SHA256 = d6d4091a7d14986f8e215c0acdcabfb8df6a9ff064fc6d67146107ccb18e9644`
+
+`SAO_ENGINEERING_REPAIR_ADAPTER_SHA256 = b4d36f87e2e48436498fb5b59e38fbf33882e560a3fd8fa6aeb58259fafd85ef`
+
+`SAO_ENGINEERING_REPAIR_IMPORT_PATCH_SHA256 = df732865be587fa63fca797cdc19679254b15a86c30b0575b701a0a51c3677c1`
+
+`SAO_ENGINEERING_REPAIR_PLACEMENT = an12:[7];TP1;R1`
+
+`SAO_STATE_CAPABILITY = NOT_ATTEMPTED`
+
+`SAO_ELIGIBILITY_SCOPE_EXPANDED = NO`

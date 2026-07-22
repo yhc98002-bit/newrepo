@@ -658,3 +658,38 @@ manifest and artifacts are named here with SHA-256 digests.
   `4e647f1c3154ea59ad2e2478ba846f5e0c4b41303e8318d52f01368cf2da34dd`
 - Disposition: failed attempt retained mode 0444; D-0049 opens only a new
   sequential claim/run with identical scientific bindings
+
+## L-0020 — Stable Audio Open dedicated offline environment validated
+
+- Time: 2026-07-22T15:31:21Z
+- Kind: completed CPU-only engineering repair validation; no scientific
+  model outcome and no benchmark endpoint
+- Authority: D-0045; D-0050 is the separate later GPU opening
+- Node: `an12`; GPUs hidden/unavailable; TP and replicas: none
+- Environment: `sao-env-v2-002`, Python 3.10.12, 85 installed packages;
+  package-freeze SHA-256
+  `705a0c9d8be50b23b118422e00256661ac837780dec544755dec9dce228dd108`
+- ABI repair: NumPy 1.26.4 official wheel SHA-256
+  `ffa75af20b44f8dba823498024771d5ac50620e6915abac414251bd971b4529f`
+  with retained PyWavelets 1.4.1
+- Optional-import repair: upstream LoRA initializer SHA-256
+  `ec32c74f7884a0928889aaef90a054229a8fa2354eb001fae9f8e9222775cbf1`
+  to inference-only patched SHA-256
+  `104174f6acabb438e652fe3c76889988dee4b9e5f38b8d2d9893a47f01ace595`;
+  patch SHA-256
+  `df732865be587fa63fca797cdc19679254b15a86c30b0575b701a0a51c3677c1`
+- CPU gate: imports PASS; factory graph PASS; 1,213,337,474 parameters;
+  44.1-kHz model; 31.749 s factory wall; 6,611,600 KiB maximum RSS
+- Official model: `stabilityai/stable-audio-open-1.0`, revision
+  `f21265c1e2710b3bd2386596943f0007f55f802e`
+- Calls/outputs/GPU time: 0 / 0 / 0 seconds; checkpoint not loaded
+- Network/token: no network and no token read, restored, printed, logged, or
+  committed
+- Environment manifest / report / machine receipt SHA-256s:
+  `45a688fc8fb13cb81abc3da1267c0d90d6475244ca342ac30df9173ba2dc4e4f` /
+  `f2142dc09dd75800684c2273f67301f6cc67dff12545d38ede730ed00a4dc932` /
+  `85fee0b21917aaad30006e3d71bc1ea29bacc8617e1e6251fb54b49527f6f1e6`
+- Historical failures retained: mini-smoke v2-002 terminal SHA-256
+  `3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097`;
+  CPU factory optional-import failure SHA-256
+  `cb7df87510b2314361b2d5fa177fbc196870d64962d82ce27e994f9781c0a6ac`

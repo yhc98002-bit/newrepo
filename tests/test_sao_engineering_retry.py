@@ -45,6 +45,20 @@ def test_retry_decision_vocabulary_freezes_scientific_request_and_new_identity()
     assert all(len(value) == 64 for key, value in assignments.items() if key.endswith("_SHA256"))
 
 
+def test_committed_repair_opening_matches_current_integrated_sources() -> None:
+    decisions = ROOT / "DECISIONS.md"
+    block = retry._decision_block(decisions.read_text(encoding="utf-8"), "D-0050")
+    block_sha256 = hashlib.sha256(block.encode()).hexdigest()
+
+    observed = retry.verify_sao_engineering_retry_decision(
+        decisions,
+        decision_id="D-0050",
+        expected_decision_block_sha256=block_sha256,
+    )
+    assert observed["decision_id"] == "D-0050"
+    assert observed["decision_block_sha256"] == block_sha256
+
+
 def test_committed_cpu_receipt_binds_zero_gpu_repair_and_exact_patch() -> None:
     receipt = json.loads(
         (ROOT / "provenance/b2/sao_environment_repair_v2.json").read_text(encoding="utf-8")
