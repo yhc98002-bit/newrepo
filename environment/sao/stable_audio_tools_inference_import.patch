@@ -1,0 +1,14 @@
+diff --git a/stable_audio_tools/models/lora/__init__.py b/stable_audio_tools/models/lora/__init__.py
+--- a/stable_audio_tools/models/lora/__init__.py
++++ b/stable_audio_tools/models/lora/__init__.py
+@@ -25,5 +25,9 @@ from .utils import (
+     prepare_dora_state_dict,
+     resolve_adapter_type
+ )
+-from .callbacks import LoRASafetensorsCheckpoint, StepOffsetCallback
++try:
++    from .callbacks import LoRASafetensorsCheckpoint, StepOffsetCallback
++except ModuleNotFoundError as exc:
++    if exc.name != "pytorch_lightning":
++        raise
+ from .loader import load_and_apply_loras

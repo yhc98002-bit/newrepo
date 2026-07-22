@@ -1,0 +1,127 @@
+{
+  "attempts": [
+    {
+      "failure_class": "PRE_SCIENTIFIC_ENGINEERING_BINARY_ABI",
+      "generated_outputs": 0,
+      "model_calls": 1,
+      "run_id": "sao-mini-smoke-v2-002",
+      "status": "FAILED_RETAINED_SUPERSEDED_BY_ENGINEERING_REPAIR_AUTHORITY",
+      "terminal_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/mini-smoke/sao-mini-smoke-v2-002/sao-mini-smoke-terminal.json",
+      "terminal_sha256": "3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097"
+    },
+    {
+      "checkpoint_loaded": false,
+      "failure_class": "PRE_SCIENTIFIC_ENGINEERING_OPTIONAL_IMPORT",
+      "failure_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/engineering/sao-engineering-env-v2-001/provenance/cpu-factory-failure.json",
+      "failure_sha256": "cb7df87510b2314361b2d5fa177fbc196870d64962d82ce27e994f9781c0a6ac",
+      "generated_outputs": 0,
+      "gpu_used": false,
+      "model_calls": 0,
+      "run_id": "sao-engineering-env-v2-001",
+      "status": "FAILED_ENGINEERING_REPAIRABLE_RETAINED"
+    },
+    {
+      "checkpoint_loaded": false,
+      "environment_manifest_identity_sha256": "43af5c1f9979dc2873dc7d1ac7fb98812d3e4d0cb98dc43f37981eaeaf23bf1c",
+      "environment_manifest_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/engineering/sao-engineering-env-v2-002/provenance/environment-manifest.json",
+      "environment_manifest_sha256": "45a688fc8fb13cb81abc3da1267c0d90d6475244ca342ac30df9173ba2dc4e4f",
+      "generated_outputs": 0,
+      "gpu_used": false,
+      "model_calls": 0,
+      "run_id": "sao-engineering-env-v2-002",
+      "status": "CPU_VALIDATED_READY_FOR_GOVERNED_MINI_SMOKE"
+    },
+    {
+      "claim_exists_at_receipt_time": false,
+      "claim_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sao-live-v2/sao-mini-smoke-v2-003.engineering-repair.claim.json",
+      "run_exists_at_receipt_time": false,
+      "run_id": "sao-mini-smoke-v2-003",
+      "status": "NOT_LAUNCHED_AWAITING_APPEND_ONLY_OPENING_AND_CLEAN_PUSH"
+    }
+  ],
+  "compatibility_choices": {
+    "inference_import_repair": {
+      "constraint": "Only a missing pytorch_lightning training dependency is tolerated; every other callback import error is re-raised.",
+      "original_file_sha256": "ec32c74f7884a0928889aaef90a054229a8fa2354eb001fae9f8e9222775cbf1",
+      "patch_path": "environment/sao/stable_audio_tools_inference_import.patch",
+      "patch_sha256": "df732865be587fa63fca797cdc19679254b15a86c30b0575b701a0a51c3677c1",
+      "patched_file_sha256": "104174f6acabb438e652fe3c76889988dee4b9e5f38b8d2d9893a47f01ace595",
+      "reason": "The registered Stable Audio Tools commit imports LoRA training callbacks unconditionally although pytorch-lightning is declared only by its train extra; inference uses the loader import and no callback."
+    },
+    "numpy_pywavelets_abi": {
+      "numpy": "1.26.4",
+      "numpy_wheel_sha256": "ffa75af20b44f8dba823498024771d5ac50620e6915abac414251bd971b4529f",
+      "numpy_wheel_source": "https://mirrors.tencent.com/pypi/packages/4b/d7/ecf66c1cd12dc28b4040b15ab4d17b773b87fa9d29ca16125de01adb36cd/numpy-1.26.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "pywavelets": "1.4.1",
+      "reason": "The registered Stable Audio Tools commit pins the PyWavelets 1.4.1 binary wheel; NumPy 1.26.4 preserves its NumPy 1.x C ABI. PyWavelets was not substituted."
+    },
+    "stable_audio_tools": {
+      "source": "https://github.com/Stability-AI/stable-audio-tools/archive/3241adba4fc2a85cf5b29d9eb68d42f40a28e820.tar.gz",
+      "version": "0.0.20"
+    }
+  },
+  "cpu_gate": {
+    "factory": {
+      "audio_channels": 64,
+      "checkpoint_loaded": false,
+      "conditioning_bundle_sha256": "aeadaa6dbd9df1c752893d2f8fdb69ddce59ca55e77b51d2c2975d3e061dc661",
+      "cuda_available": false,
+      "generation_calls": 0,
+      "max_rss_kib": 6611600,
+      "model_class": "stable_audio_tools.models.diffusion.ConditionedDiffusionModelWrapper",
+      "parameter_count": 1213337474,
+      "sample_rate": 44100,
+      "status": "PASS",
+      "wall_seconds": 31.74913066998124
+    },
+    "imports": {
+      "failures": [],
+      "numpy_pywavelets_dwt": "PASS",
+      "required_audio_conditioner_adapter_imports": "PASS",
+      "stable_audio_tools_model_factory_import": "PASS",
+      "status": "PASS"
+    },
+    "node": "an12"
+  },
+  "created_at_utc": "2026-07-22T15:31:21Z",
+  "environment": {
+    "complete_distribution_metadata_in": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/engineering/sao-engineering-env-v2-002/provenance/environment-manifest.json",
+    "complete_freeze_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/engineering/sao-engineering-env-v2-002/provenance/package-freeze.txt",
+    "complete_freeze_sha256": "705a0c9d8be50b23b118422e00256661ac837780dec544755dec9dce228dd108",
+    "package_count": 85,
+    "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/environments/sao-v2/sao-env-v2-002",
+    "python": "3.10.12",
+    "uv_lock_sha256": "c61a7fa1375d6766cceed983b56051b5b3ea7f3dba3769a5ffde1561f05f2b8c",
+    "uv_pip_check": "PASS"
+  },
+  "evidence": {
+    "cpu_factory_validation_sha256": "dc8cbc4eac3532f5c761af838185ae3a1d08373a23a1885c01d89260d19ca826",
+    "cpu_import_validation_sha256": "3a98193bdfd2fdead9d3fb98043575439ce71f092cc1f3af007437d9585d6e62",
+    "cpu_validation_log_sha256": "50cacd94c5e72df80f735283726b4abcba5e953a930f8b98537af184f24115dd",
+    "inference_import_patch_log_sha256": "8cd800fbfcccf8e758f3f284003df1d4d1cf4a0b87f426eeaf4daf02facfd9fd",
+    "inference_import_patch_post_hashes_sha256": "33b63fd6f6fcacfdbbdb693f3577360103a67e6e665654c724f9ee4a4c7829a9",
+    "inference_import_patch_pre_hashes_sha256": "96c468c539ee251800c28234d97c4908116a7392d35e7edac9ba23637464e893",
+    "numpy_compat_install_log_sha256": "266f29f1dd44d9f112723326b1cc6ee710cca4bd86782e392395e000a4add1c5",
+    "upstream_dependency_closure_sha256": "2596641e972485960b3c3099b9b463c0f202447b4b016aa488e695baf4853963",
+    "uv_pip_check_log_sha256": "5eb8becfef38b02dd56738bcd0fd7bb6afc1d6f45ce6799adee2e667dc2d20a1",
+    "uv_sync_log_sha256": "3fd84613f90a45aa6936a4e07b32a6c0c3d0d5651a5eff22478a5a00d5c5c084"
+  },
+  "license_and_snapshot": {
+    "access_receipt_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/acquisition/sao-acquisition-recovery-v2-002/access-receipt.json",
+    "access_receipt_sha256": "41f4ac3200c5292ac4f93a992e789031f7a7180f372fb1c3c32a605b91f37b52",
+    "license_identifier": "Stability AI Community License",
+    "model_id": "stabilityai/stable-audio-open-1.0",
+    "resolved_provider_revision": "f21265c1e2710b3bd2386596943f0007f55f802e",
+    "snapshot_manifest_sha256": "68e9e340df05259ba0510bfcaad4ed697ee6fdb9ecc79d479e71898169726e81"
+  },
+  "resource_use": {
+    "generated_audio": 0,
+    "gpu_calls": 0,
+    "gpu_minutes": 0,
+    "network_used": false,
+    "token_used": false
+  },
+  "schema_version": 1,
+  "scientific_result": "NONE_CPU_ENGINEERING_VALIDATION_ONLY",
+  "status": "CPU_VALIDATED_READY_FOR_GOVERNED_MINI_SMOKE"
+}
