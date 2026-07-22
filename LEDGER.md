@@ -740,3 +740,50 @@ manifest and artifacts are named here with SHA-256 digests.
   `e51057d133684b607473629f8791244216b8cbc18939f47558753fd16949e977` /
   `4e96142e35553d391f89ad98b6c8bd055a5583746d15b2461f145713297a7713`
 - Calls/outputs/GPU time across all three package attempts: 0 / 0 / 0 seconds
+
+## L-0023 — Stable Audio Open core preclaim invariant repaired
+
+- Time: 2026-07-22T16:42:00Z
+- Kind: immutable CPU-only launch-preparation failure followed by a targeted
+  pre-scientific validator repair; no model call
+- Authority: D-0045, D-0052, and D-0053
+- Failed run: `benchmark-core-v2-sao-20260722t162200z`; stopped before the
+  global claim, run-directory publication, GPU use, or output creation
+- Failure: the validator rejected the ACE completion receipt because it
+  contained the exact completed-shard counts (`384` shard records and `384`
+  heartbeat snapshots) in addition to the required 1,536 commit, claim, and
+  WAV counts
+- Immutable failure receipt SHA-256:
+  `4b94cd78c6066bc8eec2f82e9bfd242206234c5b81a69501b1840feffc11cea5`
+- Repair: accept only the exact legacy three-count receipt or those same
+  counts plus exactly 384 shard records and 384 heartbeat snapshots; a
+  regression test rejects any other count
+- Fresh authorized run: `benchmark-core-v2-sao-20260722t164200z`; placement
+  remains `an12:[7];TP1;R1`
+- Calls/outputs/GPU time in the failed preparation: 0 / 0 / 0 seconds
+- Scientific settings changed: no; prompts, seeds, model revision, sampler,
+  steps, duration, evaluators, endpoints, and thresholds are unchanged
+
+## L-0024 — Stable Audio Open deferred-state validator repaired
+
+- Time: 2026-07-22T16:50:00Z
+- Kind: immutable CPU-only launch-validation failure followed by a targeted
+  pre-scientific metadata-invariant repair; no model call
+- Authority: D-0045, D-0053, and D-0054
+- Failed run: `benchmark-core-v2-sao-20260722t164200z`; stopped before the
+  global claim, run-directory publication, GPU use, or output creation
+- Failure: the ordinary-core loader conflated ACE's launch-time
+  `AUTOMATIC_OUTPUT_ONLY` state metadata with ACE's later, separately
+  authorized eligibility lane
+- Immutable failure receipt SHA-256:
+  `7d9f62a5f29ccfb9fe10c873f0f0c75e66e08e5d0e81642fca60bf3cac6c6b41`
+- Repair: keep eligibility IDs a subset of READY generation backbones and
+  admit only ACE's deferred state readiness while ordinary-core state launch
+  remains exactly `CLOSED_AT_ORDINARY_CORE_LAUNCH`; SAO and all other
+  non-ready-state models remain excluded
+- Fresh authorized run: `benchmark-core-v2-sao-20260722t165200z`; placement
+  remains `an12:[7];TP1;R1`
+- Calls/outputs/GPU time in the failed validation: 0 / 0 / 0 seconds
+- Scientific settings changed: no; model, prompts, seeds, sampler, steps,
+  duration, evaluators, endpoints, thresholds, and eligibility scope are
+  unchanged

@@ -709,11 +709,17 @@ def _validate_prior_completion(
         raise CoreConfigurationError("prior completion heartbeat/ledger tail mismatch")
 
     counts = _object(receipt, "retained_counts")
-    if counts != {
+    required_counts = {
         "commit_records": 1_536,
         "request_claims": 1_536,
         "wav_files": 1_536,
-    }:
+    }
+    sharded_counts = {
+        **required_counts,
+        "heartbeat_snapshots": 384,
+        "shard_records": 384,
+    }
+    if counts not in (required_counts, sharded_counts):
         raise CoreConfigurationError("prior completion retained counts are incomplete")
     return PriorCompletionBinding(
         model_id=model_id,
@@ -978,10 +984,14 @@ def load_core_execution_config(
     if not set(state_policy.eligible_model_ids).issubset(ready_ids):
         raise CoreConfigurationError("state-capture model IDs must be READY")
     for model in models:
-        if (
-            model.model_id in state_policy.eligible_model_ids
-            and model.state_capture_status != "READY"
-        ):
+        if model.model_id not in state_policy.eligible_model_ids:
+            continue
+        deferred_ace_state = (
+            model.model_id == ACE_MODEL_ID
+            and model.state_capture_status == "AUTOMATIC_OUTPUT_ONLY"
+            and state_policy.ordinary_core_launch_status == STATE_CORE_LAUNCH_STATUS
+        )
+        if model.state_capture_status != "READY" and not deferred_ace_state:
             raise CoreConfigurationError(
                 "state-capture policy includes a model without READY state"
             )

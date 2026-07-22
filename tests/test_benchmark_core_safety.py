@@ -419,6 +419,30 @@ def test_phase_b_measured_ace_pass_can_enter_ready_queue(tmp_path: Path) -> None
     }
 
 
+def test_closed_ordinary_core_defers_only_ace_state_readiness(tmp_path: Path) -> None:
+    path = _core_config(tmp_path)
+    completion_receipt, _ = _write_completed_sa3_fixture(tmp_path, path)
+    _configure_ace_incremental(path, completion_receipt)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["execution"]["state_capture"]["eligible_model_ids"] = [
+        SA3_MODEL_ID,
+        ACE_MODEL_ID,
+    ]
+    _write_json(path, raw)
+
+    config = _load_test_config(path)
+    ace = next(model for model in config.models if model.model_id == ACE_MODEL_ID)
+    assert config.state_capture.ordinary_core_launch_status == STATE_CORE_LAUNCH_STATUS
+    assert ace.state_capture_status == "AUTOMATIC_OUTPUT_ONLY"
+
+    raw["models"][0]["core_execution"]["state_capture_status"] = (
+        "AUTOMATIC_OUTPUT_ONLY"
+    )
+    _write_json(path, raw)
+    with pytest.raises(CoreConfigurationError, match="without READY state"):
+        _load_test_config(path)
+
+
 def test_incremental_config_requires_completion_and_exact_amended_tolerance(
     tmp_path: Path,
 ) -> None:
@@ -450,6 +474,30 @@ def test_incremental_config_requires_completion_and_exact_amended_tolerance(
     raw["models"][2]["core_execution"]["duration_tolerance_seconds"] = 0.250001
     _write_json(path, raw)
     with pytest.raises(CoreConfigurationError, match="exceeds"):
+        _load_test_config(path)
+
+
+def test_prior_completion_accepts_only_exact_legacy_or_sharded_retained_counts(
+    tmp_path: Path,
+) -> None:
+    path = _core_config(tmp_path)
+    completion_receipt, _ = _write_completed_sa3_fixture(tmp_path, path)
+    receipt = json.loads(completion_receipt.read_text(encoding="utf-8"))
+    receipt["retained_counts"].update(
+        {"heartbeat_snapshots": 384, "shard_records": 384}
+    )
+    _write_json(completion_receipt, receipt)
+    _configure_ace_incremental(path, completion_receipt)
+    assert set(_load_test_config(path).prior_model_completions) == {SA3_MODEL_ID}
+
+    receipt["retained_counts"]["shard_records"] = 383
+    _write_json(completion_receipt, receipt)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["execution"]["prior_model_completions"][SA3_MODEL_ID]["sha256"] = _sha(
+        completion_receipt
+    )
+    _write_json(path, raw)
+    with pytest.raises(CoreConfigurationError, match="retained counts"):
         _load_test_config(path)
 
 

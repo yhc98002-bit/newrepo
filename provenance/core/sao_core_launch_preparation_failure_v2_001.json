@@ -1,0 +1,23 @@
+{
+  "attempt_id": "sao-core-launch-preparation-v2-001",
+  "audio_generated": 0,
+  "config_sha256": "4e96142e35553d391f89ad98b6c8bd055a5583746d15b2461f145713297a7713",
+  "error_message": "prior completion retained counts are incomplete",
+  "error_type": "CoreConfigurationError",
+  "failed_at_utc": "2026-07-22T16:40:44Z",
+  "generated_outputs": 0,
+  "global_sao_claim_created": false,
+  "gpu_seconds": 0,
+  "model_calls": 0,
+  "phase": "CONFIG_VALIDATION_BEFORE_GIT_GATE_CLAIM_OR_RUN_PUBLICATION",
+  "repair": {
+    "description": "Accept exactly either the legacy three retained counts or the completed-shard receipt's same three counts plus exactly 384 shard records and 384 heartbeat snapshots.",
+    "scientific_configuration_changed": false,
+    "thresholds_changed": false
+  },
+  "run_dir_created": false,
+  "run_id": "benchmark-core-v2-sao-20260722t162200z",
+  "schema_version": 1,
+  "status": "IMMUTABLE_PRE_CLAIM_ENGINEERING_FAILURE",
+  "token_or_network_access": false
+}

@@ -526,6 +526,44 @@ def test_committed_d0052_opens_only_the_hash_bound_sao_core_run() -> None:
     )
 
 
+def test_committed_d0053_opens_only_the_fresh_hash_bound_sao_core_run() -> None:
+    decisions = ROOT / "DECISIONS.md"
+    block = claims_module._decision_block(decisions.read_text(encoding="utf-8"), "D-0053")
+    block_sha256 = hashlib.sha256(block.encode()).hexdigest()
+
+    observed = verify_exact_sao_core_decision(
+        decisions,
+        decision_id="D-0053",
+        requested_run_id="benchmark-core-v2-sao-20260722t164200z",
+        expected_decision_block_sha256=block_sha256,
+    )
+    assert observed["authorized_run_id"] == "benchmark-core-v2-sao-20260722t164200z"
+    assert "66be950ad5f4f37fdfbbb441cfc626365a27454505461085b82a943090141b05" in block
+    assert _sha(ROOT / "provenance/core/sao_core_launch_preparation_failure_v2_001.json") == (
+        "4b94cd78c6066bc8eec2f82e9bfd242206234c5b81a69501b1840feffc11cea5"
+    )
+
+
+def test_committed_d0054_opens_only_the_deferred_state_repair_core_run() -> None:
+    decisions = ROOT / "DECISIONS.md"
+    block = claims_module._decision_block(decisions.read_text(encoding="utf-8"), "D-0054")
+    block_sha256 = hashlib.sha256(block.encode()).hexdigest()
+
+    observed = verify_exact_sao_core_decision(
+        decisions,
+        decision_id="D-0054",
+        requested_run_id="benchmark-core-v2-sao-20260722t165200z",
+        expected_decision_block_sha256=block_sha256,
+    )
+    assert observed["authorized_run_id"] == "benchmark-core-v2-sao-20260722t165200z"
+    assert _sha(ROOT / "src/benchmark_core/config.py") == (
+        "5971ba8e9da6ae61074c4bb3bbafd8982be2549a0494a29abaa1c163af3929e3"
+    )
+    assert _sha(ROOT / "provenance/core/sao_core_launch_preparation_failure_v2_002.json") == (
+        "7d9f62a5f29ccfb9fe10c873f0f0c75e66e08e5d0e81642fca60bf3cac6c6b41"
+    )
+
+
 def test_sao_core_global_claim_is_external_and_replay_proof(tmp_path: Path) -> None:
     run_root = (tmp_path / "runtime" / "runs" / "core-v2").resolve()
     config = tmp_path / "sao-core.json"
