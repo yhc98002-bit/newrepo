@@ -798,8 +798,20 @@ def load_bound_decision_grade_source(
 
     if status.get("missing_primary_backbones") != derived_missing:
         raise ValueError("scoring-status missing-backbone list differs from source artifacts")
-    if status.get("incomplete_primary_backbones") != derived_incomplete:
-        raise ValueError("scoring-status incomplete-backbone list differs from source artifacts")
+    if "incomplete_primary_backbones" in status:
+        if status["incomplete_primary_backbones"] != derived_incomplete:
+            raise ValueError(
+                "scoring-status incomplete-backbone list differs from source artifacts"
+            )
+    elif not (
+        not derived_incomplete
+        and derived_missing
+        and status.get("status") == "SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE"
+    ):
+        raise ValueError(
+            "scoring-status lacks its incomplete-backbone list outside the immutable "
+            "complete-sources/missing-primary legacy case"
+        )
     all_complete = all(
         record["core_completion"] == "COMPLETE_FROZEN_CORE" for record in source_records
     )

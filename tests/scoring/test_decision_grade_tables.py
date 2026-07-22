@@ -580,6 +580,77 @@ def test_loader_allows_complete_only_for_exact_three_backbone_frozen_cells(
     assert tables["source_completeness"] == COMPLETE_SOURCE_STATUS
 
 
+def test_loader_accepts_immutable_legacy_status_without_empty_incomplete_list(
+    tmp_path: Path,
+) -> None:
+    rows = _full_confirmatory_fixture((SA3, ACE))
+    paths = _write_bound_source_artifacts(tmp_path, rows, complete_core=True)
+    status = json.loads(paths["status"].read_text(encoding="utf-8"))
+    del status["incomplete_primary_backbones"]
+    status["status"] = "SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE"
+    paths["status"].write_text(json.dumps(status, sort_keys=True), encoding="utf-8")
+
+    loaded, binding = load_bound_decision_grade_source(
+        paths["input"],
+        scoring_config_path=paths["config"],
+        scoring_status_path=paths["status"],
+        source_snapshot_path=paths["snapshot"],
+    )
+
+    assert loaded == rows
+    assert binding["all_registered_backbones_complete"] is False
+    assert binding["source_completeness"] == PARTIAL_SOURCE_STATUS
+    assert binding["scoring_status_value"] == "SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE"
+    assert {
+        record["backbone"]
+        for record in binding["backbones"]
+        if record["core_completion"] == "COMPLETE_FROZEN_CORE"
+    } == {SA3, ACE}
+    assert {
+        record["backbone"]
+        for record in binding["backbones"]
+        if record["core_completion"] == "MISSING_REGISTERED_BACKBONE"
+    } == {SAO}
+
+
+def test_loader_rejects_legacy_omission_for_partial_or_wrong_overall_status(
+    tmp_path: Path,
+) -> None:
+    partial_rows = _fixture((SA3,))
+    partial_paths = _write_bound_source_artifacts(tmp_path / "partial", partial_rows)
+    partial_status = json.loads(partial_paths["status"].read_text(encoding="utf-8"))
+    del partial_status["incomplete_primary_backbones"]
+    partial_status["status"] = "SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE"
+    partial_paths["status"].write_text(
+        json.dumps(partial_status, sort_keys=True), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="lacks its incomplete-backbone list"):
+        load_bound_decision_grade_source(
+            partial_paths["input"],
+            scoring_config_path=partial_paths["config"],
+            scoring_status_path=partial_paths["status"],
+            source_snapshot_path=partial_paths["snapshot"],
+        )
+
+    complete_rows = _full_confirmatory_fixture((SA3, ACE))
+    complete_paths = _write_bound_source_artifacts(
+        tmp_path / "wrong-status", complete_rows, complete_core=True
+    )
+    complete_status = json.loads(complete_paths["status"].read_text(encoding="utf-8"))
+    del complete_status["incomplete_primary_backbones"]
+    complete_status["status"] = "SCORING_INCREMENTAL_PRIMARY_PREFIX"
+    complete_paths["status"].write_text(
+        json.dumps(complete_status, sort_keys=True), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="lacks its incomplete-backbone list"):
+        load_bound_decision_grade_source(
+            complete_paths["input"],
+            scoring_config_path=complete_paths["config"],
+            scoring_status_path=complete_paths["status"],
+            source_snapshot_path=complete_paths["snapshot"],
+        )
+
+
 def test_loader_rejects_truncated_input_and_mismatched_source_ledger(tmp_path: Path) -> None:
     rows = _fixture((SA3,))
     paths = _write_bound_source_artifacts(tmp_path, rows)
