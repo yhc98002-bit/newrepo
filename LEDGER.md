@@ -910,3 +910,20 @@ manifest and artifacts are named here with SHA-256 digests.
   `0.10`; one doubling and one re-gate only for `INCONCLUSIVE_UNDERPOWERED`
 - Opening remains fail-closed until these exact bytes and D-0060 are pushed to
   `origin/main`; supplemental execution remains locked
+
+## L-0031 — Eligibility time-budget mapping frozen before live input access
+
+- Time: 2026-07-22T18:05:26Z
+- Kind: prospective CPU-only budget operationalization; no state/evaluator/
+  outcome input opened, no model call, and no generation
+- Authority: D-0060 and D-0061
+- Config / schema SHA-256:
+  `3457cc27c36796d87edd956688fecd1ed1246739a9621938cb852abf84e68b81` /
+  `2aa44c9cad0191251fcdece20f59a66ce303eaaf099f50d723d7cba6318d9e08`
+- Mapping: same-root BASE core synchronized wall time as total, partitioned by
+  the registered cumulative/native NFE ratio; KEEP gets remaining budget and
+  restarts get full budget
+- Scope: initial Stage-1 survivors only; STOP/cancelled and supplemental units
+  prohibited; human gold and evaluator rows prohibited
+- Opening remains fail-closed until the exact implementation and D-0061 are
+  pushed to `origin/main`

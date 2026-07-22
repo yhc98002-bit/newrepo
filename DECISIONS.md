@@ -3368,3 +3368,59 @@ ELIGIBILITY_OUTCOME_ROWS_READ_BEFORE_FREEZE = NO
 ELIGIBILITY_ANALYSIS_RUNNER_STATUS = PROSPECTIVE_CODE_COMPLETE
 
 ELIGIBILITY_SUPPLEMENTAL_ONLY_TRIGGER = INCONCLUSIVE_UNDERPOWERED
+
+## D-0061 — Outcome-blind state time-budget assembly opened prospectively
+
+- Date: 2026-07-22
+- Status: accepted cost-coordinate operationalization before live input access
+- Authority: benchmark-v2 Sections 11.2–11.3, D-0045, D-0060, and the PI
+  consolidated eligible-state execution goal
+
+The frozen prompt-plus-time/budget tier requires elapsed and remaining NFE and
+time coordinates, while the registered state exports record exact cumulative
+NFE but no checkpoint wall-clock timestamp. Before opening any live state,
+evaluator, or outcome row, this decision fixes the deterministic construction:
+the unit's total time is its same-root BASE ordinary-core synchronized call
+wall time; elapsed time is that total multiplied by cumulative NFE divided by
+native total NFE; remaining time is the exact complement. KEEP uses the
+remaining NFE/time budget and either restart uses one full native NFE/time
+budget, exactly as the D-0060 builder already requires.
+
+The assembler must bind the ordinary-core queue, COMMITTED WAV/provenance,
+hash-chained SUCCEEDED ledger event, model, axis, prompt, root, BASE condition,
+request identity, native NFE, and synchronized wall time. It accepts only the
+exact 144-unit Stage-1 survivor cell and rejects every STOP/cancelled or
+supplemental unit. It imports no evaluator, opens no automatic or human
+outcome, performs no audio generation, and does not use observed resume
+latency. No action, fold, model, threshold, endpoint, or gate changes.
+
+| Item | SHA-256 |
+| --- | --- |
+| state-budget config | `3457cc27c36796d87edd956688fecd1ed1246739a9621938cb852abf84e68b81` |
+| budget evidence schema | `2aa44c9cad0191251fcdece20f59a66ce303eaaf099f50d723d7cba6318d9e08` |
+| outcome-blind assembler | `60f48332aa7bbd4536479b380e602804ca110de739cd2746eec9df824234eb99` |
+| CLI | `9a53eb6fc5bb4177886b4f1eaf6f18439d04cda140aaeb75ceae93266826523a` |
+| D-0060 builder | `fd6258b24d7df96e8ad2e5e7136fed7a426543c77b6af6611dd1e33eb3fa1281` |
+| D-0060 input contract | `9e210c78f31bb3fb8fe3cebb43fe2a2b47f446e5f98524340aaa91d4d18075d7` |
+
+ELIGIBILITY_STATE_BUDGET_ASSEMBLY_AUTHORIZED = YES
+
+ELIGIBILITY_STATE_BUDGET_CONFIG_PATH = configs/eligibility_state_budget_v2.json
+
+ELIGIBILITY_STATE_BUDGET_CONFIG_SHA256 = 3457cc27c36796d87edd956688fecd1ed1246739a9621938cb852abf84e68b81
+
+ELIGIBILITY_ANALYSIS_CONFIG_SHA256 = f4bab82b22fa0822ab83f70af4aae07d9c95c1f21b70dd17ee58933d218ddb07
+
+ELIGIBILITY_STATE_BUDGET_INPUTS_READ_BEFORE_OPENING = NO
+
+STATE_BUDGET_EVALUATOR_OR_OUTCOME_ROWS_ALLOWED = NO
+
+STATE_BUDGET_GENERATION_AUTHORIZED = NO
+
+STATE_BUDGET_STOP_OR_CANCELLED_ALLOWED = NO
+
+STATE_BUDGET_SUPPLEMENTAL_ALLOWED = NO
+
+STATE_BUDGET_HUMAN_GOLD_USED = NO
+
+STATE_BUDGET_SCIENTIFIC_ENDPOINTS_CHANGED = NO
