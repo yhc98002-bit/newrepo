@@ -1,0 +1,37 @@
+{
+  "attempts": [
+    {
+      "attempt_id": "sao-core-preparation-v2-attempt-001",
+      "audio_generated": 0,
+      "error_message": "No module named 'soundfile'",
+      "error_type": "ModuleNotFoundError",
+      "generated_outputs": 0,
+      "gpu_seconds": 0,
+      "model_calls": 0,
+      "phase": "IMPORT_BEFORE_EVIDENCE_VALIDATION",
+      "repair_disposition": "Use the dedicated CPU-validated sao-env-v2-002 environment; no scientific setting changes.",
+      "status": "FAILED_ENGINEERING_ENVIRONMENT_SELECTION"
+    },
+    {
+      "attempt_id": "sao-core-preparation-v2-attempt-002",
+      "audio_generated": 0,
+      "error_message": "SAO mini-smoke run is neither the original nor D-0042 replacement path",
+      "error_type": "SaoMiniSmokeEvidenceError",
+      "generated_outputs": 0,
+      "gpu_seconds": 0,
+      "model_calls": 0,
+      "phase": "DEEP_MINI_SMOKE_EVIDENCE_VALIDATION_BEFORE_OUTPUT_PUBLICATION",
+      "repair_disposition": "Add a fail-closed D-0050 engineering-retry lineage branch for the exact sao-mini-smoke-v2-003 path and claim; do not weaken the original or D-0042 branches.",
+      "status": "FAILED_INCORRECT_ENGINEERING_INVARIANT"
+    }
+  ],
+  "audio_generated_total": 0,
+  "config_outputs_published": 0,
+  "git_commit": "0e8097c01545ab56c18ef72c751c7e5e40bd0e15",
+  "model_calls_total": 0,
+  "observed_at_utc": "2026-07-22T16:07:53Z",
+  "schema_version": 1,
+  "scientific_configuration_changed": false,
+  "status": "IMMUTABLE_ENGINEERING_FAILURE_RECEIPT",
+  "token_or_network_access": false
+}
