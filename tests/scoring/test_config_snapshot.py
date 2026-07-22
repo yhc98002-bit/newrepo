@@ -12,7 +12,7 @@ from benchmark_core.ledger import HashChainedLedger
 from scoring.common import canonical_json, sha256_file
 from scoring.config import CANONICAL_CANDIDATE_INDEX, load_config
 from scoring.pipeline import _primary_progress
-from scoring.snapshot import snapshot_source
+from scoring.snapshot import completed_shard_prefix_sha256, snapshot_source
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -171,6 +171,9 @@ def test_snapshot_includes_only_completed_shard_rows(tmp_path: Path) -> None:
     prefix_source = dict(source)
     prefix_source["completion_mode"] = "INCREMENTAL_PREFIX"
     prefix_source["expected_hashes"] = {
+        "completed_shard_prefix": completed_shard_prefix_sha256(
+            [worker / "shards" / "shard-000000.json"]
+        ),
         "run_manifest": sha256_file(run / "run-manifest.json"),
         "queue": sha256_file(queue_path),
         "ledger_tail": first_terminal["ledger_row_sha256"],
@@ -181,6 +184,13 @@ def test_snapshot_includes_only_completed_shard_rows(tmp_path: Path) -> None:
     assert result["completion_mode"] == "INCREMENTAL_PREFIX"
     assert result["ledger_tail_sha256"] == first_terminal["ledger_row_sha256"]
     assert [row["request_sha256"] for row in result["rows"]] == [first_request]
+
+    shard["rows"] = [{"request_sha256": second_request, "state": "SUCCEEDED"}]
+    (worker / "shards" / "shard-000000.json").write_text(
+        json.dumps(shard, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="completed-shard prefix hash mismatch"):
+        snapshot_source(prefix_source, catalog, verify_audio_bytes=True)
 
 
 def test_schema2_scoring_continuation_requires_three_sources_and_new_output_root(
@@ -208,6 +218,7 @@ def test_schema2_scoring_continuation_requires_three_sources_and_new_output_root
             "expected_completed_rows": 4,
             "expected_completed_shards": 1,
             "expected_hashes": {
+                "completed_shard_prefix": "0" * 64,
                 "run_manifest": "1" * 64,
                 "queue": "2" * 64,
                 "ledger_tail": "3" * 64,

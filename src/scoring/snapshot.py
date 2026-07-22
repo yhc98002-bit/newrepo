@@ -47,6 +47,18 @@ CONFIRMATORY_AXES = {"vocal_instrumental", "tempo", "integrity"}
 ALL_AXES = CONFIRMATORY_AXES | {"structure_exploratory"}
 
 
+def completed_shard_prefix_sha256(paths: list[Path]) -> str:
+    """Bind an ordered completed-shard prefix to exact file bytes."""
+
+    return sha256_json(
+        {
+            "completed_shards": [
+                {"name": path.name, "sha256": sha256_file(path)} for path in paths
+            ]
+        }
+    )
+
+
 def load_prompt_catalog(repo_root: Path) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
     for name in (
@@ -87,6 +99,9 @@ def _completed_shards(source: dict[str, Any], run_dir: Path) -> list[dict[str, A
                 f"{len(paths)} < {expected_count}"
             )
         paths = paths[:expected_count]
+        observed_prefix = completed_shard_prefix_sha256(paths)
+        if observed_prefix != source["expected_hashes"]["completed_shard_prefix"]:
+            raise ValueError("incremental completed-shard prefix hash mismatch")
     elif len(paths) != expected_count:
         raise ValueError(
             f"{source['backbone']} completed shard count differs: {len(paths)} != {expected_count}"

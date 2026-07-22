@@ -101,7 +101,7 @@ def load_config(path: Path, *, repo_root: Path | None = None) -> dict[str, Any]:
         if source["backbone"] not in EXPECTED_PRIMARY_BACKBONES:
             raise ValueError("source backbone is not primary")
         expected_hash_keys = (
-            {"run_manifest", "queue", "ledger_tail"}
+            {"completed_shard_prefix", "run_manifest", "queue", "ledger_tail"}
             if source["completion_mode"] == "INCREMENTAL_PREFIX"
             else {"run_manifest", "queue", "ledger", "heartbeat", "ledger_tail"}
         )

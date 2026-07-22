@@ -20,6 +20,7 @@ from benchmark_core.config import (  # noqa: E402
 )
 from benchmark_core.heartbeat import validate_heartbeat  # noqa: E402
 from scoring.common import load_json  # noqa: E402
+from scoring.snapshot import completed_shard_prefix_sha256  # noqa: E402
 
 BASE_SCORING = ROOT / "configs" / "automatic_scoring_v2.json"
 SCORING_ROOT = Path(
@@ -37,7 +38,9 @@ def _write_json_exclusive(path: Path, value: object) -> None:
         os.fsync(handle.fileno())
 
 
-def _completed_shard_tip(run_dir: Path, worker_slug: str, count: int) -> tuple[Path, dict]:
+def _completed_shard_tip(
+    run_dir: Path, worker_slug: str, count: int
+) -> tuple[list[Path], dict]:
     shard_dir = run_dir / "workers" / worker_slug / "shards"
     paths = sorted(shard_dir.glob("shard-*.json"))
     if not 1 <= count <= 384 or len(paths) < count:
@@ -57,7 +60,7 @@ def _completed_shard_tip(run_dir: Path, worker_slug: str, count: int) -> tuple[P
         or heartbeat["last_ledger_sha256"] != tip["ledger_tail_sha256"]
     ):
         raise ValueError("SAO completed shard tip heartbeat is inconsistent")
-    return selected[-1], tip
+    return selected, tip
 
 
 def main() -> int:
@@ -83,7 +86,7 @@ def main() -> int:
     if run_manifest.get("config_sha256") != sha256_file(args.core_config):
         raise ValueError("SAO core run/config identity mismatch")
     run_id = str(run_manifest["run_id"])
-    _tip_path, tip = _completed_shard_tip(
+    selected_shards, tip = _completed_shard_tip(
         run_dir, sao.slug, args.completed_shards
     )
     scoring_run_id = (
@@ -102,6 +105,7 @@ def main() -> int:
         "requires_live_config_sha256": True,
         "required_assignments": [
             "SAO_AUTOMATIC_SCORING_AUTHORIZED = YES",
+            f"AUTOMATIC_ENDPOINT_SCORING_RUN_ID = {scoring_run_id}",
             "AUDIO_GENERATION_AUTHORIZED_BY_SCORING = NO",
             "QUEUE_DO_NOT_PREEMPT = YES",
         ],
@@ -134,6 +138,7 @@ def main() -> int:
         completion_mode = "INCREMENTAL_ADDITION"
     else:
         expected_hashes = {
+            "completed_shard_prefix": completed_shard_prefix_sha256(selected_shards),
             "run_manifest": sha256_file(run_manifest_path),
             "queue": sha256_file(queue_path),
             "ledger_tail": tip["ledger_tail_sha256"],
