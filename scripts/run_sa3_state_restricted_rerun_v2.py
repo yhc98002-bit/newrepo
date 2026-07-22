@@ -62,6 +62,10 @@ def main() -> int:
     git_state = observe_clean_origin_main(REPOSITORY)
     run_dir = args.run_dir.resolve(strict=True)
     validated = validate_restricted_run(run_dir, config=config, git_state=git_state)
+    placement = validated["placement"]
+    assignments = {index: gpu_id for index, gpu_id in enumerate(placement["physical_gpu_ids"])}
+    if assignments.get(args.replica_index) != args.physical_gpu_id:
+        raise RuntimeError("SA3 worker differs from the exact attempt placement")
     bundle = load_sa3_state_capture_bundle(config.queue_manifest_path, config=config.state_config)
     scope = load_execution_scope(run_dir, plan=validated["plan"], phase=args.phase)
     # Select before engine construction so a wrong phase/shard cannot load a model.
@@ -69,14 +73,14 @@ def main() -> int:
         units=bundle["units"],
         groups=bundle["prefix_groups"],
         replica_index=args.replica_index,
-        replica_count=config.state_config.placement.maximum_parallel_replicas,
+        replica_count=placement["replica_count"],
     )
 
     engine = SA3StateEngine(config.state_config, run_dir=run_dir)
     worker = SA3StateWorker(
         config=config.state_config,
         run_dir=run_dir,
-        run_id=config.run_id,
+        run_id=validated["manifest"]["run_id"],
         git_commit=git_state.head,
         bundle_manifest_sha256=str(validated["manifest"]["queue_manifest_sha256"]),
         replica_index=args.replica_index,

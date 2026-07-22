@@ -51,13 +51,15 @@ def main() -> int:
     git_state = observe_clean_origin_main(REPOSITORY)
     run_dir = args.run_dir.resolve(strict=True)
     validated = validate_formal_run(run_dir, config=config, git_state=git_state)
+    placement = validated["placement"]
     assignment = load_json(run_dir / "control" / "formal-supervisor-assignment.json")
     rows = assignment.get("assignments")
     if (
         assignment.get("config_sha256") != config.sha256
         or assignment.get("git_commit") != git_state.head
+        or assignment.get("run_id") != validated["manifest"]["run_id"]
         or not isinstance(rows, list)
-        or len(rows) != 4
+        or len(rows) != placement["replica_count"]
     ):
         raise RuntimeError("formal supervisor assignment binding drifted")
     assigned = {
@@ -65,8 +67,11 @@ def main() -> int:
         for row in rows
         if isinstance(row, dict)
     }
-    if set(assigned) != set(range(4)) or set(assigned.values()) != {4, 5, 6, 7}:
-        raise RuntimeError("formal supervisor assignment is not four disjoint TP1 replicas")
+    if (
+        set(assigned) != set(range(placement["replica_count"]))
+        or list(assigned.values()) != placement["physical_gpu_ids"]
+    ):
+        raise RuntimeError("formal supervisor assignment differs from exact attempt placement")
     if assigned.get(args.replica_index) != args.physical_gpu_id:
         raise RuntimeError("formal worker does not match its immutable GPU assignment")
     engine = ProductionAceFormalGroupEngine(config, run_dir=run_dir)
@@ -74,9 +79,11 @@ def main() -> int:
         config=config,
         authorization=validated["authorization"],
         run_dir=run_dir,
+        run_id=validated["manifest"]["run_id"],
         git_commit=git_state.head,
         queue_manifest_sha256=validated["manifest"]["queue_manifest_sha256"],
         replica_index=args.replica_index,
+        replica_count=placement["replica_count"],
         physical_gpu_id=args.physical_gpu_id,
         engine=engine,
     )

@@ -44,6 +44,7 @@ ENGINEERING_GOVERNANCE_ASSIGNMENTS = {
     "FAILED_ATTEMPTS_IMMUTABLE": "YES",
     "STOP_AXIS_UNITS_EXECUTABLE": "NO",
 }
+SA3_ATTEMPT_ID_PATTERN = re.compile(r"^sa3-state-v2-restricted-rerun-(\d{3})$")
 
 
 class RestrictedRerunError(RuntimeError):
@@ -125,6 +126,75 @@ def _binding(repo_root: Path, raw: Any, context: str) -> tuple[Path, str]:
     return path, expected
 
 
+def _attempt_placement(
+    config: RestrictedRerunConfig,
+    *,
+    physical_gpu_ids: Sequence[int],
+) -> dict[str, Any]:
+    ids = tuple(physical_gpu_ids)
+    allowed = config.state_config.placement.allowed_physical_gpu_ids
+    if not ids or len(ids) != len(set(ids)) or any(value not in allowed for value in ids):
+        raise RestrictedRerunError("SA3 attempt GPU IDs must be a unique nonempty allowed subset")
+    return {
+        "node": "an12",
+        "physical_gpu_ids": list(ids),
+        "replica_count": len(ids),
+        "tensor_parallel_width": 1,
+        "placement_justification": (
+            f"{len(ids)} independent TP1 SA3 state replica(s) on exact an12 GPU IDs "
+            f"{list(ids)}; every worker retains live idle/headroom and cooperative-lock checks."
+        ),
+    }
+
+
+def _repair_predecessor(
+    path: Path | None,
+    *,
+    base_run_id: str,
+    next_run_id: str,
+    expected_scientific_bindings: Mapping[str, str],
+) -> dict[str, Any] | None:
+    if next_run_id == base_run_id:
+        if path is not None:
+            raise RestrictedRerunError("base attempt may not name a repair predecessor")
+        return None
+    next_match = SA3_ATTEMPT_ID_PATTERN.fullmatch(next_run_id)
+    base_match = SA3_ATTEMPT_ID_PATTERN.fullmatch(base_run_id)
+    if base_match is None or next_match is None:
+        raise RestrictedRerunError("SA3 engineering repair run ID is invalid")
+    if path is None:
+        raise RestrictedRerunError("SA3 engineering repair requires a predecessor failure receipt")
+    source = path.resolve(strict=True)
+    record = load_json(source)
+    predecessor_run_id = record.get("run_id")
+    predecessor_match = (
+        SA3_ATTEMPT_ID_PATTERN.fullmatch(predecessor_run_id)
+        if isinstance(predecessor_run_id, str)
+        else None
+    )
+    if (
+        record.get("schema_version") != 1
+        or predecessor_match is None
+        or int(predecessor_match.group(1)) < int(base_match.group(1))
+        or int(next_match.group(1)) != int(predecessor_match.group(1)) + 1
+        or record.get("status") != "FAILED_PRE_MODEL_ENGINEERING"
+        or record.get("model_calls") != 0
+        or record.get("generated_outputs") != 0
+        or record.get("failure_classification") != "ENGINEERING_BUG"
+        or record.get("scientific_design_changed") is not False
+        or record.get("scientific_outputs_retained") is not True
+        or record.get("failed_attempt_immutable") is not True
+        or record.get("repair_requires_new_run_id") is not True
+        or record.get("repair_requires_new_claim") is not True
+        or record.get("scientific_bindings") != dict(expected_scientific_bindings)
+    ):
+        raise RestrictedRerunError(
+            "SA3 predecessor is not the immediately prior immutable zero-call failure "
+            "with identical science bindings"
+        )
+    return {"path": str(source), "sha256": sha256_file(source), "status": record["status"]}
+
+
 @dataclass(frozen=True)
 class RestrictedRerunConfig:
     source_path: Path
@@ -184,12 +254,16 @@ def load_restricted_rerun_config(path: Path, *, repo_root: Path) -> RestrictedRe
         repo_root, source_run["queue"]["manifest"], "source queue manifest"
     )
     stage1 = raw["stage1"]
-    if set(stage1) != {
-        "backbone",
-        "cancellation_summary_path",
-        "gate_config_path",
-        "result_path",
-    } or stage1.get("backbone") != SA3_BACKBONE:
+    if (
+        set(stage1)
+        != {
+            "backbone",
+            "cancellation_summary_path",
+            "gate_config_path",
+            "result_path",
+        }
+        or stage1.get("backbone") != SA3_BACKBONE
+    ):
         raise RestrictedRerunError("Stage-1 backbone binding drifted")
     return RestrictedRerunConfig(
         source_path=source,
@@ -408,6 +482,10 @@ def prepare_restricted_rerun(
     decisions_path: Path,
     decision_id: str,
     repo_root: Path,
+    run_id: str | None = None,
+    attempt_claim_path: Path | None = None,
+    physical_gpu_ids: Sequence[int] = (4, 5, 6, 7),
+    predecessor_failure_path: Path | None = None,
 ) -> dict[str, Any]:
     """Materialize one D-0035 execution attempt; never import a model or probe CUDA."""
 
@@ -421,8 +499,33 @@ def prepare_restricted_rerun(
     )
     _, engineering_block_sha = verify_engineering_governance(decisions_path)
     git_state = observe_clean_origin_main(repo_root)
-    run_dir = (config.run_root / config.run_id).resolve()
-    if config.attempt_claim_path.exists() or run_dir.exists():
+    actual_run_id = run_id or config.run_id
+    scientific_bindings = {
+        "config_sha256": config.source_sha256,
+        "queue_manifest_sha256": config.raw["source_run"]["queue"]["manifest"]["sha256"],
+        "stage1_result_sha256": plan["stage1_result_sha256"],
+        "stage1_summary_sha256": plan["stage1_summary_sha256"],
+    }
+    predecessor = _repair_predecessor(
+        predecessor_failure_path,
+        base_run_id=config.run_id,
+        next_run_id=actual_run_id,
+        expected_scientific_bindings=scientific_bindings,
+    )
+    placement = _attempt_placement(config, physical_gpu_ids=physical_gpu_ids)
+    claim_path = (
+        attempt_claim_path.resolve()
+        if attempt_claim_path is not None
+        else config.attempt_claim_path
+    )
+    if actual_run_id != config.run_id:
+        expected_claim = config.attempt_claim_path.parent / f"{actual_run_id}.claim.json"
+        if claim_path != expected_claim:
+            raise RestrictedRerunError("SA3 repair claim path is not the canonical new-run path")
+    elif claim_path != config.attempt_claim_path:
+        raise RestrictedRerunError("base SA3 attempt claim path drifted")
+    run_dir = (config.run_root / actual_run_id).resolve()
+    if claim_path.exists() or run_dir.exists():
         raise RestrictedRerunError(
             "this immutable SA3 attempt run/claim already exists; an engineering repair "
             "requires a new run ID and claim"
@@ -447,9 +550,12 @@ def prepare_restricted_rerun(
         "git_commit": git_state.head,
         "git_origin_main": git_state.origin_main,
         "one_root_validation_required": plan["validation_group_request_sha256"] is not None,
+        "placement": placement,
+        "predecessor_failure": predecessor,
         "run_dir": str(run_dir),
-        "run_id": config.run_id,
+        "run_id": actual_run_id,
         "schema_version": 1,
+        "scientific_bindings": scientific_bindings,
         "stage1_cancellation_summary_path": str(config.stage1_summary_path),
         "stage1_cancellation_summary_sha256": plan["stage1_summary_sha256"],
         "stage1_plan_path": str(plan_path),
@@ -460,18 +566,21 @@ def prepare_restricted_rerun(
         "survivors_only": True,
         "within_attempt_retry": False,
     }
-    _write_json_exclusive(config.attempt_claim_path, claim)
+    _write_json_exclusive(claim_path, claim)
     manifest = {
         "authorization_status": AUTHORIZATION_STATUS,
-        "attempt_claim_path": str(config.attempt_claim_path),
-        "attempt_claim_sha256": sha256_file(config.attempt_claim_path),
+        "attempt_claim_path": str(claim_path),
+        "attempt_claim_sha256": sha256_file(claim_path),
         "config_sha256": config.source_sha256,
         "engineering_governance_block_sha256": engineering_block_sha,
         "git_commit": git_state.head,
+        "placement": placement,
+        "predecessor_failure": predecessor,
         "queue_manifest_path": str(config.queue_manifest_path),
         "queue_manifest_sha256": config.raw["source_run"]["queue"]["manifest"]["sha256"],
-        "run_id": config.run_id,
+        "run_id": actual_run_id,
         "schema_version": 1,
+        "scientific_bindings": scientific_bindings,
         "stage1_cancellation_summary_sha256": plan["stage1_summary_sha256"],
         "stage1_plan_path": str(plan_path),
         "stage1_plan_sha256": sha256_file(plan_path),
@@ -480,6 +589,7 @@ def prepare_restricted_rerun(
     }
     manifest_path = run_dir / "run-manifest.json"
     _write_json_exclusive(manifest_path, manifest)
+    validate_restricted_run(run_dir, config=config, git_state=git_state)
     return {
         "run_dir": str(run_dir),
         "run_manifest_path": str(manifest_path),
@@ -498,21 +608,65 @@ def validate_restricted_run(
 ) -> dict[str, Any]:
     root = run_dir.resolve(strict=True)
     manifest = load_json(root / "run-manifest.json")
+    run_id = manifest.get("run_id")
+    if not isinstance(run_id, str) or SA3_ATTEMPT_ID_PATTERN.fullmatch(run_id) is None:
+        raise RestrictedRerunError("restricted-rerun manifest has an invalid attempt run ID")
     if (
         manifest.get("status") != PREPARED_STATUS
         or manifest.get("authorization_status") != AUTHORIZATION_STATUS
         or manifest.get("config_sha256") != config.source_sha256
         or manifest.get("git_commit") != git_state.head
         or git_state.head != git_state.origin_main
-        or manifest.get("run_id") != config.run_id
+        or root.name != run_id
     ):
         raise RestrictedRerunError("restricted-rerun manifest/Git binding drifted")
     claim_path = Path(str(manifest.get("attempt_claim_path", ""))).resolve(strict=True)
-    if claim_path != config.attempt_claim_path or sha256_file(claim_path) != manifest.get(
+    expected_claim_path = (
+        config.attempt_claim_path
+        if run_id == config.run_id
+        else config.attempt_claim_path.parent / f"{run_id}.claim.json"
+    )
+    if claim_path != expected_claim_path or sha256_file(claim_path) != manifest.get(
         "attempt_claim_sha256"
     ):
         raise RestrictedRerunError("restricted-rerun attempt claim drifted")
     claim = load_json(claim_path)
+    scientific_bindings = {
+        "config_sha256": config.source_sha256,
+        "queue_manifest_sha256": config.raw["source_run"]["queue"]["manifest"]["sha256"],
+        "stage1_result_sha256": sha256_file(config.stage1_result_path),
+        "stage1_summary_sha256": sha256_file(config.stage1_summary_path),
+    }
+    placement_raw = claim.get("placement")
+    if not isinstance(placement_raw, dict):
+        raise RestrictedRerunError("restricted-rerun exact placement is absent")
+    gpu_ids = placement_raw.get("physical_gpu_ids")
+    if not isinstance(gpu_ids, list):
+        raise RestrictedRerunError("restricted-rerun exact GPU list is absent")
+    placement = _attempt_placement(config, physical_gpu_ids=gpu_ids)
+    if (
+        placement_raw != placement
+        or manifest.get("placement") != placement
+        or claim.get("run_id") != run_id
+    ):
+        raise RestrictedRerunError("restricted-rerun exact placement/run identity drifted")
+    predecessor_path = None
+    predecessor_raw = claim.get("predecessor_failure")
+    if isinstance(predecessor_raw, dict) and isinstance(predecessor_raw.get("path"), str):
+        predecessor_path = Path(predecessor_raw["path"])
+    predecessor = _repair_predecessor(
+        predecessor_path,
+        base_run_id=config.run_id,
+        next_run_id=run_id,
+        expected_scientific_bindings=scientific_bindings,
+    )
+    if (
+        predecessor_raw != predecessor
+        or manifest.get("predecessor_failure") != predecessor
+        or claim.get("scientific_bindings") != scientific_bindings
+        or manifest.get("scientific_bindings") != scientific_bindings
+    ):
+        raise RestrictedRerunError("restricted-rerun predecessor binding drifted")
     _, live_engineering_block_sha = verify_engineering_governance(
         Path(
             str(
@@ -528,8 +682,7 @@ def validate_restricted_run(
         or claim.get("stage1_cancellation_summary_sha256")
         != sha256_file(config.stage1_summary_path)
         or claim.get("stage1_runtime_sha256_binding") != "VERIFIED_AND_RECORDED_AT_LAUNCH"
-        or claim.get("engineering_governance_decision_id")
-        != ENGINEERING_GOVERNANCE_DECISION_ID
+        or claim.get("engineering_governance_decision_id") != ENGINEERING_GOVERNANCE_DECISION_ID
         or claim.get("engineering_governance_block_sha256") != live_engineering_block_sha
         or manifest.get("engineering_governance_block_sha256") != live_engineering_block_sha
         or claim.get("engineering_repair_requires_new_run_id") is not True
@@ -550,7 +703,13 @@ def validate_restricted_run(
     plan = _stage1_plan(config, bundle)
     if plan != load_json(plan_path):
         raise RestrictedRerunError("restricted-rerun survivor plan no longer matches Stage-1")
-    return {"manifest": manifest, "plan": plan, "plan_path": plan_path}
+    return {
+        "claim": claim,
+        "manifest": manifest,
+        "placement": placement,
+        "plan": plan,
+        "plan_path": plan_path,
+    }
 
 
 @dataclass(frozen=True)
@@ -727,9 +886,7 @@ def mark_validation_pass(
         group_id = plan["validation_group_request_sha256"]
         if not isinstance(group_id, str):
             raise RestrictedRerunError("no validation group exists")
-        group = next(
-            (row for row in groups if row["group_request_sha256"] == group_id), None
-        )
+        group = next((row for row in groups if row["group_request_sha256"] == group_id), None)
         if group is None:
             raise RestrictedRerunError("validation group is absent from immutable queue")
         states = validate_request_state_machine(validate_ledger(root / "state-ledger.jsonl"))

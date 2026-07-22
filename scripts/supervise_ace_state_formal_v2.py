@@ -21,17 +21,21 @@ from scoring.storage import write_json_exclusive  # noqa: E402
 
 
 def _launch_replica_indices(
-    *, launch: bool, launch_all: bool, requested: list[int]
+    *, launch: bool, launch_all: bool, requested: list[int], replica_count: int
 ) -> tuple[int, ...]:
+    if replica_count <= 0:
+        raise ValueError("replica_count must be positive")
     if not launch:
         if launch_all or requested:
             raise ValueError("launch selectors require --launch")
         return ()
     if launch_all == bool(requested):
         raise ValueError("--launch requires exactly one selector mode")
-    result = tuple(range(4)) if launch_all else tuple(sorted(requested))
-    if len(result) != len(set(result)) or any(index not in range(4) for index in result):
-        raise ValueError("formal replica selectors must be unique values in 0..3")
+    result = tuple(range(replica_count)) if launch_all else tuple(sorted(requested))
+    if len(result) != len(set(result)) or any(
+        index not in range(replica_count) for index in result
+    ):
+        raise ValueError("formal replica selectors must be unique values in the attempt range")
     return result
 
 
@@ -47,14 +51,6 @@ def main() -> int:
     args = parser.parse_args()
     if args.launch and not args.assign:
         parser.error("--launch requires --assign")
-    try:
-        launch_indices = _launch_replica_indices(
-            launch=args.launch,
-            launch_all=args.launch_all,
-            requested=args.launch_replica,
-        )
-    except ValueError as exc:
-        parser.error(str(exc))
     if socket.gethostname().split(".", 1)[0] != "an12":
         raise RuntimeError("ACE formal supervisor requires an12")
 
@@ -69,7 +65,19 @@ def main() -> int:
     config = load_formal_config(args.config, repo_root=REPOSITORY)
     git_state = observe_clean_origin_main(REPOSITORY)
     run_dir = args.run_dir.resolve(strict=True)
-    validate_formal_run(run_dir, config=config, git_state=git_state)
+    validated = validate_formal_run(run_dir, config=config, git_state=git_state)
+    placement_claim = validated["placement"]
+    gpu_ids = tuple(placement_claim["physical_gpu_ids"])
+    replica_count = int(placement_claim["replica_count"])
+    try:
+        launch_indices = _launch_replica_indices(
+            launch=args.launch,
+            launch_all=args.launch_all,
+            requested=args.launch_replica,
+            replica_count=replica_count,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     if (run_dir / "control" / "formal-terminal-failure.json").exists():
         raise RuntimeError(
             "this ACE formal attempt is FAILED_STOPPED; engineering repair requires "
@@ -84,12 +92,13 @@ def main() -> int:
             if (
                 assignment.get("config_sha256") != config.sha256
                 or assignment.get("git_commit") != git_state.head
+                or assignment.get("run_id") != validated["manifest"]["run_id"]
             ):
                 raise RuntimeError("formal supervisor assignment binding drifted")
             assignments = list(assignment["assignments"])
         else:
             placement_raw = config.raw["placement"]
-            for gpu_id in (4, 5, 6, 7):
+            for gpu_id in gpu_ids:
                 placement = PlacementConfig(
                     node="an12",
                     physical_gpu_id=gpu_id,
@@ -99,9 +108,7 @@ def main() -> int:
                     minimum_free_vram_bytes=int(placement_raw["minimum_free_vram_bytes"]),
                     post_load_reserve_bytes=int(placement_raw["post_load_reserve_bytes"]),
                     lock_root=Path(placement_raw["cooperative_lock_root"]),
-                    required_gpu_name_substring=str(
-                        placement_raw["required_gpu_name_substring"]
-                    ),
+                    required_gpu_name_substring=str(placement_raw["required_gpu_name_substring"]),
                     maximum_idle_utilization_percent=int(
                         placement_raw["maximum_idle_utilization_percent"]
                     ),
@@ -124,26 +131,26 @@ def main() -> int:
                 )
             assignments = [
                 {"physical_gpu_id": gpu_id, "replica_index": index}
-                for index, gpu_id in enumerate((4, 5, 6, 7))
+                for index, gpu_id in enumerate(gpu_ids)
             ]
             write_json_exclusive(
                 assignment_path,
                 {
                     "assigned_at_utc": datetime.now(timezone.utc).isoformat(),
-                    "assignment_rule": "FOUR_DISJOINT_IDLE_AN12_TP1_REPLICAS",
+                    "assignment_rule": "EXACT_ATTEMPT_DISJOINT_IDLE_AN12_TP1_REPLICAS",
                     "assignments": assignments,
                     "config_sha256": config.sha256,
                     "git_commit": git_state.head,
                     "probes": probes,
-                    "run_id": config.raw["run"]["run_id"],
+                    "run_id": validated["manifest"]["run_id"],
                     "schema_version": 1,
                 },
             )
     if assignments and (
-        {row["replica_index"] for row in assignments} != set(range(4))
-        or {row["physical_gpu_id"] for row in assignments} != {4, 5, 6, 7}
+        {row["replica_index"] for row in assignments} != set(range(replica_count))
+        or [row["physical_gpu_id"] for row in assignments] != list(gpu_ids)
     ):
-        raise RuntimeError("formal supervisor requires exact four-way disjoint assignment")
+        raise RuntimeError("formal supervisor differs from exact attempt placement")
     launched: list[dict[str, object]] = []
     for row in assignments:
         replica = int(row["replica_index"])

@@ -421,3 +421,92 @@ def test_plan_source_hash_fields_are_not_rewritten(tmp_path: Path) -> None:
         assert plan[f"{name}_sha256"] == config.raw["source_run"]["queue"][name]["sha256"]
     assert plan["original_queue_bytes_reused_without_rewrite"] is True
     assert sha256_file(CONFIG) == load_restricted_rerun_config(CONFIG, repo_root=ROOT).source_sha256
+
+
+def test_repair_attempt_requires_exact_placement_and_immutable_predecessor(
+    tmp_path: Path,
+) -> None:
+    config = load_restricted_rerun_config(CONFIG, repo_root=ROOT)
+    placement = rerun_module._attempt_placement(config, physical_gpu_ids=(4,))
+    assert placement["physical_gpu_ids"] == [4]
+    assert placement["replica_count"] == 1
+    with pytest.raises(RestrictedRerunError, match="unique nonempty"):
+        rerun_module._attempt_placement(config, physical_gpu_ids=(4, 4))
+    bindings = {
+        "config_sha256": "a" * 64,
+        "queue_manifest_sha256": "b" * 64,
+        "stage1_result_sha256": "c" * 64,
+        "stage1_summary_sha256": "d" * 64,
+    }
+    failure = tmp_path / "failure.json"
+    failure.write_text(
+        json.dumps(
+            {
+                "failed_attempt_immutable": True,
+                "failure_classification": "ENGINEERING_BUG",
+                "generated_outputs": 0,
+                "model_calls": 0,
+                "repair_requires_new_claim": True,
+                "repair_requires_new_run_id": True,
+                "run_id": "sa3-state-v2-restricted-rerun-001",
+                "schema_version": 1,
+                "scientific_design_changed": False,
+                "scientific_bindings": bindings,
+                "scientific_outputs_retained": True,
+                "status": "FAILED_PRE_MODEL_ENGINEERING",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    predecessor = rerun_module._repair_predecessor(
+        failure,
+        base_run_id="sa3-state-v2-restricted-rerun-001",
+        next_run_id="sa3-state-v2-restricted-rerun-002",
+        expected_scientific_bindings=bindings,
+    )
+    assert predecessor == {
+        "path": str(failure.resolve()),
+        "sha256": sha256_file(failure),
+        "status": "FAILED_PRE_MODEL_ENGINEERING",
+    }
+    with pytest.raises(RestrictedRerunError, match="immediately prior"):
+        rerun_module._repair_predecessor(
+            failure,
+            base_run_id="sa3-state-v2-restricted-rerun-001",
+            next_run_id="sa3-state-v2-restricted-rerun-003",
+            expected_scientific_bindings=bindings,
+        )
+    second_failure = tmp_path / "failure-002.json"
+    second_record = json.loads(failure.read_text(encoding="utf-8"))
+    second_record["run_id"] = "sa3-state-v2-restricted-rerun-002"
+    second_failure.write_text(json.dumps(second_record) + "\n", encoding="utf-8")
+    assert (
+        rerun_module._repair_predecessor(
+            second_failure,
+            base_run_id="sa3-state-v2-restricted-rerun-001",
+            next_run_id="sa3-state-v2-restricted-rerun-003",
+            expected_scientific_bindings=bindings,
+        )["status"]
+        == "FAILED_PRE_MODEL_ENGINEERING"
+    )
+    with pytest.raises(RestrictedRerunError, match="immediately prior"):
+        rerun_module._repair_predecessor(
+            second_failure,
+            base_run_id="sa3-state-v2-restricted-rerun-001",
+            next_run_id="sa3-state-v2-restricted-rerun-002",
+            expected_scientific_bindings=bindings,
+        )
+    post_call = dict(second_record)
+    post_call["status"] = "FAILED_ENGINEERING_ATTEMPT"
+    post_call["model_calls"] = 4
+    post_call["generated_outputs"] = 4
+    post_call_path = tmp_path / "post-call-failure.json"
+    post_call_path.write_text(json.dumps(post_call) + "\n", encoding="utf-8")
+    with pytest.raises(RestrictedRerunError, match="zero-call"):
+        rerun_module._repair_predecessor(
+            post_call_path,
+            base_run_id="sa3-state-v2-restricted-rerun-001",
+            next_run_id="sa3-state-v2-restricted-rerun-003",
+            expected_scientific_bindings=bindings,
+        )

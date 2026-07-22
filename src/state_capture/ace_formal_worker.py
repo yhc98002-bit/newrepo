@@ -264,9 +264,11 @@ class AceFormalWorker:
         config: AceFormalConfig,
         authorization: D0036Authorization,
         run_dir: Path,
+        run_id: str,
         git_commit: str,
         queue_manifest_sha256: str,
         replica_index: int,
+        replica_count: int,
         physical_gpu_id: int,
         engine: AceFormalGroupEngine,
         probe: NvidiaSmiProbe | None = None,
@@ -275,16 +277,24 @@ class AceFormalWorker:
     ) -> None:
         if engine.model_id != MODEL_ID:
             raise ValueError("ACE formal engine model identity mismatch")
-        if replica_index not in range(4) or physical_gpu_id not in GPU_IDS:
+        if (
+            replica_count not in range(1, len(GPU_IDS) + 1)
+            or replica_index not in range(replica_count)
+            or physical_gpu_id not in GPU_IDS
+        ):
             raise ValueError("ACE formal worker placement is outside an12:4..7")
+        if not run_id:
+            raise ValueError("ACE formal worker requires its attempt run ID")
         if not math.isfinite(placement_poll_seconds) or placement_poll_seconds < 0:
             raise ValueError("placement poll seconds must be finite and nonnegative")
         self.config = config
         self.authorization = authorization
         self.run_dir = run_dir.resolve()
+        self.run_id = run_id
         self.git_commit = git_commit
         self.queue_manifest_sha256 = queue_manifest_sha256
         self.replica_index = replica_index
+        self.replica_count = replica_count
         self.physical_gpu_id = physical_gpu_id
         self.engine = engine
         self.poll_seconds = float(placement_poll_seconds)
@@ -330,7 +340,7 @@ class AceFormalWorker:
             "physical_gpu_id": self.physical_gpu_id,
             "pid": os.getpid(),
             "prompt_manifest_sha256": self.queue_manifest_sha256,
-            "run_id": str(self.config.raw["run"]["run_id"]),
+            "run_id": self.run_id,
             "schema_version": 1,
             "state": "QUEUED_WAITING_FOR_SAFE_GPU",
             "updated_at_utc": utc_now(),
@@ -385,7 +395,7 @@ class AceFormalWorker:
         assigned = [
             group
             for group in groups
-            if (int(group["group_sequence"]) - 1) % 4 == self.replica_index
+            if (int(group["group_sequence"]) - 1) % self.replica_count == self.replica_index
         ]
         heartbeat = HeartbeatLoop(
             self.worker_root / "heartbeat.json",

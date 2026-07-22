@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import runpy
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,7 @@ from state_capture.ace_formal_contract import (
     verify_d0036,
 )
 from state_capture.ace_formal_engine import ProductionAceFormalGroupEngine
+from state_capture.ace_formal_launcher import _attempt_placement, _repair_predecessor
 from state_capture.ace_formal_worker import (
     AceFormalWorker,
     AceFormalWorkerStopped,
@@ -65,9 +67,7 @@ def _stage1_fixture(
     bundle = load_source_bundle(config)
     sa3_queue = tmp_path / "queues" / "sa3.jsonl"
     write_jsonl(sa3_queue, [])
-    stopped_cells = (
-        set() if stopped_ace_axis is None else {("ACE-Step v1", stopped_ace_axis)}
-    )
+    stopped_cells = set() if stopped_ace_axis is None else {("ACE-Step v1", stopped_ace_axis)}
     result_path, summary_path, gate_config_path = build_terminal(
         tmp_path,
         queue_bindings=[
@@ -110,9 +110,7 @@ def _stage1_fixture(
         "## D-0036 — ACE formal initial opening\n\n"
         + "\n".join(f"`{key} = {value}`" for key, value in assignments.items())
         + "\n\n## D-0045 — engineering-attempt governance correction\n\n"
-        + "\n".join(
-            f"`{key} = {value}`" for key, value in ENGINEERING_ASSIGNMENTS.items()
-        )
+        + "\n".join(f"`{key} = {value}`" for key, value in ENGINEERING_ASSIGNMENTS.items())
         + "\n",
         encoding="utf-8",
     )
@@ -394,9 +392,11 @@ def _worker(
         config=config,
         authorization=authorization,
         run_dir=run_dir,
+        run_id="ace-state-formal-v2-002",
         git_commit="a" * 40,
         queue_manifest_sha256=config.raw["source_queue"]["manifest"]["sha256"],
         replica_index=0,
+        replica_count=1,
         physical_gpu_id=4,
         engine=engine,
         probe=_SafeProbe(),
@@ -863,3 +863,110 @@ def test_formal_factory_refuses_nonformal_context() -> None:
 def test_preparation_git_identity_type_is_frozen() -> None:
     state = GitLaunchState(head="a" * 40, origin_main="a" * 40)
     assert state.head == state.origin_main
+
+
+def test_attempt_placement_and_repair_predecessor_are_exact(tmp_path: Path) -> None:
+    config = load_formal_config(CONFIG, repo_root=ROOT)
+    placement = _attempt_placement(config, physical_gpu_ids=(5, 6))
+    assert placement["physical_gpu_ids"] == [5, 6]
+    assert placement["replica_count"] == 2
+    assert placement["tensor_parallel_width"] == 1
+    with pytest.raises(AceFormalContractError, match="unique nonempty"):
+        _attempt_placement(config, physical_gpu_ids=(5, 5))
+    bindings = {
+        "config_sha256": "a" * 64,
+        "queue_manifest_sha256": "b" * 64,
+        "stage1_result_sha256": "c" * 64,
+        "stage1_summary_sha256": "d" * 64,
+        "survivor_axes": ["integrity"],
+    }
+    failure = tmp_path / "failure.json"
+    failure.write_text(
+        json.dumps(
+            {
+                "failed_attempt_immutable": True,
+                "failure_classification": "ENGINEERING_BUG",
+                "generated_outputs": 0,
+                "model_calls": 0,
+                "repair_requires_new_claim": True,
+                "repair_requires_new_run_id": True,
+                "run_id": "ace-state-formal-v2-001",
+                "schema_version": 1,
+                "scientific_design_changed": False,
+                "scientific_bindings": bindings,
+                "scientific_outputs_retained": True,
+                "status": "FAILED_PRE_MODEL_ENGINEERING",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    predecessor = _repair_predecessor(
+        failure,
+        base_run_id="ace-state-formal-v2-001",
+        next_run_id="ace-state-formal-v2-002",
+        expected_scientific_bindings=bindings,
+    )
+    assert predecessor == {
+        "path": str(failure.resolve()),
+        "sha256": sha256_file(failure),
+        "status": "FAILED_PRE_MODEL_ENGINEERING",
+    }
+    with pytest.raises(AceFormalContractError, match="immediately prior"):
+        _repair_predecessor(
+            failure,
+            base_run_id="ace-state-formal-v2-001",
+            next_run_id="ace-state-formal-v2-003",
+            expected_scientific_bindings=bindings,
+        )
+    second_failure = tmp_path / "failure-002.json"
+    second_record = json.loads(failure.read_text(encoding="utf-8"))
+    second_record["run_id"] = "ace-state-formal-v2-002"
+    second_failure.write_text(json.dumps(second_record) + "\n", encoding="utf-8")
+    assert (
+        _repair_predecessor(
+            second_failure,
+            base_run_id="ace-state-formal-v2-001",
+            next_run_id="ace-state-formal-v2-003",
+            expected_scientific_bindings=bindings,
+        )["status"]
+        == "FAILED_PRE_MODEL_ENGINEERING"
+    )
+    with pytest.raises(AceFormalContractError, match="immediately prior"):
+        _repair_predecessor(
+            second_failure,
+            base_run_id="ace-state-formal-v2-001",
+            next_run_id="ace-state-formal-v2-002",
+            expected_scientific_bindings=bindings,
+        )
+    post_call = dict(second_record)
+    post_call["status"] = "FAILED_ENGINEERING_ATTEMPT"
+    post_call["model_calls"] = 4
+    post_call["generated_outputs"] = 4
+    post_call_path = tmp_path / "post-call-failure.json"
+    post_call_path.write_text(json.dumps(post_call) + "\n", encoding="utf-8")
+    with pytest.raises(AceFormalContractError, match="zero-call"):
+        _repair_predecessor(
+            post_call_path,
+            base_run_id="ace-state-formal-v2-001",
+            next_run_id="ace-state-formal-v2-003",
+            expected_scientific_bindings=bindings,
+        )
+
+
+def test_formal_supervisor_selects_only_exact_attempt_replica_count() -> None:
+    namespace = runpy.run_path(str(ROOT / "scripts/supervise_ace_state_formal_v2.py"))
+    select = namespace["_launch_replica_indices"]
+    assert select(
+        launch=True,
+        launch_all=True,
+        requested=[],
+        replica_count=2,
+    ) == (0, 1)
+    with pytest.raises(ValueError, match="attempt range"):
+        select(
+            launch=True,
+            launch_all=False,
+            requested=[2],
+            replica_count=2,
+        )
