@@ -895,3 +895,18 @@ manifest and artifacts are named here with SHA-256 digests.
   `5d6fe8de0efe4f591fb1b85fd4bd2e77c84ae40b6ea6296da0452e7adafb5871`
 - Scoring generation authority: none; human-gold/accuracy claims: none;
   watermark required; queue-don't-preempt applies
+
+## L-0030 — Eligibility analysis contract frozen before live outcome access
+
+- Time: 2026-07-22T17:34:51Z
+- Kind: prospective CPU-only analysis/code freeze; no scored state-action row
+  opened and no model or evaluator call
+- Authority: D-0045 and D-0060
+- Analysis config / row-schema SHA-256:
+  `f4bab82b22fa0822ab83f70af4aae07d9c95c1f21b70dd17ee58933d218ddb07` /
+  `6e189ca2f609163e93e01c279d72b440ea5b93737f05bc93e43c214272610c35`
+- Four-way gate: `ELIGIBLE`, `REPLICATION_ONLY`,
+  `INCONCLUSIVE_UNDERPOWERED`, `STOP_AXIS`; deviation-share requirement
+  `0.10`; one doubling and one re-gate only for `INCONCLUSIVE_UNDERPOWERED`
+- Opening remains fail-closed until these exact bytes and D-0060 are pushed to
+  `origin/main`; supplemental execution remains locked

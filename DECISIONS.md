@@ -3320,3 +3320,51 @@ ordinary-core rows are generated and scored.
 `AUTOMATIC_ENDPOINT_SCORING_WATERMARK = AUTOMATIC-INSTRUMENT OUTCOMES`
 
 `AUTOMATIC_ENDPOINT_SCORING_HUMAN_GOLD_CLAIMS = NO`
+
+## D-0060 — Eligibility analysis frozen prospectively before outcome-row access
+
+- Date: 2026-07-22
+- Status: accepted prospective analysis opening; no scored state-action row read
+- Authority: frozen benchmark-v2 Section 11 eligibility design, D-0045, and
+  the PI consolidated Stage-1/state execution goal
+
+This decision freezes the complete eligibility analysis implementation and
+input-row contract before the builder or runner is permitted to open any live
+scored state-action row. The two compared tiers are the registered
+prompt-plus-time/budget baseline and that baseline plus root-local preview
+state. Folds are prompt-grouped; state features may come only from the same
+`(prompt, root, checkpoint)` unit's pre-action preview; action outcomes are
+replicated KEEP / RESTART_BASE / RESTART_FIXED outcomes; and no single-draw
+oracle is permitted.
+
+The exact four-way gate remains `ELIGIBLE`, `REPLICATION_ONLY`,
+`INCONCLUSIVE_UNDERPOWERED`, or `STOP_AXIS`. `ELIGIBLE` additionally requires
+cross-fitted deviation share at least `0.10`. Only
+`INCONCLUSIVE_UNDERPOWERED` can open one registered root doubling followed by
+one re-gate; every other verdict leaves supplemental roots locked. This is a
+prospective methodological freeze, not an obtained eligibility result and not
+authority to execute supplemental actions.
+
+| Item | SHA-256 |
+| --- | --- |
+| analysis config | `f4bab82b22fa0822ab83f70af4aae07d9c95c1f21b70dd17ee58933d218ddb07` |
+| scored action-row schema | `6e189ca2f609163e93e01c279d72b440ea5b93737f05bc93e43c214272610c35` |
+| analysis implementation | `d34663be1b4caddaecd8bd52548ca145d6f9f7b12880fb106f135ceb7a3bdad6` |
+| input builder | `fd6258b24d7df96e8ad2e5e7136fed7a426543c77b6af6611dd1e33eb3fa1281` |
+| opening and input contract | `9e210c78f31bb3fb8fe3cebb43fe2a2b47f446e5f98524340aaa91d4d18075d7` |
+| model implementation | `47ac69054b1abbd1d59379e16cf580152031666f9728aa4f472f80aef8c342b0` |
+| analysis runner | `f66b34807878c5fe0f2bf782b943aa42bcad12c3689f75c87f6c14b2bbce59ef` |
+
+ELIGIBILITY_ANALYSIS_PROSPECTIVE_FREEZE = YES
+
+ELIGIBILITY_ANALYSIS_CONFIG_PATH = configs/eligibility_analysis_v2.json
+
+ELIGIBILITY_ANALYSIS_CONFIG_SHA256 = f4bab82b22fa0822ab83f70af4aae07d9c95c1f21b70dd17ee58933d218ddb07
+
+ELIGIBILITY_ACTION_ROW_SCHEMA_SHA256 = 6e189ca2f609163e93e01c279d72b440ea5b93737f05bc93e43c214272610c35
+
+ELIGIBILITY_OUTCOME_ROWS_READ_BEFORE_FREEZE = NO
+
+ELIGIBILITY_ANALYSIS_RUNNER_STATUS = PROSPECTIVE_CODE_COMPLETE
+
+ELIGIBILITY_SUPPLEMENTAL_ONLY_TRIGGER = INCONCLUSIVE_UNDERPOWERED

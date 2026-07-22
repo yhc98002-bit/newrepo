@@ -107,7 +107,7 @@
     },
     {
       "path": "src/scoring/endpoints.py",
-      "sha256": "6f9c660c171b7075120eace1e89d04dba383553eb6aee18ffb04b9d185790bae"
+      "sha256": "1a6b2a2e0aa06c78bc4bb7da278ab555c0997cc2041161b88007baf5c0277eef"
     },
     {
       "path": "src/scoring/feature_worker.py",
