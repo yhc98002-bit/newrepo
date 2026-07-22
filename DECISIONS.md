@@ -3424,3 +3424,34 @@ STATE_BUDGET_SUPPLEMENTAL_ALLOWED = NO
 STATE_BUDGET_HUMAN_GOLD_USED = NO
 
 STATE_BUDGET_SCIENTIFIC_ENDPOINTS_CHANGED = NO
+
+## D-0062 — ACE initial-survivor state budget assembled without outcomes
+
+- Date: 2026-07-22
+- Status: accepted complete immutable 144-unit budget package
+- Authority: D-0060 and D-0061
+
+After both prospective openings were verified on `origin/main`, the cost-only
+assembler read the exact ACE-Step v1 integrity survivor cell. It emitted 144
+rows spanning 12 prompts, roots 0–3, and checkpoints 25/50/75%, bound to 48
+unique same-root BASE core requests. The complete core queue, COMMITTED
+artifacts, provenance, and hash-chained successful ledger events validated.
+No evaluator or outcome row was opened, no state audio was scored, no human
+gold was used, and no model/generation call occurred. STOP/cancelled and
+supplemental units remain absent.
+
+| Item | SHA-256 |
+| --- | --- |
+| immutable result manifest | `7cd5ae63c222b44676c8b24dc41cbbb1aaae8abc4d5954b6b76749ceb3a6dfa1` |
+| budget evidence | `95221d7ea7e7bb57085938a16d6945dcddd3878bc5d79f971eb3b3d25a722c37` |
+| D-0060-compatible measured-cost rows | `81272a2a78e6af9357afa56b12fc790735a73dd7e2133cc3850c8e22b44eb1b1` |
+| ACE survivor manifest | `f7d2dcd8acc274625de392f29178926f76bd2f67344713ecef6cec313b29ce67` |
+| Stage-1 cancellation manifest | `b0b115721e1b72654bb63dfc0daaa31b04b1176d56ba25c6b327f41c35de0e60` |
+
+`ACE_STATE_BUDGET_STATUS = COMPLETE_OUTCOME_BLIND`
+
+`ACE_STATE_BUDGET_ROW_COUNT = 144`
+
+`ACE_STATE_BUDGET_SUPPLEMENTAL_ROOTS_USED = NO`
+
+`ACE_STATE_BUDGET_EVALUATOR_OR_OUTCOME_ROWS_READ = NO`

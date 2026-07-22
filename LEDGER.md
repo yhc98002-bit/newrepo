@@ -927,3 +927,19 @@ manifest and artifacts are named here with SHA-256 digests.
   prohibited; human gold and evaluator rows prohibited
 - Opening remains fail-closed until the exact implementation and D-0061 are
   pushed to `origin/main`
+
+## L-0032 — ACE initial-survivor time budgets assembled
+
+- Time: 2026-07-22T18:07:27Z
+- Kind: outcome-blind CPU-only deterministic assembly; zero evaluator/model/
+  generation calls
+- Authority: D-0060 through D-0062
+- Cell: ACE-Step v1 acoustic integrity, 12 prompts × 4 initial roots × 3
+  checkpoints = 144 units; 48 same-root BASE core calls bound
+- Manifest / evidence / measured-cost SHA-256:
+  `7cd5ae63c222b44676c8b24dc41cbbb1aaae8abc4d5954b6b76749ceb3a6dfa1` /
+  `95221d7ea7e7bb57085938a16d6945dcddd3878bc5d79f971eb3b3d25a722c37` /
+  `81272a2a78e6af9357afa56b12fc790735a73dd7e2133cc3850c8e22b44eb1b1`
+- Human gold, evaluator rows, state outcomes, supplemental roots, and
+  STOP/cancelled units used: none
+- All three published files are mode 0444
