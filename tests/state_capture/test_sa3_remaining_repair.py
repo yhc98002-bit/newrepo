@@ -71,10 +71,15 @@ def _repair_fixture(
         "validation_group_request_sha256": groups[0]["group_request_sha256"],
     }
     config = SimpleNamespace(
+        attempt_claim_path=tmp_path / "claims" / "sa3-state-v2-restricted-rerun-001.claim.json",
         queue_manifest_path=tmp_path / "unused-manifest.json",
         raw={"source_run": {"queue": {"manifest": {"sha256": _digest("manifest")}}}},
+        repo_root=tmp_path,
+        run_root=tmp_path / "runs",
         source_sha256=_digest("config"),
-        state_config=object(),
+        state_config=SimpleNamespace(
+            placement=SimpleNamespace(allowed_physical_gpu_ids=(4, 5, 6, 7))
+        ),
     )
     monkeypatch.setattr(remaining_module, "load_restricted_rerun_config", lambda *_a, **_k: config)
     monkeypatch.setattr(
@@ -279,6 +284,25 @@ def test_remaining_repair_decision_binds_exact_scope_and_placement(tmp_path: Pat
     assert block == decisions.read_text(encoding="utf-8")
     assert len(digest) == 64
     decisions.write_text(
+        decisions.read_text(encoding="utf-8") + "\n## D-0100 — later append\n\nappend only\n",
+        encoding="utf-8",
+    )
+    appended_block, appended_digest = rerun_module.verify_remaining_repair_decision(
+        decisions,
+        decision_id="D-0099",
+        run_id=run_id,
+        predecessor=predecessor,
+        placement={
+            "node": "an12",
+            "physical_gpu_ids": [4],
+            "replica_count": 1,
+            "tensor_parallel_width": 1,
+        },
+        scientific_bindings=science,
+    )
+    assert appended_block.rstrip() == block.rstrip()
+    assert appended_digest == digest
+    decisions.write_text(
         decisions.read_text(encoding="utf-8").replace(
             "SA3_STATE_REMAINING_REPAIR_VALIDATION_RERUN = NO",
             "SA3_STATE_REMAINING_REPAIR_VALIDATION_RERUN = YES",
@@ -456,6 +480,63 @@ def test_zero_call_attempt_carries_exact_remaining_scope_into_next_run(
         replica_count=1,
     )
     assert len(selected) == 47
+    preclaim_receipt = tmp_path / "provenance" / "run-004-preclaim-failure.json"
+    _write_json(
+        preclaim_receipt,
+        {
+            "attempt_id": "sa3-state-v2-restricted-rerun-004-preclaim-001",
+            "claim_created": False,
+            "completed_exclusion_path": repair["completed_exclusion_path"],
+            "completed_exclusion_sha256": repair["completed_exclusion_sha256"],
+            "failed_attempt_immutable": True,
+            "failure_classification": "ENGINEERING_BUG",
+            "failure_kind": "APPEND_ONLY_DECISION_BLOCK_SEPARATOR_HASH_MISMATCH",
+            "generated_outputs": 0,
+            "gpu_seconds": 0,
+            "model_calls": 0,
+            "opening_decision": {
+                "canonical_block_sha256": repair_decision["block_sha256"],
+                "decision_id": "D-0100",
+            },
+            "phase": "PREDECESSOR_VALIDATION_BEFORE_CLAIM_RUN_PUBLICATION_OR_GPU_USE",
+            "predecessor_failure_path": str(receipt_path),
+            "predecessor_failure_sha256": sha256_file(receipt_path),
+            "remaining_manifest_path": repair["remaining_manifest_path"],
+            "remaining_manifest_sha256": repair["remaining_manifest_sha256"],
+            "repair": {
+                "scientific_configuration_changed": False,
+                "thresholds_changed": False,
+            },
+            "repair_requires_new_claim": True,
+            "repair_requires_new_run_id": True,
+            "run_dir_created": False,
+            "run_id": "sa3-state-v2-restricted-rerun-004",
+            "schema_version": 1,
+            "scientific_bindings": science,
+            "scientific_design_changed": False,
+            "scientific_outputs_retained": True,
+            "source_remaining_decision": {
+                "canonical_block_sha256": repair_decision["block_sha256"],
+                "decision_id": repair_decision["decision_id"],
+            },
+            "status": "FAILED_PRE_CLAIM_ENGINEERING",
+            "worker_started": False,
+        },
+    )
+    preclaim_predecessor = rerun_module._repair_predecessor(
+        preclaim_receipt,
+        base_run_id="sa3-state-v2-restricted-rerun-001",
+        next_run_id="sa3-state-v2-restricted-rerun-005",
+        expected_scientific_bindings=science,
+        completed_exclusion_path=Path(repair["completed_exclusion_path"]),
+        remaining_manifest_path=Path(repair["remaining_manifest_path"]),
+        config=config,
+        bundle=bundle,
+        source_plan=source_plan,
+    )
+    assert preclaim_predecessor is not None
+    assert preclaim_predecessor["status"] == "FAILED_PRE_CLAIM_ENGINEERING"
+    assert preclaim_predecessor["remaining_repair"] == repair
     (run_003 / "workers").mkdir()
     with pytest.raises(RestrictedRerunError, match="worker/model artifacts"):
         rerun_module._repair_predecessor(

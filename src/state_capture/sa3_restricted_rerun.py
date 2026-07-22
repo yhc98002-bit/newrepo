@@ -85,6 +85,12 @@ def _decision_block(text: str, decision_id: str) -> str:
     return match.group(0)
 
 
+def _semantic_decision_block_sha256(block: str) -> str:
+    """Hash decision semantics without the append-only boundary newline."""
+
+    return hashlib.sha256((block.rstrip() + "\n").encode()).hexdigest()
+
+
 def verify_engineering_governance(decisions_path: Path) -> tuple[str, str]:
     """Bind D-0045 without weakening any D-0035 scientific restriction."""
 
@@ -317,6 +323,120 @@ def _validate_zero_call_carried_repair(
     return repair
 
 
+def _validate_preclaim_carried_repair(
+    record: Mapping[str, Any],
+    *,
+    base_run_id: str,
+    predecessor_run_id: str,
+    expected_scientific_bindings: Mapping[str, str],
+    completed_exclusion_path: Path | None,
+    remaining_manifest_path: Path | None,
+    config: RestrictedRerunConfig | None,
+    bundle: Mapping[str, Any] | None,
+    source_plan: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Carry a validated package through a failure before claim publication."""
+
+    if (
+        completed_exclusion_path is None
+        or remaining_manifest_path is None
+        or config is None
+        or bundle is None
+        or source_plan is None
+    ):
+        raise RestrictedRerunError(
+            "preclaim repair lacks the exact completed exclusion/remaining package"
+        )
+    source_failure_path = _receipt_file_binding(
+        record,
+        prefix="predecessor_failure",
+        context="preclaim source predecessor failure",
+    )
+    source_predecessor = _repair_predecessor(
+        source_failure_path,
+        base_run_id=base_run_id,
+        next_run_id=predecessor_run_id,
+        expected_scientific_bindings=expected_scientific_bindings,
+        completed_exclusion_path=completed_exclusion_path,
+        remaining_manifest_path=remaining_manifest_path,
+        config=config,
+        bundle=bundle,
+        source_plan=source_plan,
+    )
+    if source_predecessor is None or not isinstance(
+        source_predecessor.get("remaining_repair"), dict
+    ):
+        raise RestrictedRerunError("preclaim source predecessor lacks remaining-work lineage")
+    repair = source_predecessor["remaining_repair"]
+    exclusion_source = _receipt_file_binding(
+        record,
+        prefix="completed_exclusion",
+        context="preclaim completed exclusion",
+    )
+    remaining_source = _receipt_file_binding(
+        record,
+        prefix="remaining_manifest",
+        context="preclaim remaining manifest",
+    )
+    repair_record = record.get("repair")
+    if (
+        record.get("attempt_id") != f"{predecessor_run_id}-preclaim-001"
+        or record.get("claim_created") is not False
+        or record.get("run_dir_created") is not False
+        or record.get("worker_started") is not False
+        or record.get("gpu_seconds") != 0
+        or record.get("phase") != "PREDECESSOR_VALIDATION_BEFORE_CLAIM_RUN_PUBLICATION_OR_GPU_USE"
+        or not isinstance(record.get("failure_kind"), str)
+        or not record.get("failure_kind")
+        or not isinstance(repair_record, dict)
+        or repair_record.get("scientific_configuration_changed") is not False
+        or repair_record.get("thresholds_changed") is not False
+        or exclusion_source != Path(repair["completed_exclusion_path"])
+        or remaining_source != Path(repair["remaining_manifest_path"])
+    ):
+        raise RestrictedRerunError("preclaim carried-repair evidence drifted")
+    expected_claim_path = (
+        config.attempt_claim_path.parent / f"{predecessor_run_id}.claim.json"
+    ).resolve()
+    expected_run_dir = (config.run_root / predecessor_run_id).resolve()
+    if expected_claim_path.exists() or expected_run_dir.exists():
+        raise RestrictedRerunError("preclaim failure unexpectedly published a claim or run")
+
+    source_record = load_json(source_failure_path)
+    source_claim_path = _receipt_file_binding(
+        source_record,
+        prefix="attempt_claim",
+        context="preclaim source attempt claim",
+    )
+    source_claim = load_json(source_claim_path)
+    source_decision = record.get("source_remaining_decision")
+    source_claim_decision = source_claim.get("remaining_repair_decision")
+    if (
+        not isinstance(source_decision, dict)
+        or not isinstance(source_claim_decision, dict)
+        or source_decision.get("decision_id") != source_claim_decision.get("decision_id")
+        or source_decision.get("canonical_block_sha256")
+        != source_claim_decision.get("block_sha256")
+    ):
+        raise RestrictedRerunError("preclaim source decision lineage drifted")
+
+    opening = record.get("opening_decision")
+    if not isinstance(opening, dict) or not isinstance(opening.get("decision_id"), str):
+        raise RestrictedRerunError("preclaim opening decision binding is absent")
+    placement = _attempt_placement(config, physical_gpu_ids=(4,))
+    _, opening_sha = verify_remaining_repair_decision(
+        config.repo_root / "DECISIONS.md",
+        decision_id=opening["decision_id"],
+        run_id=predecessor_run_id,
+        predecessor=source_predecessor,
+        placement=placement,
+        scientific_bindings=expected_scientific_bindings,
+    )
+    if opening.get("canonical_block_sha256") != opening_sha:
+        raise RestrictedRerunError("preclaim opening decision drifted")
+    return repair
+
+
 def _repair_predecessor(
     path: Path | None,
     *,
@@ -387,6 +507,20 @@ def _repair_predecessor(
                 bundle=bundle,
                 source_plan=source_plan,
             )
+    elif status == "FAILED_PRE_CLAIM_ENGINEERING":
+        if record.get("model_calls") != 0 or record.get("generated_outputs") != 0:
+            raise RestrictedRerunError("preclaim predecessor is not zero-call")
+        remaining_repair = _validate_preclaim_carried_repair(
+            record,
+            base_run_id=base_run_id,
+            predecessor_run_id=str(predecessor_run_id),
+            expected_scientific_bindings=expected_scientific_bindings,
+            completed_exclusion_path=completed_exclusion_path,
+            remaining_manifest_path=remaining_manifest_path,
+            config=config,
+            bundle=bundle,
+            source_plan=source_plan,
+        )
     elif status == "FAILED_ENGINEERING_ATTEMPT":
         if (
             record.get("model_calls") != 4
@@ -718,7 +852,7 @@ def verify_remaining_repair_decision(
         raise RestrictedRerunError("remaining repair placement differs from D decision")
     if re.search(r"\b(?:PLACEHOLDER|PENDING|TBD|ESTIMATE|UNSET)\b", block, re.IGNORECASE):
         raise RestrictedRerunError("remaining repair decision contains unresolved text")
-    return block, hashlib.sha256(block.encode()).hexdigest()
+    return block, _semantic_decision_block_sha256(block)
 
 
 def _stage1_plan(config: RestrictedRerunConfig, bundle: dict[str, Any]) -> dict[str, Any]:
