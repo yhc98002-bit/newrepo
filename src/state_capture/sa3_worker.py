@@ -92,14 +92,27 @@ class SA3StateWorker:
         replica_index: int,
         physical_gpu_id: int,
         engine: StateEngine,
+        execution_replica_count: int | None = None,
         probe: NvidiaSmiProbe | None = None,
         lease: DeviceLease | None = None,
         placement_poll_seconds: float = 15.0,
     ) -> None:
         if engine.model_id != SA3_MODEL_ID:
             raise ValueError("state engine model identity mismatch")
-        if replica_index not in range(config.placement.maximum_parallel_replicas):
-            raise ValueError("replica_index is outside frozen 0..3")
+        replica_count = (
+            config.placement.maximum_parallel_replicas
+            if execution_replica_count is None
+            else execution_replica_count
+        )
+        if (
+            not isinstance(replica_count, int)
+            or isinstance(replica_count, bool)
+            or replica_count <= 0
+            or replica_count > config.placement.maximum_parallel_replicas
+        ):
+            raise ValueError("execution replica count is outside frozen placement capacity")
+        if replica_index not in range(replica_count):
+            raise ValueError("replica_index is outside the exact execution replica range")
         if physical_gpu_id not in config.placement.allowed_physical_gpu_ids:
             raise ValueError("physical GPU is not one of frozen an12:4..7 candidates")
         if not math.isfinite(placement_poll_seconds) or placement_poll_seconds < 0:
@@ -110,6 +123,7 @@ class SA3StateWorker:
         self.git_commit = git_commit
         self.bundle_sha = bundle_manifest_sha256
         self.replica_index = replica_index
+        self.execution_replica_count = replica_count
         self.physical_gpu_id = physical_gpu_id
         self.engine = engine
         self.poll_seconds = float(placement_poll_seconds)
@@ -341,11 +355,14 @@ class SA3StateWorker:
             raise ValueError("max_new_groups must be positive")
         unit_index = {str(row["lane_request_sha256"]): row for row in units}
         if execution_scope is None:
+            if self.execution_replica_count != self.config.placement.maximum_parallel_replicas:
+                raise ValueError(
+                    "a reduced execution replica count requires a separately authorized scope"
+                )
             assigned = [
                 group
                 for group in groups
-                if (int(group["group_sequence"]) - 1)
-                % self.config.placement.maximum_parallel_replicas
+                if (int(group["group_sequence"]) - 1) % self.execution_replica_count
                 == self.replica_index
             ]
             if len(assigned) != 36:
@@ -355,7 +372,7 @@ class SA3StateWorker:
                 units=units,
                 groups=groups,
                 replica_index=self.replica_index,
-                replica_count=self.config.placement.maximum_parallel_replicas,
+                replica_count=self.execution_replica_count,
             )
         heartbeat = HeartbeatLoop(
             self.worker_root / "heartbeat.json",

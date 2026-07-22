@@ -12,7 +12,9 @@ import state_capture.sa3_remaining_repair as remaining_module
 import state_capture.sa3_restricted_rerun as rerun_module
 from benchmark_core.ledger import HashChainedLedger
 from scoring.common import sha256_file
+from state_capture.sa3_contract import SA3_MODEL_ID
 from state_capture.sa3_restricted_rerun import RestrictedExecutionScope, RestrictedRerunError
+from state_capture.sa3_worker import SA3StateWorker
 
 
 def _digest(value: str) -> str:
@@ -297,3 +299,97 @@ def test_remaining_repair_decision_binds_exact_scope_and_placement(tmp_path: Pat
             },
             scientific_bindings=science,
         )
+
+
+def test_restricted_worker_uses_exact_attempt_replica_count(tmp_path: Path) -> None:
+    placement = SimpleNamespace(
+        allowed_physical_gpu_ids=(4, 5, 6, 7),
+        maximum_idle_utilization_percent=5,
+        maximum_parallel_replicas=4,
+        minimum_free_vram_bytes=1,
+        post_load_reserve_bytes=1,
+        required_gpu_name_substring="A800",
+        shared_core_lock_root=tmp_path / "locks",
+    )
+    config = SimpleNamespace(
+        heartbeat_interval_seconds=1,
+        heartbeat_stale_after_seconds=5,
+        initial_gpu_seconds_cap=720.0,
+        placement=placement,
+        prefix_group_reservation_seconds=2.0,
+        resume_unit_reservation_seconds=1.0,
+        source_sha256="1" * 64,
+    )
+
+    class _Engine:
+        model_id = SA3_MODEL_ID
+
+        def preflight(self) -> dict[str, str]:
+            return {"status": "READY"}
+
+        def load(self) -> dict[str, str]:
+            return {"status": "READY"}
+
+        def close(self) -> None:
+            return None
+
+    class _Probe:
+        def require_safe(self, **_kwargs: Any) -> object:
+            return object()
+
+    class _Lease:
+        def acquire(self) -> _Lease:
+            return self
+
+        def release(self) -> None:
+            return None
+
+        def __enter__(self) -> _Lease:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    class _RecordingScope:
+        def __init__(self) -> None:
+            self.observed_replica_count: int | None = None
+
+        def select(self, **kwargs: Any) -> list[dict[str, Any]]:
+            self.observed_replica_count = kwargs["replica_count"]
+            return []
+
+        def require_open(self) -> None:
+            return None
+
+        def atomic_open(self) -> Any:
+            raise AssertionError("empty selected scope must not publish")
+
+        def record_failure(self, **_kwargs: Any) -> None:
+            raise AssertionError("empty selected scope must not fail")
+
+    def worker(run_dir: Path) -> SA3StateWorker:
+        return SA3StateWorker(
+            config=config,
+            run_dir=run_dir,
+            run_id="sa3-state-v2-restricted-test",
+            git_commit="1" * 40,
+            bundle_manifest_sha256="2" * 64,
+            replica_index=0,
+            physical_gpu_id=4,
+            engine=_Engine(),  # type: ignore[arg-type]
+            execution_replica_count=1,
+            probe=_Probe(),  # type: ignore[arg-type]
+            lease=_Lease(),  # type: ignore[arg-type]
+            placement_poll_seconds=0,
+        )
+
+    scope = _RecordingScope()
+    result = worker(tmp_path / "restricted").run(
+        units=[],
+        groups=[],
+        execution_scope=scope,  # type: ignore[arg-type]
+    )
+    assert result["status"] == "COMPLETE"
+    assert scope.observed_replica_count == 1
+    with pytest.raises(ValueError, match="separately authorized scope"):
+        worker(tmp_path / "unrestricted").run(units=[], groups=[])

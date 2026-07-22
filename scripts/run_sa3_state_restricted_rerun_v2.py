@@ -86,6 +86,7 @@ def main() -> int:
         replica_index=args.replica_index,
         physical_gpu_id=args.physical_gpu_id,
         engine=engine,
+        execution_replica_count=placement["replica_count"],
     )
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     log_name = f"restricted-{args.phase}-replica-{args.replica_index:02d}-{stamp}.jsonl"
