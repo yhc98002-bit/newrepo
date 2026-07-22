@@ -1,0 +1,402 @@
+{
+  "bootstrap": {
+    "cluster_unit": "prompt_id",
+    "pairing": "ONE_SHARED_RESAMPLE_FOR_BOTH_TIERS_AND_ALL_PAIRED_CONTRASTS",
+    "replicates": 10000,
+    "seed": 2026072002,
+    "stratum_field": "prompt_stratum",
+    "two_sided_quantiles": [
+      0.025,
+      0.975
+    ],
+    "one_sided_lower_quantile": 0.05,
+    "quantile_method": "linear",
+    "refit_each_replicate": false
+  },
+  "feature_encoding": {
+    "baseline_numeric_fields": [
+      "checkpoint_fraction",
+      "elapsed_nfe",
+      "elapsed_seconds",
+      "remaining_nfe",
+      "remaining_seconds",
+      "incremental_cost_nfe",
+      "incremental_cost_seconds"
+    ],
+    "categorical_unknown_rule": "ALL_ZERO_BEFORE_TRAINING_FOLD_STANDARDIZATION",
+    "categorical_vocabulary_source": "TRAINING_PROMPTS_ONLY",
+    "missing_numeric_rule": "ZERO_WITH_EXPLICIT_RESOLVED_OR_FILE_VALIDITY_INDICATOR; NONFINITE_VALUES_FORBIDDEN",
+    "prompt_factor_fields": [
+      "request",
+      "target_bpm",
+      "salience",
+      "profile",
+      "style_family"
+    ],
+    "prompt_factor_rules": {
+      "integrity": {
+        "profile": "categorical_main_effect",
+        "style_family": "categorical_main_effect"
+      },
+      "tempo": {
+        "salience": "categorical_main_effect",
+        "target_bpm": "standardized_numeric_main_effect_and_action_interaction"
+      },
+      "vocal_instrumental": {
+        "request": "categorical_main_effect_and_action_interaction"
+      }
+    },
+    "state_feature_groups": [
+      "axis_evaluator_values",
+      "integrity_values",
+      "within_preview_summaries",
+      "frozen_decoder_metadata"
+    ],
+    "standardization": "FIT_MEAN_AND_POPULATION_SD_ON_TRAINING_PROMPTS_ONLY",
+    "zero_variance_rule": "STANDARDIZED_VALUE_ZERO",
+    "action_encoding": "THREE_ONE_HOT_MAIN_EFFECTS",
+    "action_interactions": [
+      "action_x_request",
+      "action_x_target_bpm",
+      "state_tier_only_action_x_each_root_local_state_feature"
+    ]
+  },
+  "folds": {
+    "assignment": "sort prompt_id by sha256(namespace+'|'+prompt_id), then cyclically assign 0..5",
+    "count": 6,
+    "namespace": "benchmark-v2-eligibility-folds-20260720",
+    "prompts_per_fold": 2,
+    "unit": "WHOLE_PROMPT"
+  },
+  "frozen_sources": [
+    {
+      "path": "BENCHMARK_PREREG_v2.md",
+      "sha256": "77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa"
+    },
+    {
+      "path": "configs/statistics_v2.json",
+      "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+    },
+    {
+      "path": "configs/sa3_state_capture_v2.json",
+      "sha256": "4bb6d6480dd5167da97e4907193204ac319df090668f976734de7d37da87d02e"
+    },
+    {
+      "path": "configs/ace_state_capture_v2.json",
+      "sha256": "7797efee802aa9380c3953cfd89d05b852692f284d129c07745e46e584dcf8a3"
+    },
+    {
+      "path": "configs/automatic_scoring_v2.json",
+      "sha256": "1e03782323d469fe8bcae09aabd9d86aecf740050d54cbe95b26e14d39d1cbdd"
+    },
+    {
+      "path": "prompts/v2/manifest.json",
+      "sha256": "171d6c757ff3ecec1918d2f032206c2b570b3302dc5ed0100da0db5d22708089"
+    },
+    {
+      "path": "prompts/v2/vocal_instrumental.json",
+      "sha256": "602c4e0fb419d7a300116eb5fb76c30a8e19364aaef566aec05425caffed9f90"
+    },
+    {
+      "path": "prompts/v2/tempo.json",
+      "sha256": "16e31c155e1d535f2211fcd85c8d666c9ba7a6636e4487fd43ea2fd5fa0e36ab"
+    },
+    {
+      "path": "prompts/v2/integrity.json",
+      "sha256": "be0e7c65fa8dfad8c7fdbf4456b2c1ad7e6f4fe0bbeb67eba2fcbf96b5f16d03"
+    },
+    {
+      "path": "src/scoring/endpoints.py",
+      "sha256": "6f9c660c171b7075120eace1e89d04dba383553eb6aee18ffb04b9d185790bae"
+    },
+    {
+      "path": "src/scoring/feature_worker.py",
+      "sha256": "5e70ef4018439b4ba6d7b4c9b3ccefbe07d21771a6e002ddf04fa0a70f68a2e9"
+    },
+    {
+      "path": "src/instruments/voice.py",
+      "sha256": "b952580ec06e8b88cde704a1ad6f8597fd2d15c2f1c4b6e37c90a3a2c2378469"
+    },
+    {
+      "path": "src/instruments/tempo.py",
+      "sha256": "c6cadcb3d65225bccd32ae34c4f5fd9f4881269e738336d3892f0ff7fb614f22"
+    },
+    {
+      "path": "src/instruments/integrity.py",
+      "sha256": "b8d7f22d9b958c5a08a345ccbfba8d7fac09b8b77e51bb762f0f3bedc9a9da5d"
+    },
+    {
+      "path": "src/eligibility/__init__.py",
+      "sha256": "31317c3a6e2903226b240ac73fdf71759cfd9acbf297a5b215c353e2b9bb082a"
+    },
+    {
+      "path": "src/eligibility/analysis.py",
+      "sha256": "d34663be1b4caddaecd8bd52548ca145d6f9f7b12880fb106f135ceb7a3bdad6"
+    },
+    {
+      "path": "src/eligibility/builder.py",
+      "sha256": "fd6258b24d7df96e8ad2e5e7136fed7a426543c77b6af6611dd1e33eb3fa1281"
+    },
+    {
+      "path": "src/eligibility/contract.py",
+      "sha256": "9e210c78f31bb3fb8fe3cebb43fe2a2b47f446e5f98524340aaa91d4d18075d7"
+    },
+    {
+      "path": "src/eligibility/model.py",
+      "sha256": "47ac69054b1abbd1d59379e16cf580152031666f9728aa4f472f80aef8c342b0"
+    },
+    {
+      "path": "src/eligibility/runner.py",
+      "sha256": "f66b34807878c5fe0f2bf782b943aa42bcad12c3689f75c87f6c14b2bbce59ef"
+    },
+    {
+      "path": "scripts/build_eligibility_input_v2.py",
+      "sha256": "a4a9beceb7ccc4a1e26969af425d67c47ea974da911628ccf69c1ae7106190e1"
+    },
+    {
+      "path": "scripts/run_eligibility_analysis_v2.py",
+      "sha256": "4f8c34218c29c1fc99860b47999fbec47838ecb0aa3138b29d33b7c3b79332ad"
+    }
+  ],
+  "gate": {
+    "cross_fitted_deviation_share_minimum": 0.1,
+    "inconclusive_point_estimate_minimum": 0.05,
+    "order": [
+      "ELIGIBLE",
+      "REPLICATION_ONLY",
+      "INCONCLUSIVE_UNDERPOWERED",
+      "STOP_AXIS"
+    ],
+    "rules": [
+      "ELIGIBLE iff one_sided_95_lower_state_incremental_value > 0 AND cross_fitted_deviation_share >= 0.10",
+      "REPLICATION_ONLY iff one_sided_95_lower_state_incremental_value > 0 AND cross_fitted_deviation_share < 0.10",
+      "INCONCLUSIVE_UNDERPOWERED iff one_sided_95_lower_state_incremental_value <= 0 AND state_incremental_value >= 0.05 AND two_sided_95_upper_state_incremental_value > 0",
+      "STOP_AXIS otherwise"
+    ],
+    "supplemental": {
+      "maximum_doublings": 1,
+      "only_trigger": "INCONCLUSIVE_UNDERPOWERED",
+      "other_gate_labels_authorize_supplemental": false,
+      "regate_count": 1,
+      "roots_added": [
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  },
+  "input_contract": {
+    "actions": [
+      "KEEP",
+      "RESTART_BASE",
+      "RESTART_FIXED"
+    ],
+    "automatic_watermark": "AUTOMATIC-INSTRUMENT OUTCOMES",
+    "backbones": {
+      "ACE-Step v1": "ACE-Step/ACE-Step-v1-3.5B",
+      "stable-audio-3-medium-base": "stabilityai/stable-audio-3-medium-base"
+    },
+    "checkpoint_fractions": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "combined_action_row_count": 864,
+    "combined_roots": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "forbidden_sources": [
+      "OTHER_ROOT_PREVIEWS",
+      "ACTION_OUTCOMES_AS_FEATURES",
+      "TERMINAL_AUDIO_FEATURES",
+      "HUMAN_GOLD",
+      "HELD_OUT_FITTED_VALUES",
+      "CANCELLED_STAGE1_UNITS",
+      "STOP_AXIS_STAGE1_CELLS"
+    ],
+    "initial_action_row_count": 432,
+    "initial_roots": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "prompt_count": 12,
+    "restart_outcome_label": "RESTART_POOL_SHARED_AT_PROMPT_LEVEL",
+    "root_local_preview_source": "ONLY_THE_SAME_UNITS_ROOT_LOCAL_PRE_ACTION_DECODED_PREVIEW",
+    "rows_per_unit": 3,
+    "state_feature_fields": {
+      "axis_evaluator_values": {
+        "integrity": [
+          "integrity_failure"
+        ],
+        "tempo": [
+          "first_window_octave_invariant_error",
+          "first_window_primary_5pct_success",
+          "first_window_resolved",
+          "first_window_sensitivity_10pct_success",
+          "full_clip_consensus_bpm",
+          "full_clip_octave_invariant_error",
+          "full_clip_primary_5pct_success",
+          "full_clip_raw_absolute_percentage_error",
+          "full_clip_resolved",
+          "full_clip_sensitivity_10pct_success",
+          "second_window_octave_invariant_error",
+          "second_window_primary_5pct_success",
+          "second_window_resolved",
+          "second_window_sensitivity_10pct_success",
+          "window_octave_invariant_absolute_drift",
+          "window_signed_drift_octaves"
+        ],
+        "vocal_instrumental": [
+          "demucs_present",
+          "demucs_vocal_energy_ratio",
+          "mixture_rms",
+          "panns_max_vocal_probability",
+          "panns_present",
+          "voice_margin",
+          "voice_present"
+        ]
+      },
+      "frozen_decoder_metadata": [
+        "checkpoint_fraction",
+        "checkpoint_completed_steps",
+        "transformer_budget_nfe",
+        "checkpoint_sha256",
+        "latent_dtype",
+        "latent_shape",
+        "schedule_sha256",
+        "decoder_sample_rate",
+        "decoder_channels",
+        "decoder_chunked",
+        "preview_sha256"
+      ],
+      "integrity_values": [
+        "all_sample_rms",
+        "clipping_flag",
+        "clipping_margin",
+        "crackle_flag",
+        "crackle_margin",
+        "dropout_count",
+        "dropout_flag",
+        "dropout_margin",
+        "file_validity_failure",
+        "hard_clipped_fraction",
+        "longest_dropout_ms",
+        "maximum_channel_crackle_count",
+        "silence_flag",
+        "silence_margin",
+        "silent_frame_fraction",
+        "true_peak"
+      ],
+      "within_preview_summaries": [
+        "duration_seconds",
+        "rms",
+        "peak_absolute",
+        "crest_factor",
+        "dc_offset_per_channel",
+        "active_fraction",
+        "zero_crossing_rate",
+        "spectral_centroid_hz",
+        "spectral_rolloff_95_hz"
+      ]
+    },
+    "units_per_prompt_initial": 12
+  },
+  "metrics": {
+    "calibration": {
+      "bin_count": 10,
+      "binning": "EQUAL_WIDTH_ON_[0,1]",
+      "global_bias": "mean(observed_success - predicted_probability)"
+    },
+    "commitment": "mean(abs(2*p_hat_KEEP_root_state-1))",
+    "deviation": "mean(I(action_state_OOF != action_baseline_OOF))",
+    "legibility_bits": "(OOF_logloss_baseline-OOF_logloss_state)/ln(2)",
+    "policy_value": "equal_weight_mean_of_frozen_mapped_outcomes_over_prompts_roots_checkpoints",
+    "probability_clip_for_reporting_loss": 1e-15,
+    "report_checkpoints": [
+      0.25,
+      0.5,
+      0.75
+    ]
+  },
+  "model": {
+    "coefficient_prior": {
+      "distribution": "Normal",
+      "mean": 0.0,
+      "sd": 1.0
+    },
+    "intercept_prior": {
+      "distribution": "Normal",
+      "mean": 0.0,
+      "sd": 2.5
+    },
+    "likelihood": "Bernoulli-logit",
+    "optimizer": {
+      "ftol": 2.220446049250313e-09,
+      "gtol": 1e-08,
+      "max_iterations": 2000,
+      "max_line_search_steps": 20,
+      "method": "L-BFGS-B",
+      "require_success": true
+    },
+    "prompt_effect_parameterization": "NONCENTERED_a_prompt_EQUALS_sigma_prompt_TIMES_z_prompt",
+    "prompt_intercept_prior": "Normal(0,sigma_prompt)",
+    "sigma_prompt_lower_bound": 1e-08,
+    "sigma_prompt_prior": {
+      "distribution": "HalfNormal",
+      "scale": 1.0
+    },
+    "tiers": [
+      "PROMPT_PLUS_TIME_BUDGET",
+      "PROMPT_PLUS_TIME_BUDGET_PLUS_STATE"
+    ],
+    "unseen_prompt_intercept": 0.0
+  },
+  "opening_contract": {
+    "decision_file": "DECISIONS.md",
+    "outcome_input_must_not_be_opened_before_validation": true,
+    "remote_ref": "refs/remotes/origin/main",
+    "required_assignment_names": [
+      "ELIGIBILITY_ANALYSIS_PROSPECTIVE_FREEZE",
+      "ELIGIBILITY_ANALYSIS_CONFIG_PATH",
+      "ELIGIBILITY_ANALYSIS_CONFIG_SHA256",
+      "ELIGIBILITY_ACTION_ROW_SCHEMA_SHA256",
+      "ELIGIBILITY_OUTCOME_ROWS_READ_BEFORE_FREEZE",
+      "ELIGIBILITY_ANALYSIS_RUNNER_STATUS",
+      "ELIGIBILITY_SUPPLEMENTAL_ONLY_TRIGGER"
+    ],
+    "required_assignment_values": {
+      "ELIGIBILITY_ANALYSIS_CONFIG_PATH": "configs/eligibility_analysis_v2.json",
+      "ELIGIBILITY_ANALYSIS_PROSPECTIVE_FREEZE": "YES",
+      "ELIGIBILITY_ANALYSIS_RUNNER_STATUS": "PROSPECTIVE_CODE_COMPLETE",
+      "ELIGIBILITY_OUTCOME_ROWS_READ_BEFORE_FREEZE": "NO",
+      "ELIGIBILITY_SUPPLEMENTAL_ONLY_TRIGGER": "INCONCLUSIVE_UNDERPOWERED"
+    },
+    "require_config_and_decision_bytes_on_remote_ref": true,
+    "status": "CLOSED_PENDING_SEPARATE_APPEND_ONLY_DECISION_AND_PUSH"
+  },
+  "policy": {
+    "action_tie_order": [
+      "predicted_success_descending",
+      "incremental_cost_ascending",
+      "KEEP",
+      "RESTART_FIXED",
+      "RESTART_BASE"
+    ],
+    "incremental_cost_field": "incremental_cost_nfe",
+    "prediction_tie_tolerance": 0.0,
+    "value_outcome": "FROZEN_MAPPED_AUTOMATIC_INSTRUMENT_SUCCESS",
+    "weighting": "EQUAL_OVER_PROMPTS_ROOTS_CHECKPOINTS"
+  },
+  "schema_version": 1,
+  "status": "PROSPECTIVE_CLOSED_PENDING_SEPARATE_DECISION_AND_PUSH"
+}

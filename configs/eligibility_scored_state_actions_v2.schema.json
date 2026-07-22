@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/eligibility-scored-state-actions-v2-row.json",
+  "$defs": {
+    "decoder": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_completed_steps": {"type": "number"},
+        "checkpoint_fraction": {"type": "number"},
+        "checkpoint_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "decoder_channels": {"type": "number"},
+        "decoder_chunked": {"type": ["number", "boolean"]},
+        "decoder_sample_rate": {"type": "number"},
+        "latent_dtype": {"minLength": 1, "type": "string"},
+        "latent_shape": {
+          "items": {"minimum": 1, "type": "integer"},
+          "minItems": 1,
+          "type": "array"
+        },
+        "preview_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "schedule_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "transformer_budget_nfe": {"type": "number"}
+      },
+      "required": [
+        "checkpoint_completed_steps",
+        "checkpoint_fraction",
+        "checkpoint_sha256",
+        "decoder_channels",
+        "decoder_chunked",
+        "decoder_sample_rate",
+        "latent_dtype",
+        "latent_shape",
+        "preview_sha256",
+        "schedule_sha256",
+        "transformer_budget_nfe"
+      ],
+      "type": "object"
+    },
+    "integrityAxis": {
+      "additionalProperties": false,
+      "properties": {
+        "integrity_failure": {"type": ["number", "boolean"]}
+      },
+      "required": ["integrity_failure"],
+      "type": "object"
+    },
+    "integrityValues": {
+      "additionalProperties": false,
+      "properties": {
+        "all_sample_rms": {"type": ["number", "boolean"]},
+        "clipping_flag": {"type": ["number", "boolean"]},
+        "clipping_margin": {"type": ["number", "boolean"]},
+        "crackle_flag": {"type": ["number", "boolean"]},
+        "crackle_margin": {"type": ["number", "boolean"]},
+        "dropout_count": {"type": ["number", "boolean"]},
+        "dropout_flag": {"type": ["number", "boolean"]},
+        "dropout_margin": {"type": ["number", "boolean"]},
+        "file_validity_failure": {"type": ["number", "boolean"]},
+        "hard_clipped_fraction": {"type": ["number", "boolean"]},
+        "longest_dropout_ms": {"type": ["number", "boolean"]},
+        "maximum_channel_crackle_count": {"type": ["number", "boolean"]},
+        "silence_flag": {"type": ["number", "boolean"]},
+        "silence_margin": {"type": ["number", "boolean"]},
+        "silent_frame_fraction": {"type": ["number", "boolean"]},
+        "true_peak": {"type": ["number", "boolean"]}
+      },
+      "required": [
+        "all_sample_rms",
+        "clipping_flag",
+        "clipping_margin",
+        "crackle_flag",
+        "crackle_margin",
+        "dropout_count",
+        "dropout_flag",
+        "dropout_margin",
+        "file_validity_failure",
+        "hard_clipped_fraction",
+        "longest_dropout_ms",
+        "maximum_channel_crackle_count",
+        "silence_flag",
+        "silence_margin",
+        "silent_frame_fraction",
+        "true_peak"
+      ],
+      "type": "object"
+    },
+    "tempoAxis": {
+      "additionalProperties": false,
+      "properties": {
+        "first_window_octave_invariant_error": {"type": ["number", "boolean"]},
+        "first_window_primary_5pct_success": {"type": ["number", "boolean"]},
+        "first_window_resolved": {"type": ["number", "boolean"]},
+        "first_window_sensitivity_10pct_success": {"type": ["number", "boolean"]},
+        "full_clip_consensus_bpm": {"type": ["number", "boolean"]},
+        "full_clip_octave_invariant_error": {"type": ["number", "boolean"]},
+        "full_clip_primary_5pct_success": {"type": ["number", "boolean"]},
+        "full_clip_raw_absolute_percentage_error": {"type": ["number", "boolean"]},
+        "full_clip_resolved": {"type": ["number", "boolean"]},
+        "full_clip_sensitivity_10pct_success": {"type": ["number", "boolean"]},
+        "second_window_octave_invariant_error": {"type": ["number", "boolean"]},
+        "second_window_primary_5pct_success": {"type": ["number", "boolean"]},
+        "second_window_resolved": {"type": ["number", "boolean"]},
+        "second_window_sensitivity_10pct_success": {"type": ["number", "boolean"]},
+        "window_octave_invariant_absolute_drift": {"type": ["number", "boolean"]},
+        "window_signed_drift_octaves": {"type": ["number", "boolean"]}
+      },
+      "required": [
+        "first_window_octave_invariant_error",
+        "first_window_primary_5pct_success",
+        "first_window_resolved",
+        "first_window_sensitivity_10pct_success",
+        "full_clip_consensus_bpm",
+        "full_clip_octave_invariant_error",
+        "full_clip_primary_5pct_success",
+        "full_clip_raw_absolute_percentage_error",
+        "full_clip_resolved",
+        "full_clip_sensitivity_10pct_success",
+        "second_window_octave_invariant_error",
+        "second_window_primary_5pct_success",
+        "second_window_resolved",
+        "second_window_sensitivity_10pct_success",
+        "window_octave_invariant_absolute_drift",
+        "window_signed_drift_octaves"
+      ],
+      "type": "object"
+    },
+    "voiceAxis": {
+      "additionalProperties": false,
+      "properties": {
+        "demucs_present": {"type": ["number", "boolean"]},
+        "demucs_vocal_energy_ratio": {"type": ["number", "boolean"]},
+        "mixture_rms": {"type": ["number", "boolean"]},
+        "panns_max_vocal_probability": {"type": ["number", "boolean"]},
+        "panns_present": {"type": ["number", "boolean"]},
+        "voice_margin": {"type": ["number", "boolean"]},
+        "voice_present": {"type": ["number", "boolean"]}
+      },
+      "required": [
+        "demucs_present",
+        "demucs_vocal_energy_ratio",
+        "mixture_rms",
+        "panns_max_vocal_probability",
+        "panns_present",
+        "voice_margin",
+        "voice_present"
+      ],
+      "type": "object"
+    },
+    "withinPreview": {
+      "additionalProperties": false,
+      "properties": {
+        "active_fraction": {"type": ["number", "boolean"]},
+        "crest_factor": {"type": ["number", "boolean"]},
+        "dc_offset_per_channel": {
+          "items": {"type": "number"},
+          "minItems": 1,
+          "type": "array"
+        },
+        "duration_seconds": {"type": ["number", "boolean"]},
+        "peak_absolute": {"type": ["number", "boolean"]},
+        "rms": {"type": ["number", "boolean"]},
+        "spectral_centroid_hz": {"type": ["number", "boolean"]},
+        "spectral_rolloff_95_hz": {"type": ["number", "boolean"]},
+        "zero_crossing_rate": {"type": ["number", "boolean"]}
+      },
+      "required": [
+        "active_fraction",
+        "crest_factor",
+        "dc_offset_per_channel",
+        "duration_seconds",
+        "peak_absolute",
+        "rms",
+        "spectral_centroid_hz",
+        "spectral_rolloff_95_hz",
+        "zero_crossing_rate"
+      ],
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"tier": {"const": "INITIAL"}}, "required": ["tier"]},
+      "then": {"properties": {"root_index": {"maximum": 3, "minimum": 0}}}
+    },
+    {
+      "if": {"properties": {"axis": {"const": "vocal_instrumental"}}, "required": ["axis"]},
+      "then": {
+        "properties": {
+          "state_features": {
+            "properties": {"axis_evaluator_values": {"$ref": "#/$defs/voiceAxis"}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"axis": {"const": "tempo"}}, "required": ["axis"]},
+      "then": {
+        "properties": {
+          "state_features": {
+            "properties": {"axis_evaluator_values": {"$ref": "#/$defs/tempoAxis"}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"axis": {"const": "integrity"}}, "required": ["axis"]},
+      "then": {
+        "properties": {
+          "state_features": {
+            "properties": {"axis_evaluator_values": {"$ref": "#/$defs/integrityAxis"}}
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "action": {
+      "enum": [
+        "KEEP",
+        "RESTART_BASE",
+        "RESTART_FIXED"
+      ]
+    },
+    "action_mapping_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "automatic_result_wording": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "axis": {
+      "enum": [
+        "vocal_instrumental",
+        "tempo",
+        "integrity"
+      ]
+    },
+    "backbone": {
+      "enum": [
+        "stable-audio-3-medium-base",
+        "ACE-Step v1"
+      ]
+    },
+    "budget_features": {
+      "additionalProperties": false,
+      "properties": {
+        "elapsed_nfe": {"minimum": 0, "type": "number"},
+        "elapsed_seconds": {"minimum": 0, "type": "number"},
+        "incremental_cost_nfe": {"minimum": 0, "type": "number"},
+        "incremental_cost_seconds": {"minimum": 0, "type": "number"},
+        "remaining_nfe": {"minimum": 0, "type": "number"},
+        "remaining_seconds": {"minimum": 0, "type": "number"},
+        "total_nfe": {"exclusiveMinimum": 0, "type": "number"},
+        "total_seconds": {"exclusiveMinimum": 0, "type": "number"}
+      },
+      "required": [
+        "elapsed_nfe",
+        "elapsed_seconds",
+        "incremental_cost_nfe",
+        "incremental_cost_seconds",
+        "remaining_nfe",
+        "remaining_seconds",
+        "total_nfe",
+        "total_seconds"
+      ],
+      "type": "object"
+    },
+    "checkpoint_fraction": {
+      "enum": [0.25, 0.5, 0.75]
+    },
+    "fold_id": {
+      "maximum": 5,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "held_out_fitted_value_used": {"const": false},
+    "human_gold_used": {"const": false},
+    "lane_request_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "model_id": {"minLength": 1, "type": "string"},
+    "other_root_preview_used": {"const": false},
+    "outcome_audio_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "outcome_binding_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "outcome_label": {"minLength": 1, "type": "string"},
+    "outcome_source": {"minLength": 1, "type": "string"},
+    "outcome_source_root_index": {
+      "maximum": 7,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "outcome_success": {"type": "boolean"},
+    "outcome_valid": {"type": "boolean"},
+    "preview_audio_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "preview_source_request_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "prompt_factors": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {"type": ["string", "null"]},
+        "request": {"type": ["string", "null"]},
+        "salience": {"type": ["string", "null"]},
+        "style_family": {"type": ["string", "null"]},
+        "target_bpm": {"type": ["number", "null"]}
+      },
+      "required": ["profile", "request", "salience", "style_family", "target_bpm"],
+      "type": "object"
+    },
+    "prompt_id": {"minLength": 1, "type": "string"},
+    "prompt_stratum": {"minLength": 1, "type": "string"},
+    "root_index": {"maximum": 7, "minimum": 0, "type": "integer"},
+    "schema_version": {"const": 1},
+    "state_features": {
+      "additionalProperties": false,
+      "properties": {
+        "axis_evaluator_values": {"type": "object"},
+        "frozen_decoder_metadata": {"$ref": "#/$defs/decoder"},
+        "integrity_values": {"$ref": "#/$defs/integrityValues"},
+        "within_preview_summaries": {"$ref": "#/$defs/withinPreview"}
+      },
+      "required": [
+        "axis_evaluator_values",
+        "integrity_values",
+        "within_preview_summaries",
+        "frozen_decoder_metadata"
+      ],
+      "type": "object"
+    },
+    "terminal_features_used": {"const": false},
+    "tier": {
+      "enum": ["INITIAL", "COMBINED_AFTER_ONE_DOUBLING"]
+    },
+    "watermark": {"const": "AUTOMATIC-INSTRUMENT OUTCOMES"}
+  },
+  "required": [
+    "schema_version",
+    "watermark",
+    "backbone",
+    "model_id",
+    "axis",
+    "tier",
+    "prompt_id",
+    "prompt_stratum",
+    "root_index",
+    "checkpoint_fraction",
+    "fold_id",
+    "lane_request_sha256",
+    "action_mapping_sha256",
+    "action",
+    "outcome_binding_sha256",
+    "outcome_source",
+    "outcome_label",
+    "outcome_source_root_index",
+    "preview_source_request_sha256",
+    "preview_audio_sha256",
+    "state_features",
+    "prompt_factors",
+    "budget_features",
+    "outcome_audio_sha256",
+    "outcome_valid",
+    "outcome_success",
+    "automatic_result_wording",
+    "human_gold_used",
+    "terminal_features_used",
+    "other_root_preview_used",
+    "held_out_fitted_value_used"
+  ],
+  "title": "Frozen v2 scored state-action row",
+  "type": "object"
+}
