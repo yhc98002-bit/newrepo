@@ -2426,3 +2426,94 @@ terminal receipt is
 `STATE_ENGINEERING_GOVERNANCE = D-0045`
 
 `STAGE1_HUMAN_GOLD_CLAIMS = NO`
+
+## D-0048 — SA3 survivor-state engineering repair attempt opened
+
+- Date: 2026-07-22
+- Status: accepted exact zero-call repair opening
+- Authority: D-0045, D-0047, and the PI consolidated execution goal
+
+The prepared `sa3-state-v2-restricted-rerun-001` attempt was stopped by the
+pre-call audit because its claim and run manifest omitted exact GPU placement.
+Its immutable failure terminal, SHA-256
+`edd63740e402f3d91224ffb16872ba62f6482c5bfe5a8220174ae2b0e35689ec`,
+proves zero model calls, zero generated outputs, and no worker, heartbeat,
+ledger, or audio artifact. This is a publication bug under D-0045, not a
+scientific result.
+
+One new sequential attempt is opened on exact an12 GPU 4 as TP1/R1. It must
+replay the registered failed validation group `bbbc3309a9a4df4b56822163e6e8308c1d37cab7070c07c583fb4d541f2f7015`
+first and may continue only after that validation passes. The Stage-1 result,
+cancellation summary, source queue, prompts, roots, checkpoints, actions,
+features, outcomes, budgets, and mappings remain byte/hash-bound. Supplemental
+roots remain locked.
+
+`SA3_STATE_ENGINEERING_REPAIR_AUTHORIZED = YES`
+
+`SA3_STATE_ENGINEERING_REPAIR_RUN_ID = sa3-state-v2-restricted-rerun-002`
+
+`SA3_STATE_ENGINEERING_REPAIR_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sa3-state-restricted-rerun-v2/sa3-state-v2-restricted-rerun-002.claim.json`
+
+`SA3_STATE_ENGINEERING_REPAIR_PREDECESSOR_SHA256 = edd63740e402f3d91224ffb16872ba62f6482c5bfe5a8220174ae2b0e35689ec`
+
+`SA3_STATE_ENGINEERING_REPAIR_PLACEMENT = an12:[4];TP1;R1`
+
+`SA3_STATE_ENGINEERING_REPAIR_SURVIVOR_AXES = vocal_instrumental`
+
+`SA3_STATE_ENGINEERING_REPAIR_CONFIG_SHA256 = 67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2`
+
+`SA3_STATE_ENGINEERING_REPAIR_QUEUE_MANIFEST_SHA256 = 5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3`
+
+`SA3_STATE_ENGINEERING_REPAIR_STAGE1_RESULT_SHA256 = 5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157`
+
+`SA3_STATE_ENGINEERING_REPAIR_STAGE1_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
+
+`SA3_STATE_ENGINEERING_REPAIR_VALIDATION_GROUP_SHA256 = bbbc3309a9a4df4b56822163e6e8308c1d37cab7070c07c583fb4d541f2f7015`
+
+`SA3_STATE_ENGINEERING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO`
+
+`SA3_STATE_ENGINEERING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO`
+
+## D-0049 — ACE survivor-state engineering repair attempt opened
+
+- Date: 2026-07-22
+- Status: accepted exact zero-call repair opening
+- Authority: D-0045, D-0047, and the PI consolidated execution goal
+
+The prepared `ace-state-formal-v2-001` attempt was stopped before assignment
+or model loading. Its claim published GPUs 4–7 while the reserved placement
+was GPUs 5–6, and its validator rejected the cluster's known `/HOME` versus
+`/XYFS01/HOME` mount spelling. The retained failure terminal, SHA-256
+`4e647f1c3154ea59ad2e2478ba846f5e0c4b41303e8318d52f01368cf2da34dd`,
+proves zero model calls, zero outputs, and no worker, assignment, heartbeat,
+ledger, or audio artifact. These are path/publication bugs under D-0045.
+
+One new sequential attempt is opened on exact an12 GPUs 5 and 6 as two
+independent TP1 replicas. Its survivor queue remains ACE integrity only. The
+Stage-1 result, cancellation summary, source queue, prompts, roots,
+checkpoints, actions, features, outcomes, budgets, folds, and mappings remain
+byte/hash-bound; every STOP unit and every supplemental root remains locked.
+
+`ACE_STATE_ENGINEERING_REPAIR_AUTHORIZED = YES`
+
+`ACE_STATE_ENGINEERING_REPAIR_RUN_ID = ace-state-formal-v2-002`
+
+`ACE_STATE_ENGINEERING_REPAIR_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/ace-state-formal-v2-002/control/formal-launch-claim.json`
+
+`ACE_STATE_ENGINEERING_REPAIR_PREDECESSOR_SHA256 = 4e647f1c3154ea59ad2e2478ba846f5e0c4b41303e8318d52f01368cf2da34dd`
+
+`ACE_STATE_ENGINEERING_REPAIR_PLACEMENT = an12:[5,6];TP1;R2`
+
+`ACE_STATE_ENGINEERING_REPAIR_SURVIVOR_AXES = integrity`
+
+`ACE_STATE_ENGINEERING_REPAIR_CONFIG_SHA256 = 4cd688c71cff19104d1932386b42c4f1090cce5c5cd20dc61f7881e26a6fba89`
+
+`ACE_STATE_ENGINEERING_REPAIR_QUEUE_MANIFEST_SHA256 = 62c215ae38f0753198dcfcad36bebb8afeb669b11d170249c4be974ae7dd6e6a`
+
+`ACE_STATE_ENGINEERING_REPAIR_STAGE1_RESULT_SHA256 = 5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157`
+
+`ACE_STATE_ENGINEERING_REPAIR_STAGE1_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
+
+`ACE_STATE_ENGINEERING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO`
+
+`ACE_STATE_ENGINEERING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO`

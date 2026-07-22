@@ -56,6 +56,8 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0045",
         "D-0046",
         "D-0047",
+        "D-0048",
+        "D-0049",
     ]
 
 
@@ -293,6 +295,34 @@ def test_engineering_repair_and_stage1_policy_are_separate_append_only_decisions
         "STAGE1_HUMAN_GOLD_CLAIMS = NO",
     ):
         assert assignment in terminal
+
+
+def test_zero_call_state_repair_openings_bind_exact_attempts_and_placements() -> None:
+    sa3 = _decision_block("D-0048")
+    for assignment in (
+        "SA3_STATE_ENGINEERING_REPAIR_AUTHORIZED = YES",
+        "SA3_STATE_ENGINEERING_REPAIR_RUN_ID = sa3-state-v2-restricted-rerun-002",
+        "SA3_STATE_ENGINEERING_REPAIR_PREDECESSOR_SHA256 = "
+        "edd63740e402f3d91224ffb16872ba62f6482c5bfe5a8220174ae2b0e35689ec",
+        "SA3_STATE_ENGINEERING_REPAIR_PLACEMENT = an12:[4];TP1;R1",
+        "SA3_STATE_ENGINEERING_REPAIR_SURVIVOR_AXES = vocal_instrumental",
+        "SA3_STATE_ENGINEERING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO",
+        "SA3_STATE_ENGINEERING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO",
+    ):
+        assert assignment in sa3
+
+    ace = _decision_block("D-0049")
+    for assignment in (
+        "ACE_STATE_ENGINEERING_REPAIR_AUTHORIZED = YES",
+        "ACE_STATE_ENGINEERING_REPAIR_RUN_ID = ace-state-formal-v2-002",
+        "ACE_STATE_ENGINEERING_REPAIR_PREDECESSOR_SHA256 = "
+        "4e647f1c3154ea59ad2e2478ba846f5e0c4b41303e8318d52f01368cf2da34dd",
+        "ACE_STATE_ENGINEERING_REPAIR_PLACEMENT = an12:[5,6];TP1;R2",
+        "ACE_STATE_ENGINEERING_REPAIR_SURVIVOR_AXES = integrity",
+        "ACE_STATE_ENGINEERING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO",
+        "ACE_STATE_ENGINEERING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO",
+    ):
+        assert assignment in ace
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

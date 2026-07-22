@@ -614,3 +614,47 @@ manifest and artifacts are named here with SHA-256 digests.
   `e58b6c9722157465cfb922f5a27aa1c67abf05ad64c07dafae3e25815931c958`
 - Scientific wording: `AUTOMATIC-INSTRUMENT OUTCOMES`; no human-gold or
   evaluator-accuracy claim
+
+## L-0018 — SA3 state run-001 stopped by zero-call placement audit
+
+- Time: 2026-07-22T15:38:45Z
+- Kind: immutable pre-model engineering failure; no scientific outcome
+- Authority: D-0035, D-0045, and D-0047
+- Git repair boundary: `7e96169802ace009e12fb648e35099a09fa62b5f`, clean
+  and equal to `origin/main` before the failure receipt was sealed
+- Node: prepared/audited on `ln206`; intended execution node `an12`; GPUs,
+  TP, and replicas: none because no worker launched
+- Run: `sa3-state-v2-restricted-rerun-001`
+- Failure: `PLACEMENT_PUBLICATION_MISSING`; the claim and run manifest did
+  not publish exact GPU placement, so the pre-call audit stopped the attempt
+- Calls/outputs/GPU time: 0 / 0 / 0 seconds
+- Inventory: no worker directory, heartbeat, state ledger, or audio file
+- Claim / run-manifest / failure-terminal SHA-256s:
+  `0368708a1727043d6c7eac4a52bd0e00b3e2c1e35a7437ddfc1c885bc8ef8ea4` /
+  `913e83b2fbd7c1e3ceed5a6944211a3a399929f4ca650b9701cb382016aecf1b` /
+  `edd63740e402f3d91224ffb16872ba62f6482c5bfe5a8220174ae2b0e35689ec`
+- Disposition: failed attempt retained mode 0444; D-0048 opens only a new
+  sequential claim/run with identical scientific bindings
+
+## L-0019 — ACE state run-001 stopped by zero-call path/placement audit
+
+- Time: 2026-07-22T15:38:45Z
+- Kind: immutable pre-model engineering failure; no scientific outcome
+- Authority: D-0036, D-0045, and D-0047
+- Git repair boundary: `7e96169802ace009e12fb648e35099a09fa62b5f`, clean
+  and equal to `origin/main` before the failure receipt was sealed
+- Node: prepared/audited on `ln206`; intended execution node `an12`; GPUs,
+  TP, and replicas: none because no assignment or worker launched
+- Run: `ace-state-formal-v2-001`
+- Failure: `PLACEMENT_PUBLICATION_MISMATCH_AND_PATH_ALIAS_VALIDATOR`; the
+  claim named GPUs 4–7 instead of exact GPUs 5–6, and the validator rejected
+  the known hash-identical `/HOME` and `/XYFS01/HOME` mount aliases
+- Calls/outputs/GPU time: 0 / 0 / 0 seconds
+- Inventory: no supervisor assignment, worker directory, heartbeat, formal
+  state ledger, or audio file
+- Claim / run-manifest / failure-terminal SHA-256s:
+  `cbea38b9123fa27eefefb1b594303fb98fb32b750e3b36831d4ed214d519e960` /
+  `3c1339bb4d46f15e0ecb8e61c462490059c1f246273ab9276913343cf0459e26` /
+  `4e647f1c3154ea59ad2e2478ba846f5e0c4b41303e8318d52f01368cf2da34dd`
+- Disposition: failed attempt retained mode 0444; D-0049 opens only a new
+  sequential claim/run with identical scientific bindings
