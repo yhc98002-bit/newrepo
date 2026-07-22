@@ -51,6 +51,8 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0040",
         "D-0041",
         "D-0042",
+        "D-0043",
+        "D-0044",
     ]
 
 
@@ -206,6 +208,41 @@ def test_sao_recovery_and_decision_grade_openings_preserve_scope() -> None:
     ):
         assert assignment in replacement
 
+    sao_terminal = _decision_block("D-0043")
+    for assignment in (
+        "SAO_MINI_SMOKE_STATUS = FAILED_STOPPED_NO_RETRY",
+        "SAO_MINI_SMOKE_MODEL_CALL_ATTEMPTS = 1",
+        "SAO_MINI_SMOKE_COMPLETED_MODEL_LOADS = 0",
+        "SAO_MINI_SMOKE_GENERATED_AUDIO_OUTPUTS = 0",
+        "SAO_CORE_GENERATION_AUTHORIZED = NO",
+        "SAO_AUTOMATIC_SCORING_AUTHORIZED = NO",
+        "SAO_STATE_CAPABILITY = NOT_ATTEMPTED",
+        "SAO_ELIGIBILITY_SCOPE_EXPANDED = NO",
+        "SAO_FURTHER_MINI_SMOKE_ATTEMPTS = 0",
+    ):
+        assert assignment in sao_terminal
+    receipt_path = ROOT / "provenance/b2/sao_live_terminal_v2.json"
+    assert _sha256(receipt_path) in sao_terminal
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["status"] == "BLOCKED_ON_ENGINEERING_FAILURE"
+    assert receipt["model_call_attempts"] == 1
+    assert receipt["audio_outputs"] == 0
+    assert receipt["no_retry"] is True
+    assert receipt["benchmark_core_generation_authorized"] is False
+    assert receipt["sao_automatic_scoring_authorized"] is False
+
+    sealed_tables = _decision_block("D-0044")
+    for assignment in (
+        "DECISION_GRADE_INITIAL_STATUS = "
+        "DECISION_GRADE_AUTOMATIC_TABLES_PARTIAL_VERIFIED_SOURCES",
+        "DECISION_GRADE_INITIAL_PREVALENCE_ROWS = 64",
+        "DECISION_GRADE_INITIAL_TEMPO_DRIFT_ROWS = 8",
+        "DECISION_GRADE_INITIAL_DISAGREEMENT_ROWS = 28",
+        "DECISION_GRADE_INITIAL_MISSING_BACKBONES = stable-audio-open-1.0",
+        "DECISION_GRADE_HUMAN_GOLD_CLAIMS = NO",
+    ):
+        assert assignment in sealed_tables
+
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:
     receipt = json.loads(
@@ -228,9 +265,24 @@ def test_lane_report_states_automatic_only_and_sao_blocker() -> None:
         "automatic-instrument outcomes",
         "NOT_HUMAN_GOLD",
         "BLOCKED_ON_LICENSE",
+        "BLOCKED_MISSING_FROZEN_THRESHOLDS",
+        "FAILED_STOPPED_NO_RETRY",
+        "NOT_AUTHORIZED_ENGINEERING_FAILURE",
+        "33b15bf8811d1a2f85575605eef95e58e253f77767e79575dc5a6ec263473d94",
+        "provenance/b2/sao_live_terminal_v2.json",
         "an12 physical GPUs 0–3 occupied",
         "GPUs 4–7",
         "timing-pilot-bundles",
         "provenance/b2/sao_access_receipt.schema.json",
     ):
         assert marker in report
+
+    launch = (ROOT / "BENCHMARK_LAUNCH_REPORT.md").read_text(encoding="utf-8")
+    for marker in (
+        "Runtime terminal addendum",
+        "NO_VERDICT_SPECIFICATION_BLOCKED",
+        "PYWAVELETS_NUMPY_BINARY_ABI_INCOMPATIBILITY",
+        "SAO 1,536-row core",
+        "zero WAVs",
+    ):
+        assert marker in launch

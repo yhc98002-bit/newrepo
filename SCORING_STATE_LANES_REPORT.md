@@ -533,3 +533,83 @@ Ruff and `git diff --check` also passed. The final rerun included the
 append-only seed-registry governance checks for S-0011/S-0012. No network,
 CUDA, state execution, endpoint scoring, or packet assembly occurred during
 these tests.
+
+## 2026-07-22 terminal update — Stage-1, D-0040 tables, and SAO live
+
+| Lane | Current status | First or terminal artifact |
+| --- | --- | --- |
+| Stage-1 outcome screen | `BLOCKED_MISSING_FROZEN_THRESHOLDS` | `STAGE1_OUTCOME_GATES.md`; no result/cancellation artifact |
+| SA3 restricted state rerun | `CLOSED_PENDING_STAGE1_RESULT` | Zero units executed |
+| ACE formal initial state | `CLOSED_PENDING_STAGE1_RESULT` | Zero units executed; supplemental locked |
+| D-0040 decision-grade tables | `PARTIAL_VERIFIED_SOURCES` | `.../decision-grade-v2-001/automatic-instrument-tables.json` |
+| SAO acquisition | `COMPLETE_VERIFIED` | `.../sao-acquisition-recovery-v2-002/access-receipt.json` |
+| SAO mini-smoke | `FAILED_STOPPED_NO_RETRY` | `.../sao-mini-smoke-v2-002/sao-mini-smoke-terminal.json` |
+| SAO ordinary core | `NOT_AUTHORIZED_ENGINEERING_FAILURE` | No run directory, queue, heartbeat, ledger, or shard |
+| SAO automatic scoring | `NOT_AUTHORIZED_NO_COMPLETED_SHARDS` | No SAO score table or candidate strata |
+| Packet watcher | `ARMED_WAITING_ON_TIMING_PILOT_AND_SCORING_STRATA` | Mutable heartbeat remains active; no packet |
+
+### Stage-1 verdict cells
+
+Both registered numerical minima remain absent. The CPU runner has therefore
+read no scored row and produced no CI or formal verdict:
+
+| Axis | Backbone | Failure-rate CI | Mixed-prompt-share CI | Status |
+| --- | --- | --- | --- | --- |
+| Integrity | stable-audio-3-medium-base | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Integrity | ACE-Step v1 | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Tempo, 5% primary | stable-audio-3-medium-base | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Tempo, 5% primary | ACE-Step v1 | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Vocal/instrumental automatic instrument | stable-audio-3-medium-base | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Vocal/instrumental automatic instrument | ACE-Step v1 | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+
+No cell is `STOP_AXIS_STAGE1`, so no cancellation was ledgered. No cell is a
+survivor either, so both formal state workers remain closed.
+
+### Decision-grade table path and contents
+
+The D-0040 output is:
+
+```text
+/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/
+benchmark_v2_runtime/runs/decision-grade-v2/decision-grade-v2-001/
+automatic-instrument-tables.json
+```
+
+SHA-256 is
+`33b15bf8811d1a2f85575605eef95e58e253f77767e79575dc5a6ec263473d94`.
+It includes SA3 and ACE only: 64 primary/diagnostic prevalence rows, eight
+window-drift rows, 28 primary disagreement rows, plus separate negation
+diagnostics. Tempo has 5% primary and 10% sensitivity metrics; integrity is
+defect-separated. Every reported row is watermarked
+`AUTOMATIC-INSTRUMENT OUTCOMES`; output-language validation passed and no
+human-gold or accuracy claim is authorized. D-0043 makes an SAO extension
+unavailable in this cycle.
+
+### SAO failure and queue closure
+
+The sole D-0042 attempt used an12 physical GPU 4, TP1/R1, after observing
+85,171,634,176 free VRAM bytes, 0% utilization, and no compute process. Its
+claim SHA-256 is
+`add88f095bb969c736a28141b0ed89ce6a704e732daeac4b7d2f87536f086184`.
+The first `adapter.generate()` attempt stopped before model construction
+completed because PyWavelets 1.4.1 is binary-incompatible with NumPy 2.2.6 in
+the frozen runtime. The terminal SHA-256 is
+`3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097`;
+the one-row failed-call ledger SHA-256 is
+`bc51c5b926c01eb8afbf774e3763304b6ddb0bbf74890ea8a3eb0dac13bd2813`.
+There were one model-call attempt, zero completed model loads, zero WAVs, zero
+benchmark endpoint scores, and no measured NFE/cost row. The repository
+terminal receipt is `provenance/b2/sao_live_terminal_v2.json`, SHA-256
+`c50a9108b910354d7f74d78fdce02587e7d48cd52f16b32e68df6f3b2fb3a153`.
+
+The frozen no-retry rule is now terminal. No environment repair or second
+claim is authorized; consequently no SAO 1,536-row core queue, generation
+heartbeat, first shard, automatic scorer, or SAO packet stratum exists. SAO
+state remains `NOT_ATTEMPTED`, and eligibility remains SA3 plus ACE only.
+
+The watcher process is still alive. At 2026-07-22 11:33:17 UTC its mutable
+heartbeat reported `MISSING_SCORING_STRATA` and
+`BLOCKED_ON_TIMING_PILOT_INGESTION`, with observed SHA-256
+`5a47a54796bc6df49cce24b172c4305d89645df12f33670f1aa068958c41a38e`.
+The cross-instrument preassembly test remains enforced; no packet was
+assembled.

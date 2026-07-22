@@ -558,3 +558,124 @@ Static verification subsequently completed with `409 passed, 111 subtests
 passed in 397.94 s`; repository-wide Ruff and `git diff --check` passed. This
 verification made no network request, CUDA call, state execution, endpoint
 score, or packet assembly.
+
+## Runtime terminal addendum — 2026-07-22 (D-0042 through D-0044)
+
+This addendum supersedes only the immediately preceding static-boundary
+statements about unrun D-0040 tables and an unattempted SAO smoke. It does not
+alter any earlier model outcome or authorize a retry.
+
+### Lane status
+
+| Lane | Terminal status | Obtained artifact or blocker |
+| --- | --- | --- |
+| Stage-1 outcome gates | `BLOCKED_MISSING_FROZEN_THRESHOLDS` | Two PI policy minima remain unspecified; no scored row read and no verdict emitted |
+| SA3 restricted state rerun | `CLOSED_PENDING_STAGE1_RESULT` | Zero units executed; original failed unit not replayed |
+| ACE formal initial state | `CLOSED_PENDING_STAGE1_RESULT` | Zero units executed; supplemental queue remains locked |
+| Decision-grade automatic tables | `DECISION_GRADE_AUTOMATIC_TABLES_PARTIAL_VERIFIED_SOURCES` | SA3 + ACE immutable table, SHA-256 `33b15bf8811d1a2f85575605eef95e58e253f77767e79575dc5a6ec263473d94` |
+| SAO acquisition | `ACCESS_RECEIPT_RECOVERED_OFFLINE_HARDLINK_NO_GENERATION` | Exact revision and receipt sealed; token removed before inference |
+| SAO three-call mini-smoke | `FAILED_STOPPED_NO_RETRY` | Call 0 failed during model-factory import; zero WAVs |
+| SAO 1,536-row core | `NOT_AUTHORIZED_ENGINEERING_FAILURE` | No queue, worker, heartbeat, shard, or benchmark row created |
+| SAO automatic scoring | `NOT_AUTHORIZED_NO_COMPLETED_SHARDS` | No SAO strata or score table exists |
+| SAO state / eligibility | `NOT_ATTEMPTED / NOT_EXPANDED` | Eligibility remains SA3 + ACE only |
+| Human-audit packet | `ARMED_WAITING_ON_TIMING_PILOT_AND_SCORING_STRATA` | Watcher alive; no packet assembled |
+
+### Stage-1 table
+
+The frozen v2 record still contains no numeric
+`baseline_failure_rate_minimum` and no numeric
+`mixed_outcome_prompt_share_minimum`. The fail-closed CPU runner therefore
+did not read the bound automatic-outcome rows. “Not computed” below is not an
+`OUTCOME_SCREEN_PASS` or `STOP_AXIS_STAGE1` verdict.
+
+| Axis | Backbone | BASE failure rate (95% CI) | Mixed-outcome prompt share (95% CI) | Verdict |
+| --- | --- | --- | --- | --- |
+| Integrity | stable-audio-3-medium-base | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Integrity | ACE-Step v1 | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Tempo, primary 5% | stable-audio-3-medium-base | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Tempo, primary 5% | ACE-Step v1 | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Vocal/instrumental automatic instrument | stable-audio-3-medium-base | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+| Vocal/instrumental automatic instrument | ACE-Step v1 | Not computed | Not computed | `NO_VERDICT_SPECIFICATION_BLOCKED` |
+
+No `STOP_AXIS_STAGE1` cell exists, so no state unit was labeled
+`CANCELLED_STAGE1`; equally, no survivor exists, so neither state lane may
+execute. The immutable Stage-1 result and cancellation-summary paths remain
+absent.
+
+### Decision-grade automatic-instrument tables
+
+D-0040 completed on an12 with all GPUs hidden. The no-clobber output is:
+
+```text
+/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/
+benchmark_v2_runtime/runs/decision-grade-v2/decision-grade-v2-001/
+automatic-instrument-tables.json
+```
+
+Its SHA-256 is
+`33b15bf8811d1a2f85575605eef95e58e253f77767e79575dc5a6ec263473d94`.
+The output passes the automatic-only language validator and contains 64
+prevalence rows, eight separately reported first/second-window tempo-drift
+rows, 28 cross-instrument disagreement rows, and separate negation-diagnostic
+tables. Tempo prevalence includes metric-specific 5% primary and 10%
+sensitivity bands; integrity prevalence remains defect-specific. The included
+backbones are SA3 and ACE. SAO is explicitly a missing registered backbone,
+not a zero-rate outcome. All rows are watermarked
+`AUTOMATIC-INSTRUMENT OUTCOMES`; no human-gold or evaluator-accuracy claim is
+made.
+
+### SAO terminal evidence
+
+The acquired snapshot remains the exact official revision
+`f21265c1e2710b3bd2386596943f0007f55f802e`. The read-only Hugging Face token
+was used only by the earlier acquisition process; no token variable was
+present during smoke preflight or execution, and inference was forced
+offline.
+
+The sole D-0042 claim was consumed at 2026-07-22 11:29:34 UTC on clean pushed
+commit `0a5dac420b8036984973d0f4a596999c37e955ac`. The live idle check observed
+an12 physical GPU 4, TP1/R1, 85,171,634,176 free bytes, 0% utilization, and
+no compute neighbor. Call 0 then entered `adapter.generate()` but failed
+before model construction completed: Stable Audio Tools imported PyWavelets
+1.4.1 against NumPy 2.2.6 and raised a binary-ABI `ValueError`. The terminal
+records one attempted model call, zero completed model loads, zero generated
+outputs, zero WAVs, no endpoint scores, and `no_retry = true`. GPU4 returned
+to 2 MiB used / 81,226 MiB free immediately afterward; no neighboring process
+was changed. The normalized failure class is
+`PYWAVELETS_NUMPY_BINARY_ABI_INCOMPATIBILITY`.
+
+The retained evidence hashes are:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| D-0042 replacement claim | `add88f095bb969c736a28141b0ed89ce6a704e732daeac4b7d2f87536f086184` |
+| Manifest | `d729c2296d2d123d0eae69387ea9529d2e6b94816cb25f36de7f189f370c8ddf` |
+| One-row generation ledger | `bc51c5b926c01eb8afbf774e3763304b6ddb0bbf74890ea8a3eb0dac13bd2813` |
+| `FAILED_STOPPED_NO_RETRY` terminal | `3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097` |
+| Launch log | `eff22da9974237e3fb5fe5f0876f33a41127d97f21e53807dad5e6612075fdbc` |
+| Repository Phase-B receipt | `c50a9108b910354d7f74d78fdce02587e7d48cd52f16b32e68df6f3b2fb3a153` |
+
+The repository receipt is `provenance/b2/sao_live_terminal_v2.json`. Under
+D-0037 and D-0042, this model-call failure permanently consumes the smoke
+authority. No ABI repair, replacement claim, additional smoke call, 1,536-row
+core launch, or SAO scoring continuation is authorized.
+
+### Packet watcher
+
+The preassembly test continues to require actual cross-instrument
+disagreement cells before packet construction. The watcher process remains
+alive, and its mutable heartbeat at 2026-07-22 11:33:17 UTC reports
+`MISSING_SCORING_STRATA` plus
+`BLOCKED_ON_TIMING_PILOT_INGESTION`; SHA-256 at that observation was
+`5a47a54796bc6df49cce24b172c4305d89645df12f33670f1aa068958c41a38e`.
+Because SAO is terminal without scores and the PI timing-pilot receipt is
+also absent, no packet can autoassemble in this cycle under the frozen gate.
+
+### Verification for this addendum
+
+Before the SAO call, the complete suite passed on an12 with all GPUs hidden:
+`445 passed, 111 subtests passed in 47.55 s`; repository-wide Ruff and
+`git diff --check` passed. After terminal evidence, decisions, receipts,
+reports, and governance tests were added, the final CPU-only suite passed
+again with `445 passed, 111 subtests passed in 51.34 s`; focused lane tests
+passed 10/10, and repository-wide Ruff plus `git diff --check` passed.

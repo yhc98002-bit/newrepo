@@ -2177,3 +2177,103 @@ authorized.
 `SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIMS_SHA256 = aa3397f702a17a33f0e4bbe8bd5f002f2e90fa7e37528e001bb5b071791495b9`
 
 `SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ADAPTER_SHA256 = b4d36f87e2e48436498fb5b59e38fbf33882e560a3fd8fa6aeb58259fafd85ef`
+
+## D-0043 — SAO live mini-smoke terminal engineering failure
+
+- Date: 2026-07-22
+- Status: terminal; no retry, core queue, or scoring queue
+- Authority: D-0037 and D-0042 exact failure rules
+
+The sole D-0042 replacement claim was consumed on clean pushed commit
+`0a5dac420b8036984973d0f4a596999c37e955ac` after an offline preflight and
+an idle-device check on an12 physical GPU 4. Call 0 entered the adapter's
+model-call path but failed before a model load completed: importing
+PyWavelets 1.4.1 against NumPy 2.2.6 raised a binary-ABI `ValueError` while
+the Stable Audio Tools model factory was loading. The retained ledger has one
+`MODEL_CALL_FAILED` row. No WAV, adjacent provenance, NFE, or measured cost
+row exists; no benchmark endpoint or human label was consulted.
+
+D-0037 makes any model-call failure terminal, and D-0042 expressly authorizes
+no further replacement. The environment is therefore not repaired for
+another attempt. Stable Audio Open 1.0 receives no 1,536-row core queue and no
+automatic-scoring continuation. Its state capability remains `NOT_ATTEMPTED`
+and eligibility remains SA3 plus ACE only. The terminal Phase-B receipt is
+`provenance/b2/sao_live_terminal_v2.json`, SHA-256
+`c50a9108b910354d7f74d78fdce02587e7d48cd52f16b32e68df6f3b2fb3a153`.
+
+`SAO_MINI_SMOKE_STATUS = FAILED_STOPPED_NO_RETRY`
+
+`SAO_MINI_SMOKE_MODEL_CALL_ATTEMPTS = 1`
+
+`SAO_MINI_SMOKE_COMPLETED_MODEL_LOADS = 0`
+
+`SAO_MINI_SMOKE_GENERATED_AUDIO_OUTPUTS = 0`
+
+`SAO_MINI_SMOKE_FAILURE_CLASS = PYWAVELETS_NUMPY_BINARY_ABI_INCOMPATIBILITY`
+
+`SAO_MINI_SMOKE_REPLACEMENT_CLAIM_SHA256 = add88f095bb969c736a28141b0ed89ce6a704e732daeac4b7d2f87536f086184`
+
+`SAO_MINI_SMOKE_MANIFEST_SHA256 = d729c2296d2d123d0eae69387ea9529d2e6b94816cb25f36de7f189f370c8ddf`
+
+`SAO_MINI_SMOKE_LEDGER_SHA256 = bc51c5b926c01eb8afbf774e3763304b6ddb0bbf74890ea8a3eb0dac13bd2813`
+
+`SAO_MINI_SMOKE_TERMINAL_SHA256 = 3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097`
+
+`SAO_MINI_SMOKE_LAUNCH_LOG_SHA256 = eff22da9974237e3fb5fe5f0876f33a41127d97f21e53807dad5e6612075fdbc`
+
+`SAO_LIVE_TERMINAL_RECEIPT = provenance/b2/sao_live_terminal_v2.json`
+
+`SAO_LIVE_TERMINAL_RECEIPT_SHA256 = c50a9108b910354d7f74d78fdce02587e7d48cd52f16b32e68df6f3b2fb3a153`
+
+`SAO_CORE_GENERATION_AUTHORIZED = NO`
+
+`SAO_AUTOMATIC_SCORING_AUTHORIZED = NO`
+
+`SAO_STATE_CAPABILITY = NOT_ATTEMPTED`
+
+`SAO_ELIGIBILITY_SCOPE_EXPANDED = NO`
+
+`SAO_FURTHER_MINI_SMOKE_ATTEMPTS = 0`
+
+## D-0044 — Initial decision-grade automatic tables sealed
+
+- Date: 2026-07-22
+- Status: complete for verified SA3 plus ACE sources; SAO absent
+- Authority: D-0040 CPU execution opening
+
+The no-clobber D-0040 builder independently verified the frozen scoring rows,
+status, source snapshot, and all complete confirmatory cells for SA3 and ACE.
+The immutable legacy schema omitted an empty `incomplete_primary_backbones`
+field; commit `0a5dac420b8036984973d0f4a596999c37e955ac` accepts that omission only when
+the independently derived incomplete list is empty, at least one registered
+primary backbone is genuinely missing, and overall status is exactly
+`SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE`. Partial or status-tampered inputs
+remain rejected.
+
+The resulting table is watermarked `AUTOMATIC-INSTRUMENT OUTCOMES` and passes
+the prohibited-language validator. It contains 64 per-axis/backbone/condition
+prevalence rows, including tempo 5% primary and 10% sensitivity metrics and
+defect-specific integrity rates; eight first/second-window drift rows; 28
+cross-instrument disagreement rows; and separately labeled negation-diagnostic
+rows. It contains only SA3 and ACE. SAO is a missing registered backbone, not
+a zero-rate observation, and D-0043 prevents an SAO extension this cycle.
+
+`DECISION_GRADE_INITIAL_STATUS = DECISION_GRADE_AUTOMATIC_TABLES_PARTIAL_VERIFIED_SOURCES`
+
+`DECISION_GRADE_INITIAL_OUTPUT = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/decision-grade-v2/decision-grade-v2-001/automatic-instrument-tables.json`
+
+`DECISION_GRADE_INITIAL_OUTPUT_SHA256 = 33b15bf8811d1a2f85575605eef95e58e253f77767e79575dc5a6ec263473d94`
+
+`DECISION_GRADE_INITIAL_PREVALENCE_ROWS = 64`
+
+`DECISION_GRADE_INITIAL_TEMPO_DRIFT_ROWS = 8`
+
+`DECISION_GRADE_INITIAL_DISAGREEMENT_ROWS = 28`
+
+`DECISION_GRADE_INITIAL_INCLUDED_BACKBONES = stable-audio-3-medium-base,ACE-Step_v1`
+
+`DECISION_GRADE_INITIAL_MISSING_BACKBONES = stable-audio-open-1.0`
+
+`DECISION_GRADE_INITIAL_WATERMARK = AUTOMATIC-INSTRUMENT_OUTCOMES`
+
+`DECISION_GRADE_HUMAN_GOLD_CLAIMS = NO`
