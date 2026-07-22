@@ -943,3 +943,26 @@ manifest and artifacts are named here with SHA-256 digests.
 - Human gold, evaluator rows, state outcomes, supplemental roots, and
   STOP/cancelled units used: none
 - All three published files are mode 0444
+
+## L-0033 — SAO first completed prefix scored and published
+
+- Time: 2026-07-22T18:15:47Z
+- Kind: frozen automatic-instrument scoring; zero generation and human-label
+  calls
+- Authority: D-0059 and D-0063
+- Rows: SA3 `1248/1248`, ACE `1248/1248`, SAO prefix `4/4`; terminal status
+  `SCORING_INCREMENTAL_PRIMARY_PREFIX`; SAO remains incomplete
+- Retained engineering failure: detached-worktree canonical-path rejection,
+  four zero-output slots, immutable scoring event SHA-256
+  `73cd8afe0b9e8045f59e655691d2ed8e5979b0f18450e7ca1aaea70cbeed03c2`
+- Repair: exact scientific/runtime bytes proved identical, then only missing
+  slots ran from the required canonical path
+- GPU: an12 physical 5/6 only, TP1 evaluators, synchronized `1513.3348478600383
+  s`, peak reserved `1,390,411,776 B`; GPU4/7 were never leased
+- Scoring status / prevalence / evaluator-disagreement / candidate-index
+  SHA-256: `b9616e3329fc6f2c0389ca240e3e2023e9c812ffe73712610a8b241de99b6f9d` /
+  `e5b7491d9cc0051a8641a5f0b7fb027121b3c3e8c653ea807a1f643fb5cffd1a` /
+  `6093bfc4cabd8edb7304fbe260d0cc9f18eca6db541ac7a014ba1e493ba7b1cf` /
+  `eeded9076a70fc047be9e3572fe6b912d1c317ac6e393e136ee72d6c263dcf46`
+- Watermark exact; human-gold and evaluator-accuracy claims: none; packet
+  remains gated on complete SAO strata and timing-pilot ingestion

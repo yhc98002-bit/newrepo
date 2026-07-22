@@ -3455,3 +3455,58 @@ supplemental units remain absent.
 `ACE_STATE_BUDGET_SUPPLEMENTAL_ROOTS_USED = NO`
 
 `ACE_STATE_BUDGET_EVALUATOR_OR_OUTCOME_ROWS_READ = NO`
+
+## D-0063 — Stable Audio Open first completed-prefix scoring accepted
+
+- Date: 2026-07-22
+- Status: accepted terminal incremental automatic-instrument prefix
+- Authority: D-0029, D-0057, D-0059, and the PI completed-shard scoring
+  authorization
+
+The exact four-row sealed SAO core prefix and the previously complete SA3 and
+ACE sources were processed by the frozen v2 instruments. The result is
+`SCORING_INCREMENTAL_PRIMARY_PREFIX`: SA3 and ACE remain complete at 1,248
+rows each, SAO contributes 4/4 prefix rows, no primary backbone is missing,
+and SAO is explicitly incomplete until its live 1,536-row core finishes. This
+prefix cannot satisfy the packet watcher's all-primary scoring gate.
+
+The first operator submission used a detached worktree at the preclaim commit.
+It stopped before feature publication because the provenance validator
+requires the canonical repository path for `DECISIONS.md`. Four readonly
+attempt logs and the immutable sequence-2 scoring event retain that zero-output
+engineering failure. A byte-diff proved the scoring config, runner, scientific
+scoring tree, benchmark-core/backbone provenance code, and relevant rater
+bytes identical between the preclaim commit and canonical main. Only the four
+unpublished slots were resubmitted from the required path; no completed slot,
+scientific input, evaluator, or threshold changed.
+
+All 16 feature shards completed: integrity 576 rows, tempo 960, and
+vocal/instrumental 964, totaling 2,500 unique requests. GPU evaluators leased
+only idle an12 GPUs 5 and 6, never the live state GPU4 or generation GPU7.
+Synchronized evaluator GPU time was `1513.3348478600383 s` (`0.4203707911 h`)
+and peak reserved VRAM was `1,390,411,776 B`. Generation calls were zero.
+Publication, ledger-chain, heartbeat-chain, watermark, candidate, secret, and
+forbidden-claim validators passed; 290 candidate rows contain Demucs/PANNs
+cross-instrument disagreement. No human label or evaluator-accuracy claim was
+used.
+
+| Item | SHA-256 |
+| --- | --- |
+| scoring status | `b9616e3329fc6f2c0389ca240e3e2023e9c812ffe73712610a8b241de99b6f9d` |
+| automatic endpoint rows | `bc53ef2430b784315d2f790df109b21e94f57c8952db7292315330dbb8ec0406` |
+| prevalence table | `e5b7491d9cc0051a8641a5f0b7fb027121b3c3e8c653ea807a1f643fb5cffd1a` |
+| evaluator-disagreement table | `6093bfc4cabd8edb7304fbe260d0cc9f18eca6db541ac7a014ba1e493ba7b1cf` |
+| human-audit candidate index | `eeded9076a70fc047be9e3572fe6b912d1c317ac6e393e136ee72d6c263dcf46` |
+| integrity-first table | `135b3aad71f731a92033a4eb5618ab2c25e0b3369fbbe5019ffd21392e7c3491` |
+| 16-shard relative-path/hash manifest | `6a882a68a26bd260562d7594a8a6cafa2f7562ac7c400f112ebec0419a866d8c` |
+| failed-attempt scoring event | `73cd8afe0b9e8045f59e655691d2ed8e5979b0f18450e7ca1aaea70cbeed03c2` |
+
+`SAO_INCREMENTAL_SCORING_STATUS = AUTOMATIC_ENDPOINTS_SCORED_PREFIX`
+
+`ALL_PRIMARY_SCORING_STATUS = SCORING_INCREMENTAL_PRIMARY_PREFIX`
+
+`SCORING_COMPLETE_MISSING_PRIMARY_BACKBONE = CLEARED`
+
+`HUMAN_PACKET_ALL_PRIMARY_STRATA_READY = NO`
+
+`AUTOMATIC_SCORING_HUMAN_GOLD_CLAIMS = NO`
