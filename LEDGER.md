@@ -787,3 +787,31 @@ manifest and artifacts are named here with SHA-256 digests.
 - Scientific settings changed: no; model, prompts, seeds, sampler, steps,
   duration, evaluators, endpoints, thresholds, and eligibility scope are
   unchanged
+
+## L-0025 — SA3 one-root validation retained and remaining queue opened
+
+- Time: 2026-07-22T17:00:02Z
+- Kind: completed bounded validation plus immutable continuation-launch
+  failures and exact remaining-only repair opening
+- Authority: D-0035, D-0045, and D-0055
+- Validation run: `sa3-state-v2-restricted-rerun-002`, an12 GPU4, TP1, one
+  replica; one group, three units, four calls/outputs, zero failed units
+- Validation measured synchronized GPU time: `122.49368649721146 s`; peak
+  allocated/reserved VRAM: `9,342,266,368 / 9,839,837,184 B`
+- Validation marker / heartbeat SHA-256s:
+  `74870f74b948becc9ca5314279010f40e6220062123b33fb1578f4072324870e` /
+  `c04289df35c8838034501367f20c379a57a884b53cd5778387c18a4caee7dcaa`
+- Continuation attempts 001/002 failed before a new claim, worker, model call,
+  output, or GPU use; immutable receipt SHA-256s:
+  `91f775be763aabdabfa42b5245c0b822a112874a84da60b292cc2805ecc7a253` /
+  `7f9796c77cc820fd30ef48749576aa5811c3b81f65684aea936996b4866f7615`
+- Corrected terminal receipt SHA-256:
+  `3279b95bac56f75e074e60e79e4020272e8a60e0506d852410a4348721eadb7c`;
+  superseded receipt `fa5a55bea280305af08ded88edebdebaba045341432506ea31d5e986833622e2`
+  remains immutable
+- Remaining package: one completed group/three units excluded; exact
+  47 groups, 141 units, and 423 actions retained in original order; manifest
+  SHA-256 `fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33`
+- Fresh run: `sa3-state-v2-restricted-rerun-003`, an12 GPU4, TP1, one
+  replica; supplemental roots remain locked and STOP units prohibited
+- Scientific settings changed: no; completed valid units will not rerun

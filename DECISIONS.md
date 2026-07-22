@@ -2987,3 +2987,84 @@ The exact launch inputs are:
 `SAO_CORE_EARLIER_PRECLAIM_FAILURE_SHA256 = 4b94cd78c6066bc8eec2f82e9bfd242206234c5b81a69501b1840feffc11cea5`
 
 `SAO_CORE_ALL_PRECLAIM_FAILURES_RETAINED = YES`
+
+## D-0055 — SA3 remaining survivor-only state queue opened
+
+- Date: 2026-07-22
+- Status: accepted exact remaining-only engineering repair opening
+- Authority: PI consolidated repair-governance goal, D-0035, D-0045, and
+  the immutable run-002 evidence
+
+The exact failed unit in `sa3-state-v2-restricted-rerun-002` passed the
+required one-root validation after the committed checkpoint-sidecar rebind.
+That validation completed one group, three state units, and four model calls.
+Two later continuation-launch publications failed before a new worker,
+claim, model call, or output; both failures remain immutable. The completed
+validation is therefore excluded byte-for-byte, and only the original-order
+47 groups / 141 units / 423 action rows remaining from the same materialized
+Stage-1 survivor queue may execute in the fresh run
+`sa3-state-v2-restricted-rerun-003`.
+
+The fresh run uses one an12 A800 on physical GPU 4, TP1, one replica. It may
+not repeat the completed validation unit, execute any STOP/cancelled unit,
+or unlock supplemental roots. Prompts, roots, checkpoints, actions,
+root-local previews, folds, costs, and outcomes remain unchanged. Any later
+engineering repair must retain this attempt and use another new run ID and
+claim; scientific-design changes still require PI review.
+
+Exact repair evidence and executable sources are:
+
+| Item | SHA-256 |
+| --- | --- |
+| corrected run-002 terminal | `3279b95bac56f75e074e60e79e4020272e8a60e0506d852410a4348721eadb7c` |
+| one-root validation marker | `74870f74b948becc9ca5314279010f40e6220062123b33fb1578f4072324870e` |
+| continuation failure 001 | `91f775be763aabdabfa42b5245c0b822a112874a84da60b292cc2805ecc7a253` |
+| continuation failure 002 | `7f9796c77cc820fd30ef48749576aa5811c3b81f65684aea936996b4866f7615` |
+| completed exclusion | `b1328f35fe0a96647d90a489f152743dc3716d19ec39921e92275c29c8b88566` |
+| remaining manifest | `fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33` |
+| `configs/sa3_state_restricted_rerun_v2.json` | `67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2` |
+| original state queue manifest | `5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3` |
+| `src/state_capture/sa3_restricted_rerun.py` | `dbd5dfe7c3115a6082f7b210e54de6922028a8c5b7deb60993da7532176ef630` |
+| `src/state_capture/sa3_remaining_repair.py` | `e073ed74920404c42f79c14cb1b5dc84f2f9acfcaf6de372bdc62390220e7d35` |
+| prepare script | `c3b818fba39b92c5cc03471cf15d00b7fbdae64cdd3ec61ea5eb8cbb5d2c7810` |
+| worker script | `b8babdf5f6983bc0ad3bc1aec6315b71732bdadb7d0b2010d24b87490c4cc71d` |
+
+`SA3_STATE_REMAINING_REPAIR_AUTHORIZED = YES`
+
+`SA3_STATE_REMAINING_REPAIR_RUN_ID = sa3-state-v2-restricted-rerun-003`
+
+`SA3_STATE_REMAINING_REPAIR_PREDECESSOR_SHA256 = 3279b95bac56f75e074e60e79e4020272e8a60e0506d852410a4348721eadb7c`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_EXCLUSION_SHA256 = b1328f35fe0a96647d90a489f152743dc3716d19ec39921e92275c29c8b88566`
+
+`SA3_STATE_REMAINING_REPAIR_MANIFEST_SHA256 = fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33`
+
+`SA3_STATE_REMAINING_REPAIR_PLACEMENT = an12:[4];TP1;R1`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_GROUP_COUNT = 1`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_COUNT = 3`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_GROUP_COUNT = 47`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_UNIT_COUNT = 141`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_ACTION_COUNT = 423`
+
+`SA3_STATE_REMAINING_REPAIR_VALIDATION_RERUN = NO`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_RERUN = NO`
+
+`SA3_STATE_REMAINING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO`
+
+`SA3_STATE_REMAINING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO`
+
+`SA3_STATE_REMAINING_REPAIR_CONFIG_SHA256 = 67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2`
+
+`SA3_STATE_REMAINING_REPAIR_QUEUE_MANIFEST_SHA256 = 5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3`
+
+`SA3_STATE_REMAINING_REPAIR_STAGE1_RESULT_SHA256 = 5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157`
+
+`SA3_STATE_REMAINING_REPAIR_STAGE1_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
+
+`SA3_STATE_REMAINING_REPAIR_ATTEMPT_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sa3-state-restricted-rerun-v2/sa3-state-v2-restricted-rerun-003.claim.json`
