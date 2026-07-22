@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+import stage1.terminal as terminal_module
 from scoring.common import load_json
 from stage1.gates import AXES, BACKBONES
 from stage1.terminal import Stage1TerminalError, validate_stage1_terminal
@@ -70,6 +71,50 @@ def test_deep_terminal_revalidates_policy_provenance_rows_and_cancellations(
     assert terminal.config_sha256 == load_json(result)["provenance"]["config_sha256"]
     assert len(terminal.rows) == 6
     assert len(terminal.cancellations) == 288
+
+
+def test_known_home_alias_is_exact_and_does_not_accept_arbitrary_copies() -> None:
+    canonical = Path(
+        "/XYFS01/HOME/paratera_xy/pxy1289/project/configs/stage1.json"
+    )
+    alias = Path("/HOME/paratera_xy/pxy1289/project/configs/stage1.json")
+    assert terminal_module._known_home_alias(canonical, alias)
+    assert terminal_module._known_home_alias(alias, canonical)
+    assert not terminal_module._known_home_alias(canonical, canonical)
+    assert not terminal_module._known_home_alias(canonical, Path("/tmp/stage1.json"))
+    assert not terminal_module._known_home_alias(
+        canonical,
+        Path("/HOME/paratera_xy/pxy1289/other/configs/stage1.json"),
+    )
+
+
+def test_home_alias_requires_both_files_to_match_the_bound_hash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    left = Path("/XYFS01/HOME/paratera_xy/pxy1289/project/config.json")
+    right = Path("/HOME/paratera_xy/pxy1289/project/config.json")
+    expected = "a" * 64
+    monkeypatch.setattr(Path, "is_file", lambda self: self in {left, right})
+    observed = {left: expected, right: expected}
+    monkeypatch.setattr(terminal_module, "sha256_file", observed.__getitem__)
+    assert terminal_module._same_bound_path_or_home_alias(left, right, expected)
+    observed[right] = "b" * 64
+    assert not terminal_module._same_bound_path_or_home_alias(left, right, expected)
+
+
+def test_terminal_rejects_same_byte_config_at_an_unregistered_path(
+    tmp_path: Path,
+) -> None:
+    result, summary, config = _fixture(tmp_path)
+    copied_config = tmp_path / "unregistered-copy" / config.name
+    copied_config.parent.mkdir()
+    copied_config.write_bytes(config.read_bytes())
+    with pytest.raises(Stage1TerminalError, match="different gate configuration"):
+        validate_stage1_terminal(
+            result,
+            summary,
+            expected_config_path=copied_config,
+        )
 
 
 def _config_sha(value: dict[str, Any]) -> None:

@@ -149,6 +149,45 @@ def _canonical_bound_file(path_value: Any, sha_value: Any, label: str) -> tuple[
     return path, expected
 
 
+def _home_mount_identity(path: Path) -> tuple[str, tuple[str, ...]] | None:
+    """Identify only the cluster's two canonical spellings of the HOME mount."""
+
+    parts = path.parts
+    if len(parts) >= 3 and parts[:2] == ("/", "HOME"):
+        return "HOME", parts[2:]
+    if len(parts) >= 4 and parts[:3] == ("/", "XYFS01", "HOME"):
+        return "XYFS01_HOME", parts[3:]
+    return None
+
+
+def _known_home_alias(left: Path, right: Path) -> bool:
+    """Return true only for matching tails across /HOME and /XYFS01/HOME."""
+
+    left_identity = _home_mount_identity(left)
+    right_identity = _home_mount_identity(right)
+    return (
+        left_identity is not None
+        and right_identity is not None
+        and left_identity[0] != right_identity[0]
+        and left_identity[1] == right_identity[1]
+    )
+
+
+def _same_bound_path_or_home_alias(left: Path, right: Path, expected_sha256: str) -> bool:
+    """Accept exact paths or the cluster's /HOME <-> /XYFS01/HOME alias only."""
+
+    if left == right:
+        return True
+    if not _known_home_alias(left, right):
+        return False
+    return (
+        left.is_file()
+        and right.is_file()
+        and sha256_file(left) == expected_sha256
+        and sha256_file(right) == expected_sha256
+    )
+
+
 def _probability(value: Any, label: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise Stage1TerminalError(f"{label} must be numeric")
@@ -201,7 +240,10 @@ def _validate_provenance(
     config_path, config_sha256 = _canonical_bound_file(
         provenance["config_path"], provenance["config_sha256"], "Stage-1 config"
     )
-    if config_path != expected_config_path.resolve(strict=True):
+    expected_config = expected_config_path.resolve(strict=True)
+    if not _same_bound_path_or_home_alias(
+        config_path, expected_config, config_sha256
+    ):
         raise Stage1TerminalError("Stage-1 result names a different gate configuration")
     outcome_path, outcome_sha256 = _canonical_bound_file(
         provenance["outcome_rows_path"],
@@ -231,9 +273,17 @@ def _validate_provenance(
         or provenance["policy_decision_block_sha256"]
         != decision_binding["decision_block_sha256"]
         or provenance["policy_decisions_path"] != decision_binding["decisions_path"]
-        or Path(outcome_binding["path"]).resolve(strict=True) != outcome_path
+        or not _same_bound_path_or_home_alias(
+            Path(outcome_binding["path"]).resolve(strict=True),
+            outcome_path,
+            outcome_sha256,
+        )
         or outcome_binding["sha256"] != outcome_sha256
-        or Path(statistics_binding["path"]).resolve(strict=True) != statistics_path
+        or not _same_bound_path_or_home_alias(
+            Path(statistics_binding["path"]).resolve(strict=True),
+            statistics_path,
+            statistics_sha256,
+        )
         or statistics_binding["sha256"] != statistics_sha256
     ):
         raise Stage1TerminalError("Stage-1 result provenance differs from its frozen config")
