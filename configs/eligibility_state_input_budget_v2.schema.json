@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "axis": {
+      "enum": [
+        "vocal_instrumental",
+        "tempo",
+        "integrity"
+      ]
+    },
+    "backbone": {
+      "enum": [
+        "stable-audio-3-medium-base",
+        "ACE-Step v1"
+      ]
+    },
+    "human_gold_used": {
+      "const": false
+    },
+    "package_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "row_count": {
+      "const": 144
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/row"
+      },
+      "maxItems": 144,
+      "minItems": 144,
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "const": "FROZEN_PER_UNIT_TIME_BUDGET_COMPLETE"
+    },
+    "supplemental_roots_used": {
+      "const": false
+    },
+    "tier": {
+      "const": "INITIAL"
+    }
+  },
+  "required": [
+    "axis",
+    "backbone",
+    "human_gold_used",
+    "package_sha256",
+    "row_count",
+    "rows",
+    "schema_version",
+    "status",
+    "supplemental_roots_used",
+    "tier"
+  ],
+  "title": "Benchmark v2 eligibility root-local time-budget package",
+  "type": "object",
+  "$defs": {
+    "positiveNumber": {
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "row": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint_fraction": {
+          "enum": [
+            0.25,
+            0.5,
+            0.75
+          ]
+        },
+        "condition": {
+          "const": "BASE"
+        },
+        "core_commit_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "core_ledger_path": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "core_ledger_row_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "core_ledger_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "core_provenance_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "core_queue_path": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "core_queue_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "core_request_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "core_wav_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "elapsed_nfe": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "elapsed_seconds": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "lane_request_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "mapping": {
+          "const": "NFE_PROPORTIONAL_SAME_ROOT_BASE_CORE_TIME_BUDGET"
+        },
+        "prompt_id": {
+          "$ref": "#/$defs/nonempty"
+        },
+        "remaining_nfe": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "remaining_seconds": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "root_index": {
+          "maximum": 3,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "synchronized_wall_seconds": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "total_nfe": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "total_seconds": {
+          "$ref": "#/$defs/positiveNumber"
+        }
+      },
+      "required": [
+        "checkpoint_fraction",
+        "condition",
+        "core_commit_sha256",
+        "core_ledger_path",
+        "core_ledger_row_sha256",
+        "core_ledger_sha256",
+        "core_provenance_sha256",
+        "core_queue_path",
+        "core_queue_sha256",
+        "core_request_sha256",
+        "core_wav_sha256",
+        "elapsed_nfe",
+        "elapsed_seconds",
+        "lane_request_sha256",
+        "mapping",
+        "prompt_id",
+        "remaining_nfe",
+        "remaining_seconds",
+        "root_index",
+        "schema_version",
+        "synchronized_wall_seconds",
+        "total_nfe",
+        "total_seconds"
+      ],
+      "type": "object"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "nonempty": {
+      "minLength": 1,
+      "type": "string"
+    }
+  }
+}

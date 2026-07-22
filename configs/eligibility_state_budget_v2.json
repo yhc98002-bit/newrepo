@@ -1,0 +1,82 @@
+{
+  "budget_package_schema": {
+    "path": "configs/eligibility_state_input_budget_v2.schema.json",
+    "sha256": "2aa44c9cad0191251fcdece20f59a66ce303eaaf099f50d723d7cba6318d9e08"
+  },
+  "evaluator_or_outcome_rows_allowed": false,
+  "frozen_repository_sources": [
+    {
+      "path": "configs/eligibility_state_input_budget_v2.schema.json",
+      "sha256": "2aa44c9cad0191251fcdece20f59a66ce303eaaf099f50d723d7cba6318d9e08"
+    },
+    {
+      "path": "scripts/assemble_eligibility_state_budget_v2.py",
+      "sha256": "9a53eb6fc5bb4177886b4f1eaf6f18439d04cda140aaeb75ceae93266826523a"
+    },
+    {
+      "path": "src/eligibility/builder.py",
+      "sha256": "fd6258b24d7df96e8ad2e5e7136fed7a426543c77b6af6611dd1e33eb3fa1281"
+    },
+    {
+      "path": "src/eligibility/contract.py",
+      "sha256": "9e210c78f31bb3fb8fe3cebb43fe2a2b47f446e5f98524340aaa91d4d18075d7"
+    },
+    {
+      "path": "src/eligibility/state_budget.py",
+      "sha256": "60f48332aa7bbd4536479b380e602804ca110de739cd2746eec9df824234eb99"
+    }
+  ],
+  "generation_authorized": false,
+  "opening_contract": {
+    "remote_ref": "refs/remotes/origin/main",
+    "required_assignment_names": [
+      "ELIGIBILITY_STATE_BUDGET_ASSEMBLY_AUTHORIZED",
+      "ELIGIBILITY_STATE_BUDGET_CONFIG_PATH",
+      "ELIGIBILITY_STATE_BUDGET_CONFIG_SHA256",
+      "ELIGIBILITY_ANALYSIS_CONFIG_SHA256",
+      "ELIGIBILITY_STATE_BUDGET_INPUTS_READ_BEFORE_OPENING",
+      "STATE_BUDGET_EVALUATOR_OR_OUTCOME_ROWS_ALLOWED",
+      "STATE_BUDGET_GENERATION_AUTHORIZED",
+      "STATE_BUDGET_STOP_OR_CANCELLED_ALLOWED",
+      "STATE_BUDGET_SUPPLEMENTAL_ALLOWED",
+      "STATE_BUDGET_HUMAN_GOLD_USED",
+      "STATE_BUDGET_SCIENTIFIC_ENDPOINTS_CHANGED"
+    ],
+    "required_assignment_values": {
+      "ELIGIBILITY_STATE_BUDGET_ASSEMBLY_AUTHORIZED": "YES",
+      "ELIGIBILITY_STATE_BUDGET_CONFIG_PATH": "configs/eligibility_state_budget_v2.json",
+      "ELIGIBILITY_STATE_BUDGET_INPUTS_READ_BEFORE_OPENING": "NO",
+      "STATE_BUDGET_EVALUATOR_OR_OUTCOME_ROWS_ALLOWED": "NO",
+      "STATE_BUDGET_GENERATION_AUTHORIZED": "NO",
+      "STATE_BUDGET_HUMAN_GOLD_USED": "NO",
+      "STATE_BUDGET_SCIENTIFIC_ENDPOINTS_CHANGED": "NO",
+      "STATE_BUDGET_STOP_OR_CANCELLED_ALLOWED": "NO",
+      "STATE_BUDGET_SUPPLEMENTAL_ALLOWED": "NO"
+    },
+    "status": "CLOSED_REQUIRES_SEPARATE_APPEND_ONLY_BUDGET_DECISION_AND_PUSH"
+  },
+  "operationalization": {
+    "elapsed_nfe": "EXACT_FROZEN_CHECKPOINT_CUMULATIVE_NFE",
+    "elapsed_seconds": "TOTAL_SECONDS_TIMES_ELAPSED_NFE_DIVIDED_BY_TOTAL_NFE",
+    "keep_incremental": "REMAINING_NFE_AND_REMAINING_SECONDS",
+    "remaining_nfe": "TOTAL_NFE_MINUS_ELAPSED_NFE",
+    "remaining_seconds": "TOTAL_SECONDS_MINUS_ELAPSED_SECONDS",
+    "restart_incremental": "TOTAL_NFE_AND_TOTAL_SECONDS",
+    "total_nfe": "BACKBONE_NATIVE_FROZEN_TRANSFORMER_BUDGET_NFE",
+    "total_seconds": "SAME_ROOT_BASE_CORE_SYNCHRONIZED_GENERATION_WALL_SECONDS"
+  },
+  "schema_version": 1,
+  "scope": {
+    "human_gold_used": false,
+    "roots": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "stop_or_cancelled_units_allowed": false,
+    "supplemental_roots_allowed": false,
+    "tier": "INITIAL"
+  },
+  "status": "PROSPECTIVE_CLOSED_REQUIRES_APPEND_ONLY_BUDGET_OPENING"
+}
