@@ -872,3 +872,26 @@ manifest and artifacts are named here with SHA-256 digests.
   same 47 remaining groups / 141 units / 423 actions
 - Calls/outputs/GPU time in run-004: 0 / 0 / 0 seconds
 - Scientific settings changed: no; supplemental roots remain locked
+
+## L-0029 — Stable Audio Open first core shard completed and scoring opened
+
+- Time: 2026-07-22T17:00:24Z
+- Kind: first immutable ordinary-core batch plus prospective automatic
+  completed-prefix scoring opening
+- Authority: D-0054, D-0057, and D-0059
+- Generation run: `benchmark-core-v2-sao-20260722t165200z`, an12 GPU7, TP1,
+  one replica; official revision
+  `f21265c1e2710b3bd2386596943f0007f55f802e`
+- First shard: 4/4 successful rows, 0 failures, 4 retained WAVs; shard / heartbeat
+  SHA-256s `15bb331113670c8c3107b696067d89a4a4b2cf41f7ac020254b2d91761c4fe88` /
+  `b72ce184f1e0ff51dbacdc8dc0eba43336c40beeb76eb9e61af35e65e792b22e`
+- First-shard synchronized GPU time: `78.23330856487155 s`; peak allocated /
+  reserved VRAM: `8,544,626,176 / 10,741,612,544 B`
+- First-shard ledger tail:
+  `2670d83061f4668cb1383c27cc55dccd07d2930a99a419d4c790a63309c444b4`
+- Scoring run:
+  `automatic-scoring-v2-sao-benchmark-core-v2-sao-20260722t165200z-shards-001`;
+  exact four-row prefix only, config SHA-256
+  `5d6fe8de0efe4f591fb1b85fd4bd2e77c84ae40b6ea6296da0452e7adafb5871`
+- Scoring generation authority: none; human-gold/accuracy claims: none;
+  watermark required; queue-don't-preempt applies

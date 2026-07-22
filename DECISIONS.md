@@ -3264,3 +3264,59 @@ threshold changed.
 `SA3_STATE_REMAINING_REPAIR_STAGE1_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
 
 `SA3_STATE_REMAINING_REPAIR_ATTEMPT_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sa3-state-restricted-rerun-v2/sa3-state-v2-restricted-rerun-005.claim.json`
+
+## D-0059 — Stable Audio Open first completed shard scoring opened
+
+- Date: 2026-07-22
+- Status: accepted exact four-row completed-shard automatic scoring opening
+- Authority: PI automatic-endpoint-scoring authorization, D-0029, D-0054,
+  and D-0057
+
+The live SAO core run remains untouched on an12 GPU7. Its immutable first
+completed shard contains exactly four successful rows, ledger tail SHA-256
+`2670d83061f4668cb1383c27cc55dccd07d2930a99a419d4c790a63309c444b4`,
+and completed-prefix SHA-256
+`19d3436d5899d723884af8697776f54c33ec0419274960698c16fb5717508662`.
+Only this sealed prefix may enter scoring run
+`automatic-scoring-v2-sao-benchmark-core-v2-sao-20260722t165200z-shards-001`.
+Later live shards are outside this opening.
+
+The scorer uses the frozen v2 automatic instruments and writes fresh tables
+with exact watermark `AUTOMATIC-INSTRUMENT OUTCOMES`. It may use only idle,
+disjoint capacity after excluding the live SAO GPU7 and SA3 state GPU4
+allocations; queue-don't-preempt remains mandatory. This opening authorizes
+no generation, state execution, human-gold claim, evaluator-accuracy claim,
+or packet assembly. SAO remains an incomplete primary prefix until all 1,536
+ordinary-core rows are generated and scored.
+
+| Item | SHA-256 |
+| --- | --- |
+| scoring config | `5d6fe8de0efe4f591fb1b85fd4bd2e77c84ae40b6ea6296da0452e7adafb5871` |
+| SAO shard 000000 | `15bb331113670c8c3107b696067d89a4a4b2cf41f7ac020254b2d91761c4fe88` |
+| shard heartbeat snapshot | `b72ce184f1e0ff51dbacdc8dc0eba43336c40beeb76eb9e61af35e65e792b22e` |
+| scoring builder | `f6dbe0f3c47b0cc4a3cd2c2860408d5b1da9257b9998f724f7c7f672c28efdbb` |
+| config loader | `c41c3c37db01affdc26d75b37089adcf9b255e333e528272329ab7e34088b778` |
+| snapshot implementation | `75163d657f2203888e74f56f497e16748ca0441f3ebfc0942639879c9ed0dfbe` |
+| publication validator | `b0165d5b2b1dade3333e31586d85fb5aadb1fc94aa0118083098734b6b8468b3` |
+
+`SAO_AUTOMATIC_SCORING_AUTHORIZED = YES`
+
+`AUTOMATIC_ENDPOINT_SCORING_RUN_ID = automatic-scoring-v2-sao-benchmark-core-v2-sao-20260722t165200z-shards-001`
+
+`AUDIO_GENERATION_AUTHORIZED_BY_SCORING = NO`
+
+`QUEUE_DO_NOT_PREEMPT = YES`
+
+`AUTOMATIC_ENDPOINT_SCORING_CONFIG_PATH = configs/automatic_scoring_v2_sao_shard_000000.json`
+
+`AUTOMATIC_ENDPOINT_SCORING_CONFIG_SHA256 = 5d6fe8de0efe4f591fb1b85fd4bd2e77c84ae40b6ea6296da0452e7adafb5871`
+
+`AUTOMATIC_ENDPOINT_SCORING_COMPLETED_SHARDS = 1`
+
+`AUTOMATIC_ENDPOINT_SCORING_SAO_ROWS = 4`
+
+`AUTOMATIC_ENDPOINT_SCORING_PREFIX_SHA256 = 19d3436d5899d723884af8697776f54c33ec0419274960698c16fb5717508662`
+
+`AUTOMATIC_ENDPOINT_SCORING_WATERMARK = AUTOMATIC-INSTRUMENT OUTCOMES`
+
+`AUTOMATIC_ENDPOINT_SCORING_HUMAN_GOLD_CLAIMS = NO`
