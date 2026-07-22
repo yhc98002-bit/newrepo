@@ -362,17 +362,7 @@ def validate_formal_run(
         decisions_path=Path(str(claim["decisions_path"])),
         bundle=load_source_bundle(config),
     )
-    if (
-        authorization.decision_block_sha256 != claim["decision_block_sha256"]
-        or authorization.decisions_sha256 != claim["decisions_sha256"]
-        or authorization.engineering_governance_block_sha256
-        != claim["engineering_governance_block_sha256"]
-        or manifest.get("engineering_governance_block_sha256")
-        != claim["engineering_governance_block_sha256"]
-        or authorization.stage1.result_sha256 != claim["stage1"]["result_sha256"]
-        or authorization.stage1.summary_sha256 != claim["stage1"]["summary_sha256"]
-    ):
-        raise AceFormalContractError("live D-0036/Stage-1 bytes differ from launch claim")
+    _validate_live_opening(authorization, claim=claim, manifest=manifest)
     return {
         "authorization": authorization,
         "bundle": bundle,
@@ -381,6 +371,33 @@ def validate_formal_run(
         "placement": placement,
         "queue_manifest": queue_manifest,
     }
+
+
+def _validate_live_opening(
+    authorization: Any,
+    *,
+    claim: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+) -> None:
+    """Revalidate frozen blocks/artifacts while permitting later decision appends.
+
+    The launch claim retains the SHA-256 of the complete DECISIONS.md bytes seen
+    at launch as provenance.  Comparing that historical whole-file digest to the
+    live append-only file would invalidate every run as soon as a later decision
+    is appended.  Scientific authorization instead binds the exact D-0036 and
+    D-0045 block digests plus both Stage-1 terminal artifact digests.
+    """
+
+    if (
+        authorization.decision_block_sha256 != claim["decision_block_sha256"]
+        or authorization.engineering_governance_block_sha256
+        != claim["engineering_governance_block_sha256"]
+        or manifest.get("engineering_governance_block_sha256")
+        != claim["engineering_governance_block_sha256"]
+        or authorization.stage1.result_sha256 != claim["stage1"]["result_sha256"]
+        or authorization.stage1.summary_sha256 != claim["stage1"]["summary_sha256"]
+    ):
+        raise AceFormalContractError("live D-0036/Stage-1 bytes differ from launch claim")
 
 
 __all__ = ["PREPARED_STATUS", "prepare_formal_run", "validate_formal_run"]

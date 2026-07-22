@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 import state_capture.ace_formal_engine as formal_engine_module
+import state_capture.ace_formal_launcher as formal_launcher_module
 from benchmark_core.launcher import GitLaunchState
 from benchmark_core.ledger import HashChainedLedger, validate_ledger
 from scoring.common import load_json, sha256_file
@@ -180,6 +181,51 @@ def test_d0036_binds_stage1_hashes_at_launch_and_filters_exact_survivors(
     )
     with pytest.raises(AceFormalContractError, match="exact formal assignments"):
         verify_d0036(config, decisions_path=decisions, bundle=bundle)
+
+
+def test_live_formal_revalidation_allows_later_decision_append_only(tmp_path: Path) -> None:
+    config, bundle, launch_authorization, decisions = _stage1_fixture(tmp_path)
+    claim = {
+        "decision_block_sha256": launch_authorization.decision_block_sha256,
+        "decisions_sha256": launch_authorization.decisions_sha256,
+        "engineering_governance_block_sha256": (
+            launch_authorization.engineering_governance_block_sha256
+        ),
+        "stage1": {
+            "result_sha256": launch_authorization.stage1.result_sha256,
+            "summary_sha256": launch_authorization.stage1.summary_sha256,
+        },
+    }
+    manifest = {
+        "engineering_governance_block_sha256": (
+            launch_authorization.engineering_governance_block_sha256
+        )
+    }
+    decisions.write_text(
+        decisions.read_text(encoding="utf-8")
+        + "## D-0053 — later unrelated append\n\nUNRELATED_APPEND = YES\n",
+        encoding="utf-8",
+    )
+    live_authorization = verify_d0036(
+        config,
+        decisions_path=decisions,
+        bundle=bundle,
+    )
+    assert live_authorization.decisions_sha256 != claim["decisions_sha256"]
+    assert live_authorization.decision_block_sha256 == claim["decision_block_sha256"]
+    formal_launcher_module._validate_live_opening(
+        live_authorization,
+        claim=claim,
+        manifest=manifest,
+    )
+
+    changed = replace(live_authorization, decision_block_sha256="0" * 64)
+    with pytest.raises(AceFormalContractError, match="live D-0036/Stage-1 bytes"):
+        formal_launcher_module._validate_live_opening(
+            changed,
+            claim=claim,
+            manifest=manifest,
+        )
 
 
 def test_d0045_is_required_and_cannot_open_stop_units(tmp_path: Path) -> None:
