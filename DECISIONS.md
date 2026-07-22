@@ -3187,3 +3187,80 @@ human-gold claim.
 `HUMAN_PACKET_CROSS_INSTRUMENT_DISAGREEMENT_REQUIRED = YES`
 
 `HUMAN_PACKET_THREE_PRIMARY_BACKBONES_REQUIRED = YES`
+
+## D-0058 — SA3 append-stable lineage repair and run-005 opened
+
+- Date: 2026-07-22
+- Status: accepted exact remaining-only preclaim engineering repair
+- Authority: PI consolidated repair-governance goal, D-0045, D-0056, and
+  immutable run-004 preclaim evidence
+
+The run-004 CPU preparation stopped before its claim or run directory because
+the validator hashed one separator newline appended after D-0055 as if the
+decision's semantics had changed. The immutable failure receipt is
+`provenance/state/sa3_state_run004_preclaim_failure_v1.json`, SHA-256
+`2c0866666b481c49a2534a4fdf2cd3a0556b1f8a03e41cfbfa954cc3f2829dc7`.
+It records zero workers, calls, outputs, and GPU seconds and proves the
+run-004 claim and directory are absent.
+
+The repair canonicalizes an append-only decision block as `rstrip()` plus one
+newline before comparing the block SHA-256. The launch-time whole-decisions
+hash remains immutable provenance. The canonical D-0055 hash remains
+`05ce6b48161cd3d0d74ccd9a868f7908aef1f00560a513e95bf0ba3db57848cb`
+after later decisions are appended; D-0056 is likewise bound at canonical
+SHA-256 `f8813161060cdde685c0a496caeaf3fc4beea66d13d995bc4bff0529b170ca2e`.
+
+Fresh run `sa3-state-v2-restricted-rerun-005` retains the exact completed
+exclusion and 47-group / 141-unit / 423-action remaining package. It uses
+an12 GPU4, TP1, R1 with the corrected scheduler. No completed, STOP,
+cancelled, or supplemental unit may execute; no scientific input or
+threshold changed.
+
+| Item | SHA-256 |
+| --- | --- |
+| run-004 preclaim failure | `2c0866666b481c49a2534a4fdf2cd3a0556b1f8a03e41cfbfa954cc3f2829dc7` |
+| completed exclusion | `b1328f35fe0a96647d90a489f152743dc3716d19ec39921e92275c29c8b88566` |
+| remaining manifest | `fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33` |
+| `src/state_capture/sa3_restricted_rerun.py` | `dd464e330d8f4a7a92e33b31abd7b8d41fa889e46661683166b1b9890ef6ba18` |
+| `src/state_capture/sa3_worker.py` | `425823a15716cb03de8cec7731bef47a95c0b03b83b4335a35c1e72752cb7bd2` |
+| worker script | `adf4eb31cc73535d64a7c92ef5aca8a075c0c34ee896f243442819aaac3ed2de` |
+
+`SA3_STATE_REMAINING_REPAIR_AUTHORIZED = YES`
+
+`SA3_STATE_REMAINING_REPAIR_RUN_ID = sa3-state-v2-restricted-rerun-005`
+
+`SA3_STATE_REMAINING_REPAIR_PREDECESSOR_SHA256 = 2c0866666b481c49a2534a4fdf2cd3a0556b1f8a03e41cfbfa954cc3f2829dc7`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_EXCLUSION_SHA256 = b1328f35fe0a96647d90a489f152743dc3716d19ec39921e92275c29c8b88566`
+
+`SA3_STATE_REMAINING_REPAIR_MANIFEST_SHA256 = fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33`
+
+`SA3_STATE_REMAINING_REPAIR_PLACEMENT = an12:[4];TP1;R1`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_GROUP_COUNT = 1`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_COUNT = 3`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_GROUP_COUNT = 47`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_UNIT_COUNT = 141`
+
+`SA3_STATE_REMAINING_REPAIR_REMAINING_ACTION_COUNT = 423`
+
+`SA3_STATE_REMAINING_REPAIR_VALIDATION_RERUN = NO`
+
+`SA3_STATE_REMAINING_REPAIR_COMPLETED_UNIT_RERUN = NO`
+
+`SA3_STATE_REMAINING_REPAIR_SUPPLEMENTAL_AUTHORIZED = NO`
+
+`SA3_STATE_REMAINING_REPAIR_SCIENTIFIC_DESIGN_CHANGED = NO`
+
+`SA3_STATE_REMAINING_REPAIR_CONFIG_SHA256 = 67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2`
+
+`SA3_STATE_REMAINING_REPAIR_QUEUE_MANIFEST_SHA256 = 5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3`
+
+`SA3_STATE_REMAINING_REPAIR_STAGE1_RESULT_SHA256 = 5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157`
+
+`SA3_STATE_REMAINING_REPAIR_STAGE1_SUMMARY_SHA256 = 7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121`
+
+`SA3_STATE_REMAINING_REPAIR_ATTEMPT_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sa3-state-restricted-rerun-v2/sa3-state-v2-restricted-rerun-005.claim.json`

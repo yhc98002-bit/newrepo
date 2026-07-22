@@ -852,3 +852,23 @@ manifest and artifacts are named here with SHA-256 digests.
   scored strata with tested cross-instrument disagreement coverage
 - Current gate status: timing-pilot absent and all-primary scoring incomplete;
   packet assembly remains prohibited
+
+## L-0028 — SA3 run-004 preclaim stopped; append-stable run-005 opened
+
+- Time: 2026-07-22T17:16:47Z
+- Kind: immutable zero-call CPU preclaim failure and decision-block validator
+  repair
+- Authority: D-0045, D-0056, and D-0058
+- Failed run: `sa3-state-v2-restricted-rerun-004`; no claim or run directory,
+  worker, GPU use, call, output, ledger, or staging artifact was created
+- Failure: an append-only separator newline after D-0055 changed the raw
+  block hash despite unchanged semantic bytes
+- Failure receipt SHA-256:
+  `2c0866666b481c49a2534a4fdf2cd3a0556b1f8a03e41cfbfa954cc3f2829dc7`
+- Repair: compare canonical `block.rstrip() + "\n"`; retain whole-file launch
+  hash as provenance; regression proves later decision appends are accepted
+  while semantic drift still fails
+- Fresh run: `sa3-state-v2-restricted-rerun-005`, an12 GPU4, TP1, R1;
+  same 47 remaining groups / 141 units / 423 actions
+- Calls/outputs/GPU time in run-004: 0 / 0 / 0 seconds
+- Scientific settings changed: no; supplemental roots remain locked

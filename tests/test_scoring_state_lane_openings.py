@@ -66,6 +66,7 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0055",
         "D-0056",
         "D-0057",
+        "D-0058",
     ]
 
 

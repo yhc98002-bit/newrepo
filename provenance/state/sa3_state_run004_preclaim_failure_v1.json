@@ -1,0 +1,48 @@
+{
+  "attempt_id": "sa3-state-v2-restricted-rerun-004-preclaim-001",
+  "claim_created": false,
+  "completed_exclusion_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/repairs/sa3-state-v2-restricted-rerun-003/completed-validation-exclusion.json",
+  "completed_exclusion_sha256": "b1328f35fe0a96647d90a489f152743dc3716d19ec39921e92275c29c8b88566",
+  "detected_at_utc": "2026-07-22T17:16:47Z",
+  "error_message": "zero-call predecessor remaining-repair decision drifted",
+  "error_type": "RestrictedRerunError",
+  "failed_attempt_immutable": true,
+  "failure_classification": "ENGINEERING_BUG",
+  "failure_kind": "APPEND_ONLY_DECISION_BLOCK_SEPARATOR_HASH_MISMATCH",
+  "generated_outputs": 0,
+  "gpu_seconds": 0,
+  "model_calls": 0,
+  "opening_decision": {
+    "canonical_block_sha256": "f8813161060cdde685c0a496caeaf3fc4beea66d13d995bc4bff0529b170ca2e",
+    "decision_id": "D-0056"
+  },
+  "phase": "PREDECESSOR_VALIDATION_BEFORE_CLAIM_RUN_PUBLICATION_OR_GPU_USE",
+  "predecessor_failure_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/state-capture-v2/sa3-state-v2-restricted-rerun-003/control/pre-model-engineering-failure.terminal.json",
+  "predecessor_failure_sha256": "a58875bf6e5327437be0ce0eb98bf2a6858045c4851b36e0c69aba1db267c2f7",
+  "remaining_manifest_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/repairs/sa3-state-v2-restricted-rerun-003/remaining-manifest.json",
+  "remaining_manifest_sha256": "fb8068ee7335901ab2f4d9b5caf870971c2c024843bf356813324b94fe1afb33",
+  "repair": {
+    "description": "Canonicalize the immutable decision block as block.rstrip() plus one newline before comparing its stored SHA-256, while retaining the launch-time whole-file hash as provenance.",
+    "scientific_configuration_changed": false,
+    "thresholds_changed": false
+  },
+  "repair_requires_new_claim": true,
+  "repair_requires_new_run_id": true,
+  "run_dir_created": false,
+  "run_id": "sa3-state-v2-restricted-rerun-004",
+  "schema_version": 1,
+  "scientific_bindings": {
+    "config_sha256": "67a210fb63f078aff9d3d43d41bf05a6b3a18a04c2c21ddce3e7ee2f2a3087d2",
+    "queue_manifest_sha256": "5aca81acc9eb9043a7e2e8e538d2843bd145dc11796c037a9175278e54095be3",
+    "stage1_result_sha256": "5e9d2e7ee1132733a31b64e05900774a1f6f29e6e19ab3f828027ebba48d7157",
+    "stage1_summary_sha256": "7234e464b263191400fb42a48ef628fafa3478fa0261e88cbf61d71aad807121"
+  },
+  "scientific_design_changed": false,
+  "scientific_outputs_retained": true,
+  "source_remaining_decision": {
+    "canonical_block_sha256": "05ce6b48161cd3d0d74ccd9a868f7908aef1f00560a513e95bf0ba3db57848cb",
+    "decision_id": "D-0055"
+  },
+  "status": "FAILED_PRE_CLAIM_ENGINEERING",
+  "worker_started": false
+}
