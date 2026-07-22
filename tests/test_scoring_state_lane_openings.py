@@ -50,6 +50,7 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0039",
         "D-0040",
         "D-0041",
+        "D-0042",
     ]
 
 
@@ -190,6 +191,20 @@ def test_sao_recovery_and_decision_grade_openings_preserve_scope() -> None:
         "SAO_RECOVERY_ATTEMPT2_FURTHER_ATTEMPTS = NO",
     ):
         assert assignment in recovery_attempt2
+
+    replacement = _decision_block("D-0042")
+    for assignment in (
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_AUTHORIZED = YES",
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_RUN_ID = sao-mini-smoke-v2-002",
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CUMULATIVE_MODEL_CALLS = 0",
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CUMULATIVE_MODEL_LOADS = 0",
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CUMULATIVE_AUDIO_OUTPUTS = 0",
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_EXACT_CALLS = 3",
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_MAX_CLIP_SECONDS = 30",
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_MAX_GPUS = 1",
+        "SAO_MINI_SMOKE_FURTHER_REPLACEMENT_AUTHORIZED = NO",
+    ):
+        assert assignment in replacement
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

@@ -2102,3 +2102,78 @@ redownload is authorized.
 `SAO_RECOVERY_ATTEMPT2_RECEIPT_GATED_PUBLICATION = YES`
 
 `SAO_RECOVERY_ATTEMPT2_FURTHER_ATTEMPTS = NO`
+
+## D-0042 — SAO mini-smoke zero-call pre-model replacement authorized
+
+- Date: 2026-07-22
+- Status: accepted single pre-model replacement opening
+- Authority: PI SAO-live authorization under D-0037, with immutable zero-call failure evidence
+
+The D-0037 one-shot claim was durably consumed, but its runner stopped before
+creating a run directory, loading the model, entering a model call, or
+generating audio. The exact retained traceback shows that the fixed run
+directory's immediate parent did not exist when `Path.mkdir(parents=False)`
+ran. The original claim and failure log remain immutable. This is therefore a
+single clerical pre-model replacement, not a retry of a model call and not an
+increase to the scientific call budget.
+
+The replacement must use the distinct fixed run and O_EXCL claim below, the
+identical three prompts, seed schedule, durations, snapshot, receipt, and live
+configuration. Its runner creates and fsyncs only the fixed parent before GPU
+lease, proves all deterministic inputs and token absence before the lease,
+revalidates their exact bytes after the final idle-GPU probe, and atomically
+claims immediately before model execution. Any failure after this replacement
+claim is terminal. No third claim, retry, or further replacement is
+authorized.
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_AUTHORIZED = YES`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_RUN_ID = sao-mini-smoke-v2-001`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_RUN_ID = sao-mini-smoke-v2-002`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIM_PATH = /XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/sao-live-v2/sao-mini-smoke-v2-002.pre-model-replacement.claim.json`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_CLAIM_SHA256 = e57df24fdec18681764ca11c2585d1727f0fe677494a36e6eb8e4b43f55ad995`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_CLAIM_IDENTITY_SHA256 = f9342534decebc58a43e6f70b87d070e73986fbf7820cd7491c3bfb34ea19d6a`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_RUNTIME_AUTHORIZATION_SHA256 = b6a0be60366701465482c9a0991cd5008c4f9935806466d657885936068fb09e`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_GIT_COMMIT = 17696ed77cb118c01eb51867fc483415788c87a0`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_FAILURE_LOG_SHA256 = 73ecd7e0f5c59b75787d5a55f1016cf85461f862e95ee31c6bc8a87ea77593ba`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_FAILURE_PHASE = PRE_MODEL_RUN_DIRECTORY_CREATION`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CUMULATIVE_MODEL_CALLS = 0`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CUMULATIVE_MODEL_LOADS = 0`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CUMULATIVE_AUDIO_OUTPUTS = 0`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_EXACT_CALLS = 3`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_EXACT_CLAIMS = 1`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_MAX_CLIP_SECONDS = 30`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_MAX_GPUS = 1`
+
+`SAO_MINI_SMOKE_FURTHER_REPLACEMENT_AUTHORIZED = NO`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_RUNNER_SHA256 = 91a476fb8f1050c415c147907226c1a99167acb9ba52fa3a3103f404c6603883`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_IMPLEMENTATION_SHA256 = 220d45c4fcd1381946e6f63af9e63abbdefdff3688e7f3e1362b291dcfcc782d`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_CLAIMS_SOURCE_SHA256 = 8e2aa6bd46c3532c09f0045605f98d4a321a5e8c8a0fd953e561521851a7495f`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_ADAPTER_SHA256 = b4d36f87e2e48436498fb5b59e38fbf33882e560a3fd8fa6aeb58259fafd85ef`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_RUNNER_SHA256 = 116f30e60d8b2878142dbbf887dddccb5c11575470ddc7e35d9e84f50358e44f`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_IMPLEMENTATION_SHA256 = d6d4091a7d14986f8e215c0acdcabfb8df6a9ff064fc6d67146107ccb18e9644`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIMS_SHA256 = aa3397f702a17a33f0e4bbe8bd5f002f2e90fa7e37528e001bb5b071791495b9`
+
+`SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ADAPTER_SHA256 = b4d36f87e2e48436498fb5b59e38fbf33882e560a3fd8fa6aeb58259fafd85ef`

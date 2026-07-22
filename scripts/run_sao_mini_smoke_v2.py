@@ -20,15 +20,19 @@ from backbones.mini_smoke import RunContext  # noqa: E402
 from backbones.sao_acquisition import validate_live_config  # noqa: E402
 from backbones.sao_mini_smoke import run_sao_mini_smoke  # noqa: E402
 from backbones.sao_operational_claims import (  # noqa: E402
-    SAO_MINI_SMOKE_RUN_DIR,
+    SAO_MINI_SMOKE_REPLACEMENT_RUN_DIR,
     SHARED_CORE_DEVICE_LOCK_ROOT,
     consume_sao_mini_smoke_attempt,
+    prepare_sao_mini_smoke_attempt,
 )
-from backbones.stable_audio_open import StableAudioOpenAdapter  # noqa: E402
+from backbones.stable_audio_open import (  # noqa: E402
+    HF_TOKEN_ENVIRONMENT_VARIABLES,
+    StableAudioOpenAdapter,
+)
 from benchmark_core.config import PlacementConfig  # noqa: E402
 from benchmark_core.placement import DeviceLease, NvidiaSmiProbe  # noqa: E402
 
-DEFAULT_RUN_DIR = SAO_MINI_SMOKE_RUN_DIR
+DEFAULT_RUN_DIR = SAO_MINI_SMOKE_REPLACEMENT_RUN_DIR
 LOCK_ROOT = SHARED_CORE_DEVICE_LOCK_ROOT
 
 
@@ -60,6 +64,40 @@ def _verify_seeds() -> None:
         raise RuntimeError("SAO engineering seeds are absent or changed")
 
 
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _prepare_fixed_run_parent(run_dir: Path) -> None:
+    """Create only the fixed mini-smoke parent; never materialize the run itself."""
+
+    expected_run_dir = DEFAULT_RUN_DIR.resolve()
+    observed_run_dir = run_dir.resolve()
+    if observed_run_dir != expected_run_dir:
+        raise RuntimeError("SAO mini-smoke run directory is not the fixed replacement path")
+    if os.path.lexists(observed_run_dir):
+        raise RuntimeError("SAO mini-smoke fixed run directory already exists")
+    parent = expected_run_dir.parent
+    if parent.is_symlink():
+        raise RuntimeError("SAO mini-smoke parent may not be a symlink")
+    if parent.exists():
+        if not parent.is_dir():
+            raise RuntimeError("SAO mini-smoke parent is not a directory")
+    else:
+        grandparent = parent.parent.resolve(strict=True)
+        if grandparent != DEFAULT_RUN_DIR.parent.parent.resolve(strict=True):
+            raise RuntimeError("SAO mini-smoke parent escapes the fixed runtime root")
+        parent.mkdir(parents=False, exist_ok=False)
+        _fsync_directory(grandparent)
+    _fsync_directory(parent)
+    if os.path.lexists(observed_run_dir):
+        raise RuntimeError("SAO mini-smoke run appeared while preparing its parent")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=ROOT / "configs" / "sao_live_v2.json")
@@ -77,6 +115,11 @@ def main() -> int:
     node = socket.gethostname().split(".", 1)[0]
     if node != "an12" or args.physical_gpu_id not in {4, 5, 6, 7}:
         raise RuntimeError("SAO mini-smoke is restricted to an12 physical GPU 4..7")
+    present_tokens = [name for name in HF_TOKEN_ENVIRONMENT_VARIABLES if name in os.environ]
+    if present_tokens:
+        raise RuntimeError(
+            "SAO mini-smoke requires all Hugging Face token variables to be absent"
+        )
     run_dir = args.run_dir.resolve()
     # Complete every offline receipt/snapshot/authorization check before the
     # one-shot claim.  This hashes files but neither imports the model nor
@@ -102,12 +145,77 @@ def main() -> int:
         required_gpu_name_substring="A800",
         maximum_idle_utilization_percent=5,
     )
+    prompts = (
+        (
+            "sao-mini-repro",
+            "A purely instrumental arrangement led throughout by piano, upright bass, "
+            "and brushed drums, with a clean continuous texture.",
+            "S-0011",
+            73193011,
+        ),
+        (
+            "sao-mini-repro",
+            "A purely instrumental arrangement led throughout by piano, upright bass, "
+            "and brushed drums, with a clean continuous texture.",
+            "S-0011",
+            73193011,
+        ),
+        (
+            "sao-mini-resident-cost",
+            "A purely instrumental arrangement led throughout by acoustic guitar, warm "
+            "bass, and hand percussion, with a clean continuous texture.",
+            "S-0012",
+            73193012,
+        ),
+    )
+    requests = [
+        GenerationRequest(
+            prompt_id=prompt_id,
+            prompt=prompt,
+            seed_id=seed_id,
+            seed=seed,
+            duration_seconds=30.0,
+            output_path=run_dir / "audio" / f"call-{index:02d}.wav",
+        )
+        for index, (prompt_id, prompt, seed_id, seed) in enumerate(prompts)
+    ]
+    command = " ".join(shlex.quote(value) for value in sys.argv)
+    context = RunContext(
+        run_id=run_dir.name,
+        command=command,
+        git_commit=git_commit,
+        node=node,
+        gpu_ids=(str(args.physical_gpu_id),),
+        placement_justification=(
+            "an12 TP1 single replica on one verified-idle A800; GPUs 0-3 and all "
+            "neighbor processes are untouched."
+        ),
+        package_freeze_sha256=sha256_file(ROOT / "environment" / "package-freeze.txt"),
+    )
+    _prepare_fixed_run_parent(run_dir)
+    attempt_preparation = prepare_sao_mini_smoke_attempt(
+        args.runtime_authorization,
+        requested_run_dir=run_dir,
+        live_config_path=args.config,
+        git_commit=git_commit,
+        decisions_path=args.decisions,
+    )
     lease = DeviceLease(placement)
     with lease:
         observation = NvidiaSmiProbe(placement).require_safe(
             minimum_free_vram_bytes=placement.minimum_free_vram_bytes,
             maximum_utilization_percent=placement.maximum_idle_utilization_percent,
         )
+        placement_observation = {
+            "node": observation.node,
+            "physical_gpu_id": observation.physical_gpu_id,
+            "gpu_uuid": observation.gpu_uuid,
+            "gpu_name": observation.gpu_name,
+            "free_vram_bytes": observation.free_vram_bytes,
+            "total_vram_bytes": observation.total_vram_bytes,
+            "utilization_percent": observation.utilization_percent,
+            "neighbor_compute_pids": list(observation.compute_pids),
+        }
         # The durable claim is the last operation before model loading.  A busy
         # device therefore queues/fails without burning the exact-three-call
         # authority, while every later failure remains terminal and no-retry.
@@ -116,71 +224,17 @@ def main() -> int:
             requested_run_dir=run_dir,
             live_config_path=args.config,
             git_commit=git_commit,
+            decisions_path=args.decisions,
+            prepared_attempt=attempt_preparation,
         )
-        prompts = (
-            (
-                "sao-mini-repro",
-                "A purely instrumental arrangement led throughout by piano, upright bass, "
-                "and brushed drums, with a clean continuous texture.",
-                "S-0011",
-                73193011,
-            ),
-            (
-                "sao-mini-repro",
-                "A purely instrumental arrangement led throughout by piano, upright bass, "
-                "and brushed drums, with a clean continuous texture.",
-                "S-0011",
-                73193011,
-            ),
-            (
-                "sao-mini-resident-cost",
-                "A purely instrumental arrangement led throughout by acoustic guitar, warm "
-                "bass, and hand percussion, with a clean continuous texture.",
-                "S-0012",
-                73193012,
-            ),
-        )
-        requests = [
-            GenerationRequest(
-                prompt_id=prompt_id,
-                prompt=prompt,
-                seed_id=seed_id,
-                seed=seed,
-                duration_seconds=30.0,
-                output_path=run_dir / "audio" / f"call-{index:02d}.wav",
-            )
-            for index, (prompt_id, prompt, seed_id, seed) in enumerate(prompts)
-        ]
-        command = " ".join(shlex.quote(value) for value in sys.argv)
-        context = RunContext(
-            run_id=run_dir.name,
-            command=command,
-            git_commit=git_commit,
-            node=node,
-            gpu_ids=(str(args.physical_gpu_id),),
-            placement_justification=(
-                "an12 TP1 single replica on one verified-idle A800; GPUs 0-3 and all "
-                "neighbor processes are untouched."
-            ),
-            package_freeze_sha256=sha256_file(ROOT / "environment" / "package-freeze.txt"),
-        )
+        placement_observation["operational_attempt_claim_path"] = attempt_claim["path"]
+        placement_observation["operational_attempt_claim_sha256"] = attempt_claim["sha256"]
         result = run_sao_mini_smoke(
             adapter,
             requests,
             run_dir=run_dir,
             context=context,
-            placement_observation={
-                "node": observation.node,
-                "physical_gpu_id": observation.physical_gpu_id,
-                "gpu_uuid": observation.gpu_uuid,
-                "gpu_name": observation.gpu_name,
-                "free_vram_bytes": observation.free_vram_bytes,
-                "total_vram_bytes": observation.total_vram_bytes,
-                "utilization_percent": observation.utilization_percent,
-                "neighbor_compute_pids": list(observation.compute_pids),
-                "operational_attempt_claim_path": attempt_claim["path"],
-                "operational_attempt_claim_sha256": attempt_claim["sha256"],
-            },
+            placement_observation=placement_observation,
         )
     print(json.dumps(result, allow_nan=False, indent=2, sort_keys=True))
     return 0

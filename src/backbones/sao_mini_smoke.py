@@ -372,41 +372,25 @@ def _validate_sao_mini_smoke_evidence(
     _evidence(claim_path.is_absolute(), "SAO attempt claim path must be absolute")
     _evidence(not claim_path.is_symlink(), "SAO attempt claim may not be a symlink")
     claim_path = claim_path.resolve(strict=True)
+    original_run_root = sao_operational_claims.SAO_MINI_SMOKE_RUN_DIR.resolve()
+    replacement_run_root = sao_operational_claims.SAO_MINI_SMOKE_REPLACEMENT_RUN_DIR.resolve()
     _evidence(
-        claim_path == sao_operational_claims.SAO_MINI_SMOKE_ATTEMPT_CLAIM.resolve(),
+        run_root in {original_run_root, replacement_run_root},
+        "SAO mini-smoke run is neither the original nor D-0042 replacement path",
+    )
+    expected_claim_path = (
+        sao_operational_claims.SAO_MINI_SMOKE_ATTEMPT_CLAIM.resolve()
+        if run_root == original_run_root
+        else sao_operational_claims.SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIM.resolve()
+    )
+    _evidence(
+        claim_path == expected_claim_path,
         "SAO attempt claim is not the fixed global claim",
     )
     claim = sao_operational_claims.validate_sao_mini_smoke_attempt_claim(claim_path)
     _evidence(
         claim["sha256"] == observation["operational_attempt_claim_sha256"],
         "SAO attempt claim hash mismatch",
-    )
-    _evidence(
-        set(claim)
-        == {
-            "authorized_calls",
-            "authorized_max_clip_seconds",
-            "authorized_max_gpus",
-            "backbone_config_sha256",
-            "claim_identity_sha256",
-            "claimed_at_utc",
-            "decision_id",
-            "git_commit",
-            "live_config_path",
-            "live_config_sha256",
-            "model_id",
-            "path",
-            "retry_allowed",
-            "run_dir",
-            "run_id",
-            "runtime_authorization_path",
-            "runtime_authorization_sha256",
-            "schema_version",
-            "scope",
-            "sha256",
-            "status",
-        },
-        "SAO attempt claim keys drifted",
     )
     _timestamp(claim["claimed_at_utc"], "attempt_claim.claimed_at_utc")
     _evidence(
@@ -920,7 +904,10 @@ def run_sao_mini_smoke(
 
     with ledger_path.open("xb") as ledger:
         for index, request in enumerate(requests):
-            request.output_path.parent.mkdir(parents=True, exist_ok=True)
+            # The fixed run directory already exists.  Materialize only its
+            # immediate audio child; never mask a missing outer runtime parent
+            # after the one-shot operational claim has been consumed.
+            request.output_path.parent.mkdir(parents=False, exist_ok=True)
             base = {
                 "schema_version": 1,
                 "generation_index": index,

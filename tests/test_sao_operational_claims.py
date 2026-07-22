@@ -16,9 +16,12 @@ from backbones.sao_operational_claims import (
     SaoOperationalAuthorizationError,
     consume_sao_core_run_claim,
     consume_sao_mini_smoke_attempt,
+    prepare_sao_mini_smoke_attempt,
     sao_core_global_claim_path,
+    sao_mini_smoke_pre_model_replacement_decision_assignments,
     validate_sao_core_run_claim,
     validate_sao_mini_smoke_attempt_claim,
+    validate_sao_mini_smoke_pre_model_failure_observation,
     verify_exact_sao_core_decision,
 )
 from benchmark_core.launcher import GitLaunchState, LaunchAuthorizationError, prepare_run
@@ -150,6 +153,204 @@ def test_mini_smoke_attempt_claim_is_atomic_under_race(
     assert claim_path.is_file()
 
 
+def _pre_model_replacement_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, object]:
+    original_run, original_claim = _patch_smoke_paths(monkeypatch, tmp_path)
+    replacement_run = tmp_path / "runs" / "sao-mini-smoke-v2-002"
+    replacement_claim = (
+        tmp_path / "claims" / "sao-mini-smoke-v2-002.pre-model-replacement.claim.json"
+    )
+    failure_log = tmp_path / "logs" / "sao-mini-smoke-v2-001.launch.log"
+    decisions = tmp_path / "DECISIONS.md"
+    monkeypatch.setattr(claims_module, "SAO_MINI_SMOKE_REPLACEMENT_RUN_DIR", replacement_run)
+    monkeypatch.setattr(
+        claims_module,
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIM",
+        replacement_claim,
+    )
+    monkeypatch.setattr(claims_module, "SAO_MINI_SMOKE_FAILURE_LOG", failure_log)
+    monkeypatch.setattr(claims_module, "SAO_DECISIONS_PATH", decisions)
+
+    authorization = tmp_path / "authorization.json"
+    live_config = tmp_path / "sao-live.json"
+    _mini_authorization(authorization)
+    _write_json(live_config, {"fixture": True})
+    original = consume_sao_mini_smoke_attempt(
+        authorization,
+        requested_run_dir=original_run,
+        live_config_path=live_config,
+        git_commit="c" * 40,
+    )
+    monkeypatch.setattr(
+        claims_module, "SAO_MINI_SMOKE_ORIGINAL_ATTEMPT_CLAIM_SHA256", original["sha256"]
+    )
+    monkeypatch.setattr(
+        claims_module,
+        "SAO_MINI_SMOKE_ORIGINAL_CLAIM_IDENTITY_SHA256",
+        original["claim_identity_sha256"],
+    )
+    monkeypatch.setattr(
+        claims_module,
+        "SAO_MINI_SMOKE_ORIGINAL_RUNTIME_AUTHORIZATION_SHA256",
+        _sha(authorization),
+    )
+    monkeypatch.setattr(claims_module, "SAO_MINI_SMOKE_ORIGINAL_GIT_COMMIT", "c" * 40)
+    failure_log.parent.mkdir(parents=True)
+    failure_log.write_text(
+        claims_module._expected_pre_model_failure_log_text(), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        claims_module, "SAO_MINI_SMOKE_FAILURE_LOG_SHA256", _sha(failure_log)
+    )
+    assignments = sao_mini_smoke_pre_model_replacement_decision_assignments()
+    decisions.write_text(
+        "# Decisions\n\n## D-0042 — fixture pre-model replacement\n"
+        + "\n".join(f"`{key} = {value}`" for key, value in assignments.items())
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(claims_module, "_verify_clean_main_revision", lambda _git: None)
+    return {
+        "authorization": authorization,
+        "decisions": decisions,
+        "failure_log": failure_log,
+        "live_config": live_config,
+        "original_claim": original_claim,
+        "original_run": original_run,
+        "replacement_claim": replacement_claim,
+        "replacement_run": replacement_run,
+    }
+
+
+def test_zero_call_observation_replacement_claim_and_no_replay(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _pre_model_replacement_fixture(tmp_path, monkeypatch)
+    observation = validate_sao_mini_smoke_pre_model_failure_observation()
+    assert observation["cumulative_model_loads_before_replacement"] == 0
+    assert observation["cumulative_model_calls_before_replacement"] == 0
+    assert observation["cumulative_audio_outputs_before_replacement"] == 0
+
+    decisions = fixture["decisions"]
+    assert isinstance(decisions, Path)
+    first_block_sha = claims_module.verify_sao_mini_smoke_pre_model_replacement_decision(
+        decisions
+    )["decision_block_sha256"]
+    with decisions.open("a", encoding="utf-8") as handle:
+        handle.write("\n## D-0043 — later append-only fixture\n`FIXTURE = YES`\n")
+    assert (
+        claims_module.verify_sao_mini_smoke_pre_model_replacement_decision(decisions)[
+            "decision_block_sha256"
+        ]
+        == first_block_sha
+    )
+
+    preparation = prepare_sao_mini_smoke_attempt(
+        fixture["authorization"],
+        requested_run_dir=fixture["replacement_run"],
+        live_config_path=fixture["live_config"],
+        git_commit="d" * 40,
+        decisions_path=decisions,
+    )
+    claimed = consume_sao_mini_smoke_attempt(
+        fixture["authorization"],
+        requested_run_dir=fixture["replacement_run"],
+        live_config_path=fixture["live_config"],
+        git_commit="d" * 40,
+        decisions_path=decisions,
+        prepared_attempt=preparation,
+    )
+    assert claimed["run_id"] == "sao-mini-smoke-v2-002"
+    assert claimed["retry_allowed"] is False
+    assert claimed["authorized_seed_schedule"][0]["seed"] == 73193011
+    assert validate_sao_mini_smoke_attempt_claim(fixture["replacement_claim"])[
+        "sha256"
+    ] == _sha(fixture["replacement_claim"])
+    with pytest.raises(SaoOperationalAuthorizationError, match="already consumed"):
+        consume_sao_mini_smoke_attempt(
+            fixture["authorization"],
+            requested_run_dir=fixture["replacement_run"],
+            live_config_path=fixture["live_config"],
+            git_commit="d" * 40,
+            decisions_path=decisions,
+        )
+
+
+def test_prepared_replacement_rejects_drift_and_self_consistent_forgery(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _pre_model_replacement_fixture(tmp_path, monkeypatch)
+    preparation = prepare_sao_mini_smoke_attempt(
+        fixture["authorization"],
+        requested_run_dir=fixture["replacement_run"],
+        live_config_path=fixture["live_config"],
+        git_commit="d" * 40,
+        decisions_path=fixture["decisions"],
+    )
+    forged = json.loads(json.dumps(preparation))
+    forged["record"]["authorized_calls"] = 4
+    forged["preparation_identity_sha256"] = claims_module._preparation_identity(forged)
+    with pytest.raises(SaoOperationalAuthorizationError, match="not the canonical"):
+        consume_sao_mini_smoke_attempt(
+            fixture["authorization"],
+            requested_run_dir=fixture["replacement_run"],
+            live_config_path=fixture["live_config"],
+            git_commit="d" * 40,
+            decisions_path=fixture["decisions"],
+            prepared_attempt=forged,
+        )
+    assert not fixture["replacement_claim"].exists()
+
+    _write_json(fixture["live_config"], {"fixture": "drifted"})
+    with pytest.raises(SaoOperationalAuthorizationError, match="not the canonical"):
+        consume_sao_mini_smoke_attempt(
+            fixture["authorization"],
+            requested_run_dir=fixture["replacement_run"],
+            live_config_path=fixture["live_config"],
+            git_commit="d" * 40,
+            decisions_path=fixture["decisions"],
+            prepared_attempt=preparation,
+        )
+    assert not fixture["replacement_claim"].exists()
+
+
+def test_zero_call_observation_rejects_failure_log_tamper(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _pre_model_replacement_fixture(tmp_path, monkeypatch)
+    failure_log = fixture["failure_log"]
+    assert isinstance(failure_log, Path)
+    failure_log.write_text(failure_log.read_text(encoding="utf-8") + "tamper\n", encoding="utf-8")
+    with pytest.raises(SaoOperationalAuthorizationError, match="failure log hash mismatch"):
+        validate_sao_mini_smoke_pre_model_failure_observation()
+
+
+def test_runner_prepares_only_fixed_parent_and_never_run_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runner = importlib.import_module("scripts.run_sao_mini_smoke_v2")
+    live_root = tmp_path / "runs" / "sao-live-v2"
+    live_root.mkdir(parents=True)
+    fixed_run = live_root / "mini-smoke" / "sao-mini-smoke-v2-002"
+    monkeypatch.setattr(runner, "DEFAULT_RUN_DIR", fixed_run)
+    runner._prepare_fixed_run_parent(fixed_run)
+    assert fixed_run.parent.is_dir()
+    assert not fixed_run.exists()
+    runner._prepare_fixed_run_parent(fixed_run)
+    assert not fixed_run.exists()
+    with pytest.raises(RuntimeError, match="fixed replacement path"):
+        runner._prepare_fixed_run_parent(fixed_run.with_name("sao-mini-smoke-v2-003"))
+
+
+def test_repository_d0042_binds_the_final_replacement_sources() -> None:
+    observed = claims_module.verify_sao_mini_smoke_pre_model_replacement_decision(
+        claims_module.SAO_DECISIONS_PATH
+    )
+    assert observed["decision_id"] == "D-0042"
+    assert len(observed["decision_block_sha256"]) == 64
+
+
 def test_mini_smoke_runner_claims_only_after_offline_preflight_and_safe_device_lease(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -187,15 +388,33 @@ def test_mini_smoke_runner_claims_only_after_offline_preflight_and_safe_device_l
 
         def require_safe(self, **_kwargs: object) -> SimpleNamespace:
             events.append("gpu-safety-verified")
-            return SimpleNamespace()
+            return SimpleNamespace(
+                node="an12",
+                physical_gpu_id=4,
+                gpu_uuid="GPU-fixture",
+                gpu_name="NVIDIA A800 fixture",
+                free_vram_bytes=79_000_000_000,
+                total_vram_bytes=80_000_000_000,
+                utilization_percent=0,
+                compute_pids=(),
+            )
 
     def stop_at_claim(*_args: object, **_kwargs: object) -> dict[str, str]:
         events.append("attempt-claimed")
         raise RuntimeError("test stop at attempt claim")
 
+    def prepare_parent(_run_dir: Path) -> None:
+        events.append("parent-prepared")
+
+    def prepare_attempt(*_args: object, **_kwargs: object) -> dict[str, object]:
+        events.append("attempt-prepared")
+        return {"sealed": True}
+
     monkeypatch.setattr(runner, "StableAudioOpenAdapter", FakeAdapter)
     monkeypatch.setattr(runner, "DeviceLease", FakeLease)
     monkeypatch.setattr(runner, "NvidiaSmiProbe", FakeProbe)
+    monkeypatch.setattr(runner, "_prepare_fixed_run_parent", prepare_parent)
+    monkeypatch.setattr(runner, "prepare_sao_mini_smoke_attempt", prepare_attempt)
     monkeypatch.setattr(runner, "consume_sao_mini_smoke_attempt", stop_at_claim)
     monkeypatch.setattr(
         runner.sys,
@@ -217,6 +436,8 @@ def test_mini_smoke_runner_claims_only_after_offline_preflight_and_safe_device_l
     assert events == [
         "adapter-created",
         "offline-preflight",
+        "parent-prepared",
+        "attempt-prepared",
         "lease-created",
         "lease-entered",
         "gpu-safety-verified",

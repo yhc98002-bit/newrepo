@@ -105,6 +105,7 @@ def _write_mini_evidence(
     snapshot: Path,
     receipt_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    use_pre_model_replacement: bool = False,
 ) -> Path:
     receipt = validate_access_receipt(
         receipt_path,
@@ -137,6 +138,82 @@ def _write_mini_evidence(
         live_config_path=live_config,
         git_commit="c" * 40,
     )
+    execution_git = "c" * 40
+    if use_pre_model_replacement:
+        replacement_run = tmp_path / "sao-mini-smoke-v2-002"
+        replacement_claim = tmp_path / "sao-mini-smoke-v2-002.pre-model-replacement.claim.json"
+        failure_log = tmp_path / "sao-mini-smoke-v2-001.launch.log"
+        decisions = tmp_path / "DECISIONS.md"
+        monkeypatch.setattr(
+            sao_operational_claims,
+            "SAO_MINI_SMOKE_REPLACEMENT_RUN_DIR",
+            replacement_run,
+        )
+        monkeypatch.setattr(
+            sao_operational_claims,
+            "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIM",
+            replacement_claim,
+        )
+        monkeypatch.setattr(
+            sao_operational_claims, "SAO_MINI_SMOKE_FAILURE_LOG", failure_log
+        )
+        monkeypatch.setattr(sao_operational_claims, "SAO_DECISIONS_PATH", decisions)
+        monkeypatch.setattr(
+            sao_operational_claims,
+            "SAO_MINI_SMOKE_ORIGINAL_ATTEMPT_CLAIM_SHA256",
+            attempt_claim["sha256"],
+        )
+        monkeypatch.setattr(
+            sao_operational_claims,
+            "SAO_MINI_SMOKE_ORIGINAL_CLAIM_IDENTITY_SHA256",
+            attempt_claim["claim_identity_sha256"],
+        )
+        monkeypatch.setattr(
+            sao_operational_claims,
+            "SAO_MINI_SMOKE_ORIGINAL_RUNTIME_AUTHORIZATION_SHA256",
+            sha256_file(authorization),
+        )
+        monkeypatch.setattr(
+            sao_operational_claims, "SAO_MINI_SMOKE_ORIGINAL_GIT_COMMIT", "c" * 40
+        )
+        failure_log.write_text(
+            sao_operational_claims._expected_pre_model_failure_log_text(),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            sao_operational_claims,
+            "SAO_MINI_SMOKE_FAILURE_LOG_SHA256",
+            sha256_file(failure_log),
+        )
+        assignments = (
+            sao_operational_claims.sao_mini_smoke_pre_model_replacement_decision_assignments()
+        )
+        decisions.write_text(
+            "# Decisions\n\n## D-0042 — fixture replacement\n"
+            + "\n".join(f"`{key} = {value}`" for key, value in assignments.items())
+            + "\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            sao_operational_claims, "_verify_clean_main_revision", lambda _git: None
+        )
+        preparation = sao_operational_claims.prepare_sao_mini_smoke_attempt(
+            authorization,
+            requested_run_dir=replacement_run,
+            live_config_path=live_config,
+            git_commit="d" * 40,
+            decisions_path=decisions,
+        )
+        attempt_claim = sao_operational_claims.consume_sao_mini_smoke_attempt(
+            authorization,
+            requested_run_dir=replacement_run,
+            live_config_path=live_config,
+            git_commit="d" * 40,
+            decisions_path=decisions,
+            prepared_attempt=preparation,
+        )
+        run = replacement_run
+        execution_git = "d" * 40
     request_values = [
         (prompt_id, prompt, seed_id, seed)
         for (prompt_id, prompt), (seed_id, seed) in zip(
@@ -167,7 +244,7 @@ def _write_mini_evidence(
         context=RunContext(
             run_id=run.name,
             command="pytest SAO evidence fixture",
-            git_commit="c" * 40,
+            git_commit=execution_git,
             node="an12",
             gpu_ids=("4",),
             placement_justification="Single fake TP1 fixture on the frozen SAO placement.",
@@ -190,7 +267,12 @@ def _write_mini_evidence(
     return run / "sao-mini-smoke-terminal.json"
 
 
-def _sao_ready_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def _sao_ready_config(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    use_pre_model_replacement: bool = False,
+) -> Path:
     config_path = _core_config(tmp_path, scheduled_calls=1536)
     sa3_receipt, _queue = _write_completed_sa3_fixture(tmp_path, config_path)
     _configure_ace_incremental(config_path, sa3_receipt)
@@ -259,6 +341,7 @@ def _sao_ready_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         snapshot=snapshot,
         receipt_path=receipt,
         monkeypatch=monkeypatch,
+        use_pre_model_replacement=use_pre_model_replacement,
     )
     core_authorization = tmp_path / "sao-core-authorization.json"
     _write_json(
@@ -383,6 +466,24 @@ def test_sao_dual_format_receipt_selects_safetensors_through_smoke_and_core(
     assert {
         row["measurement_metadata"]["weight_file_sha256"] for row in terminal["rows"]
     } == {selected_sha}
+
+
+def test_sao_run_002_replacement_terminal_passes_deep_core_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _sao_ready_config(
+        tmp_path,
+        monkeypatch,
+        use_pre_model_replacement=True,
+    )
+    config = _load_test_config(path)
+    sao = next(model for model in config.models if model.model_id == SAO_MODEL_ID)
+    assert sao.sao_runtime is not None
+    terminal_path = Path(sao.sao_runtime.mini_smoke_result_path)
+    assert terminal_path.parent.name == "sao-mini-smoke-v2-002"
+    assert json.loads(terminal_path.read_text(encoding="utf-8"))["status"] == (
+        "PASS_MEASURED_READY"
+    )
 
 
 def test_sao_core_gate_fails_closed_on_state_scope_or_receipt_drift(
