@@ -49,6 +49,7 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0038",
         "D-0039",
         "D-0040",
+        "D-0041",
     ]
 
 
@@ -175,6 +176,20 @@ def test_sao_recovery_and_decision_grade_openings_preserve_scope() -> None:
     assert "DECISION_GRADE_AUDIO_GENERATION_AUTHORIZED = NO" in tables
     assert "SA3_PLUS_ACE_COMPLETE" in tables
     assert "COMPLETED_SCORED_SHARDS_ONLY" in tables
+
+    recovery_attempt2 = _decision_block("D-0041")
+    for assignment in (
+        "SAO_ACQUISITION_RECOVERY_AUTHORIZED = YES",
+        "SAO_ACQUISITION_RECOVERY_RUN_ID = sao-acquisition-recovery-v2-002",
+        "SAO_ACQUISITION_RECOVERY_NETWORK_ACCESS = NO",
+        "SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS = NO",
+        "SAO_ACQUISITION_RECOVERY_MODEL_CALLS = 0",
+        "SAO_ACQUISITION_RECOVERY_MATERIALIZATION = HARDLINK_CLONE_RETAINED_STAGE",
+        "SAO_RECOVERY_ATTEMPT2_ATOMIC_PUBLICATION = NO",
+        "SAO_RECOVERY_ATTEMPT2_RECEIPT_GATED_PUBLICATION = YES",
+        "SAO_RECOVERY_ATTEMPT2_FURTHER_ATTEMPTS = NO",
+    ):
+        assert assignment in recovery_attempt2
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

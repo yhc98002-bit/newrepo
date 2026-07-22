@@ -18,6 +18,7 @@ import re
 import shlex
 import shutil
 import socket
+import stat
 from collections.abc import Callable, MutableMapping
 from datetime import datetime, timezone
 from pathlib import Path
@@ -42,6 +43,21 @@ RECOVERY_FAILURE_TERMINAL_SHA256 = (
 RECOVERY_ACQUISITION_MANIFEST_SHA256 = (
     "65d1f48497ec451f5620327b006b85d1f34e084c164802b5ddfe0230b402f8e9"
 )
+RECOVERY_ATTEMPT2_DECISION_ID = "D-0041"
+RECOVERY_ATTEMPT2_RUN_ID = "sao-acquisition-recovery-v2-002"
+RECOVERY_ATTEMPT2_MATERIALIZATION = "HARDLINK_CLONE_RETAINED_STAGE"
+RECOVERY_ATTEMPT1_ACCESS_RECEIPT_SHA256 = (
+    "1fd37fc4e59ba8439f1dcc6c17b9b04a54f9652474e5fd72e8748bfb71188eb5"
+)
+RECOVERY_ATTEMPT1_SNAPSHOT_MANIFEST_SHA256 = (
+    "e3756f588cf5db90a122e597f3582f2a3c4ee66316b239383c78927402da0b39"
+)
+RECOVERY_ATTEMPT1_TREE_SHA256 = (
+    "354b42d6e427a3ab68558a427754dcd949a734d9bddd8cdb293a48d16fab3b8c"
+)
+RECOVERY_ATTEMPT1_FAILURE_LOG_SHA256 = (
+    "02a9d101c1c20cc9b73fb7e381f1c03cd6929c5eb4105203faf290f211dd1477"
+)
 EXECUTE_ACK = "I_ACKNOWLEDGE_SAO_ACQUISITION_USES_ONE_EPHEMERAL_READ_TOKEN"
 TOKEN_ENVIRONMENT_VARIABLE = "HF_TOKEN"
 CONFIG_STATUS = "CLOSED_UNTIL_D0037_LIVE_BINDING"
@@ -55,6 +71,9 @@ REQUIRED_DECISION_ASSIGNMENTS = (
 LICENSE_CANDIDATES = ("LICENSE", "LICENSE.md", "LICENSE.txt")
 RECOVERY_SOURCE_RUN_FILES = frozenset(
     {"acquisition-manifest.json", "terminal-failure.json"}
+)
+RECOVERY_ATTEMPT1_RUN_FILES = frozenset(
+    {"access-receipt.json", "snapshot-manifest.json"}
 )
 
 
@@ -106,7 +125,12 @@ def _decision_block(text: str, decision_id: str) -> str:
     return matches[0].group(0)
 
 
-def _single_decision_assignment(block: str, key: str) -> str:
+def _single_decision_assignment(
+    block: str,
+    key: str,
+    *,
+    decision_id: str = RECOVERY_DECISION_ID,
+) -> str:
     values: list[str] = []
     pattern = re.compile(rf"{re.escape(key)}\s*=\s*(\S+)")
     for line in block.splitlines():
@@ -118,7 +142,7 @@ def _single_decision_assignment(block: str, key: str) -> str:
             values.append(match.group(1))
     if len(values) != 1:
         raise SaoAcquisitionError(
-            f"{RECOVERY_DECISION_ID} must contain exactly one {key} assignment"
+            f"{decision_id} must contain exactly one {key} assignment"
         )
     return values[0]
 
@@ -169,6 +193,82 @@ def validate_recovery_decision(decisions_path: Path) -> dict[str, str]:
         raise SaoAcquisitionError(f"{RECOVERY_DECISION_ID} contains an unresolved marker")
     return {
         "decision_id": RECOVERY_DECISION_ID,
+        "decision_path": str(source),
+        "decision_file_sha256": sha256_file(source),
+        "decision_block_sha256": hashlib.sha256(block.encode("utf-8")).hexdigest(),
+    }
+
+
+def validate_recovery_attempt2_decision(decisions_path: Path) -> dict[str, str]:
+    """Validate the fixed D-0041 hard-link materialization authority."""
+
+    try:
+        source = decisions_path.resolve(strict=True)
+        text = source.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise SaoAcquisitionError("cannot read SAO recovery-attempt-2 decision") from exc
+    block = _decision_block(text, RECOVERY_ATTEMPT2_DECISION_ID)
+    expected = {
+        "SAO_ACQUISITION_RECOVERY_AUTHORIZED": "YES",
+        "SAO_ACQUISITION_RECOVERY_SOURCE_RUN_ID": RECOVERY_SOURCE_RUN_ID,
+        "SAO_ACQUISITION_RECOVERY_FAILED_RECOVERY_RUN_ID": RECOVERY_RUN_ID,
+        "SAO_ACQUISITION_RECOVERY_RUN_ID": RECOVERY_ATTEMPT2_RUN_ID,
+        "SAO_ACQUISITION_RECOVERY_REVISION": RECOVERY_REVISION,
+        "SAO_ACQUISITION_RECOVERY_FAILED_ACCESS_RECEIPT_SHA256": (
+            RECOVERY_ATTEMPT1_ACCESS_RECEIPT_SHA256
+        ),
+        "SAO_ACQUISITION_RECOVERY_FAILED_SNAPSHOT_MANIFEST_SHA256": (
+            RECOVERY_ATTEMPT1_SNAPSHOT_MANIFEST_SHA256
+        ),
+        "SAO_ACQUISITION_RECOVERY_FAILED_RECOVERY_TREE_SHA256": (
+            RECOVERY_ATTEMPT1_TREE_SHA256
+        ),
+        "SAO_ACQUISITION_RECOVERY_FAILURE_LOG_SHA256": (
+            RECOVERY_ATTEMPT1_FAILURE_LOG_SHA256
+        ),
+        "SAO_ACQUISITION_RECOVERY_NETWORK_ACCESS": "NO",
+        "SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS": "NO",
+        "SAO_ACQUISITION_RECOVERY_MODEL_CALLS": "0",
+        "SAO_ACQUISITION_RECOVERY_MATERIALIZATION": (
+            RECOVERY_ATTEMPT2_MATERIALIZATION
+        ),
+    }
+    observed_keys: list[str] = []
+    assignment_pattern = re.compile(
+        r"(SAO_ACQUISITION_RECOVERY_[A-Z0-9_]+)\s*=\s*\S+"
+    )
+    for line in block.splitlines():
+        candidate = line.strip()
+        if candidate.startswith("`") and candidate.endswith("`"):
+            candidate = candidate[1:-1].strip()
+        match = assignment_pattern.fullmatch(candidate)
+        if match is not None:
+            observed_keys.append(match.group(1))
+    if set(observed_keys) != set(expected):
+        extra = sorted(set(observed_keys).difference(expected))
+        missing = sorted(set(expected).difference(observed_keys))
+        raise SaoAcquisitionError(
+            f"{RECOVERY_ATTEMPT2_DECISION_ID} recovery assignment vocabulary changed: "
+            f"missing={missing}, extra={extra}"
+        )
+    for key, expected_value in expected.items():
+        if (
+            _single_decision_assignment(
+                block,
+                key,
+                decision_id=RECOVERY_ATTEMPT2_DECISION_ID,
+            )
+            != expected_value
+        ):
+            raise SaoAcquisitionError(
+                f"{RECOVERY_ATTEMPT2_DECISION_ID} assignment mismatch: {key}"
+            )
+    if re.search(r"\b(?:PENDING|PLACEHOLDER|TBD|ESTIMATE)\b", block, re.IGNORECASE):
+        raise SaoAcquisitionError(
+            f"{RECOVERY_ATTEMPT2_DECISION_ID} contains an unresolved marker"
+        )
+    return {
+        "decision_id": RECOVERY_ATTEMPT2_DECISION_ID,
         "decision_path": str(source),
         "decision_file_sha256": sha256_file(source),
         "decision_block_sha256": hashlib.sha256(block.encode("utf-8")).hexdigest(),
@@ -561,6 +661,285 @@ def _validate_source_failure(
     }
 
 
+def _attempt1_failure_log_path(run_root: Path) -> Path:
+    """Derive the fixed failed-recovery log from the frozen runtime layout."""
+
+    if (
+        run_root.name != "acquisition"
+        or run_root.parent.name != "sao-live-v2"
+        or run_root.parent.parent.name != "runs"
+    ):
+        raise SaoAcquisitionError("SAO recovery run root lacks the frozen runtime layout")
+    return (
+        run_root.parent.parent.parent
+        / "logs"
+        / "sao-live-v2"
+        / f"{RECOVERY_RUN_ID}.log"
+    )
+
+
+def _validate_failed_recovery_attempt(
+    *,
+    failed_run_dir: Path,
+    failure_log_path: Path,
+    final_snapshot: Path,
+    retained_files: list[dict[str, Any]],
+    retained_license_path: Path,
+    source: dict[str, Any],
+    failed_decision: dict[str, str],
+) -> dict[str, Any]:
+    """Verify the exact two-file D-0039 failure and its immutable log."""
+
+    if failed_run_dir.is_symlink() or not failed_run_dir.is_dir():
+        raise SaoAcquisitionError("failed SAO recovery-attempt-1 run is absent")
+    failed_entries = list(failed_run_dir.iterdir())
+    if any(path.is_symlink() for path in failed_entries):
+        raise SaoAcquisitionError("failed SAO recovery-attempt-1 contains a symlink")
+    if {path.name for path in failed_entries} != RECOVERY_ATTEMPT1_RUN_FILES or any(
+        not path.is_file() for path in failed_entries
+    ):
+        raise SaoAcquisitionError("failed SAO recovery-attempt-1 closure changed")
+
+    receipt_path = failed_run_dir / "access-receipt.json"
+    manifest_path = failed_run_dir / "snapshot-manifest.json"
+    if sha256_file(receipt_path) != RECOVERY_ATTEMPT1_ACCESS_RECEIPT_SHA256:
+        raise SaoAcquisitionError("failed recovery access receipt SHA-256 mismatch")
+    if sha256_file(manifest_path) != RECOVERY_ATTEMPT1_SNAPSHOT_MANIFEST_SHA256:
+        raise SaoAcquisitionError("failed recovery snapshot manifest SHA-256 mismatch")
+    failed_files = _snapshot_files(failed_run_dir)
+    if _tree_sha256(failed_files) != RECOVERY_ATTEMPT1_TREE_SHA256:
+        raise SaoAcquisitionError("failed recovery two-file tree SHA-256 mismatch")
+
+    if (
+        failure_log_path.is_symlink()
+        or not failure_log_path.is_file()
+        or sha256_file(failure_log_path) != RECOVERY_ATTEMPT1_FAILURE_LOG_SHA256
+    ):
+        raise SaoAcquisitionError("failed recovery log path or SHA-256 mismatch")
+
+    manifest = _strict_acquisition_json(
+        manifest_path, "failed recovery snapshot manifest"
+    )
+    _require_exact_keys(
+        manifest,
+        {
+            "schema_version",
+            "provider",
+            "acquisition_mode",
+            "model_id",
+            "revision",
+            "snapshot_dir",
+            "snapshot_tree_sha256",
+            "files",
+            "source_run_id",
+            "source_failure_terminal_path",
+            "source_failure_terminal_sha256",
+            "recovery_decision_id",
+            "recovery_decision_block_sha256",
+        },
+        "failed recovery snapshot manifest",
+    )
+    expected_manifest = {
+        "schema_version": 1,
+        "provider": "huggingface_hub",
+        "acquisition_mode": "OFFLINE_RETAINED_STAGE_RECOVERY",
+        "model_id": MODEL_ID,
+        "revision": RECOVERY_REVISION,
+        "snapshot_dir": str(final_snapshot),
+        "source_run_id": RECOVERY_SOURCE_RUN_ID,
+        "source_failure_terminal_path": source["failure_terminal_path"],
+        "source_failure_terminal_sha256": source["failure_terminal_sha256"],
+        "recovery_decision_id": RECOVERY_DECISION_ID,
+        "recovery_decision_block_sha256": failed_decision[
+            "decision_block_sha256"
+        ],
+    }
+    for field, expected in expected_manifest.items():
+        if manifest.get(field) != expected:
+            raise SaoAcquisitionError(
+                f"failed recovery snapshot manifest mismatch: {field}"
+            )
+    if manifest.get("files") != retained_files:
+        raise SaoAcquisitionError("failed recovery manifest no longer binds retained stage")
+    if manifest.get("snapshot_tree_sha256") != _tree_sha256(retained_files):
+        raise SaoAcquisitionError("failed recovery snapshot tree SHA-256 mismatch")
+
+    receipt = _strict_acquisition_json(receipt_path, "failed recovery access receipt")
+    _require_exact_keys(
+        receipt,
+        {
+            "schema_version",
+            "model_id",
+            "resolved_provider_revision",
+            "accepted_by",
+            "accepted_at_utc",
+            "user_confirmed_acceptance",
+            "license_identifier",
+            "license_text_sha256",
+            "snapshot_manifest_path",
+            "snapshot_manifest_sha256",
+        },
+        "failed recovery access receipt",
+    )
+    expected_receipt = {
+        "schema_version": 1,
+        "model_id": MODEL_ID,
+        "resolved_provider_revision": RECOVERY_REVISION,
+        "user_confirmed_acceptance": True,
+        "license_text_sha256": sha256_file(retained_license_path),
+        "snapshot_manifest_path": str(manifest_path.resolve(strict=True)),
+        "snapshot_manifest_sha256": RECOVERY_ATTEMPT1_SNAPSHOT_MANIFEST_SHA256,
+    }
+    for field, expected in expected_receipt.items():
+        if receipt.get(field) != expected:
+            raise SaoAcquisitionError(f"failed recovery access receipt mismatch: {field}")
+    for field in ("accepted_by", "license_identifier"):
+        if not isinstance(receipt.get(field), str) or not receipt[field].strip():
+            raise SaoAcquisitionError(f"failed recovery access receipt invalid: {field}")
+    _validate_utc_timestamp(receipt.get("accepted_at_utc"), "accepted_at_utc")
+    return {
+        "access_receipt_path": str(receipt_path.resolve(strict=True)),
+        "access_receipt_sha256": RECOVERY_ATTEMPT1_ACCESS_RECEIPT_SHA256,
+        "snapshot_manifest_path": str(manifest_path.resolve(strict=True)),
+        "snapshot_manifest_sha256": RECOVERY_ATTEMPT1_SNAPSHOT_MANIFEST_SHA256,
+        "failed_run_files": failed_files,
+        "failed_run_tree_sha256": RECOVERY_ATTEMPT1_TREE_SHA256,
+        "failure_log_path": str(failure_log_path.resolve(strict=True)),
+        "failure_log_sha256": RECOVERY_ATTEMPT1_FAILURE_LOG_SHA256,
+        "accepted_by": receipt["accepted_by"],
+        "accepted_at_utc": receipt["accepted_at_utc"],
+        "license_identifier": receipt["license_identifier"],
+    }
+
+
+def _prevalidate_hardlink_support(snapshot_root: Path) -> None:
+    """Exercise one scoped hard link before any recovery artifact is created."""
+
+    probe_root = snapshot_root / ".sao-hardlink-probe-recovery-v2-002"
+    source = probe_root / "source"
+    linked = probe_root / "linked"
+    if os.path.lexists(probe_root):
+        raise SaoAcquisitionError("scoped SAO hard-link probe path already exists")
+    try:
+        probe_root.mkdir(mode=0o700, exist_ok=False)
+        with source.open("xb") as handle:
+            handle.write(b"SAO hard-link recovery probe\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.link(source, linked, follow_symlinks=False)
+        source_stat = source.stat(follow_symlinks=False)
+        linked_stat = linked.stat(follow_symlinks=False)
+        if (
+            not stat.S_ISREG(source_stat.st_mode)
+            or not stat.S_ISREG(linked_stat.st_mode)
+            or source_stat.st_dev != linked_stat.st_dev
+            or source_stat.st_ino != linked_stat.st_ino
+            or source.read_bytes() != linked.read_bytes()
+        ):
+            raise SaoAcquisitionError("scoped SAO hard-link probe identity failed")
+    except BaseException as exc:
+        if isinstance(exc, (SaoAcquisitionError, KeyboardInterrupt, SystemExit)):
+            raise
+        raise SaoAcquisitionError("scoped SAO hard-link support probe failed") from exc
+    finally:
+        for path in (linked, source):
+            if os.path.lexists(path):
+                path.unlink()
+        if os.path.lexists(probe_root):
+            probe_root.rmdir()
+
+
+def _hardlink_clone_snapshot(
+    source_root: Path,
+    destination_root: Path,
+    files: list[dict[str, Any]],
+) -> None:
+    """Create a no-overwrite hierarchy of hard links from a sealed file list."""
+
+    relative_paths: list[Path] = []
+    for row in files:
+        relative = Path(str(row.get("path", "")))
+        if (
+            relative.is_absolute()
+            or not relative.parts
+            or relative.as_posix() in {"", "."}
+            or ".." in relative.parts
+        ):
+            raise SaoAcquisitionError("retained snapshot contains an unsafe path")
+        relative_paths.append(relative)
+    directories = {
+        parent
+        for relative in relative_paths
+        for parent in relative.parents
+        if parent != Path(".")
+    }
+    for relative in sorted(directories, key=lambda value: (len(value.parts), value.as_posix())):
+        destination = destination_root / relative
+        if os.path.lexists(destination):
+            raise FileExistsError(destination)
+        destination.mkdir(mode=0o755, exist_ok=False)
+
+    for row, relative in zip(files, relative_paths, strict=True):
+        source = source_root / relative
+        destination = destination_root / relative
+        source_stat = source.stat(follow_symlinks=False)
+        if source.is_symlink() or not stat.S_ISREG(source_stat.st_mode):
+            raise SaoAcquisitionError("retained snapshot entry changed before hard-linking")
+        if os.path.lexists(destination):
+            raise FileExistsError(destination)
+        os.link(source, destination, follow_symlinks=False)
+        destination_stat = destination.stat(follow_symlinks=False)
+        if (
+            not stat.S_ISREG(destination_stat.st_mode)
+            or source_stat.st_dev != destination_stat.st_dev
+            or source_stat.st_ino != destination_stat.st_ino
+            or destination_stat.st_size != row["size_bytes"]
+        ):
+            raise SaoAcquisitionError("hard-linked snapshot file identity mismatch")
+
+
+def _write_attempt2_failure_terminal(
+    *,
+    recovery_run_dir: Path,
+    final_snapshot: Path,
+    retained_stage: Path,
+    started_at_utc: str,
+    command: str,
+    git_commit: str,
+    error: BaseException,
+) -> Path:
+    """Seal a sanitized terminal while retaining every partial artifact."""
+
+    return _write_json_exclusive(
+        recovery_run_dir / "terminal-failure.json",
+        {
+            "schema_version": 1,
+            "status": "RECOVERY_FAILED_STOPPED_ARTIFACTS_RETAINED",
+            "run_id": RECOVERY_ATTEMPT2_RUN_ID,
+            "source_run_id": RECOVERY_SOURCE_RUN_ID,
+            "failed_recovery_run_id": RECOVERY_RUN_ID,
+            "started_at_utc": started_at_utc,
+            "finished_at_utc": _utc_now(),
+            "node": socket.gethostname().split(".", 1)[0],
+            "command": command,
+            "git_commit": git_commit,
+            "error_type": type(error).__name__,
+            "recovery_decision_id": RECOVERY_ATTEMPT2_DECISION_ID,
+            "materialization": RECOVERY_ATTEMPT2_MATERIALIZATION,
+            "snapshot_dir": str(final_snapshot),
+            "partial_snapshot_retained": final_snapshot.is_dir(),
+            "source_stage_retained": retained_stage.is_dir(),
+            "original_failed_run_preserved": True,
+            "failed_recovery_run_preserved": True,
+            "network_access": False,
+            "token_access": False,
+            "gpu_count": 0,
+            "model_calls": 0,
+            "generated_audio": 0,
+        },
+    )
+
+
 def finalize_retained_acquisition_recovery(
     config_path: Path,
     decisions_path: Path,
@@ -717,6 +1096,257 @@ def finalize_retained_acquisition_recovery(
         }
         terminal_path = _write_json_exclusive(recovery_run_dir / "terminal.json", terminal)
         return {**terminal, "terminal_path": str(terminal_path)}
+    finally:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+        lock_handle.close()
+
+
+def finalize_retained_acquisition_recovery_attempt2(
+    config_path: Path,
+    decisions_path: Path,
+    *,
+    command: str,
+    git_commit: str,
+) -> dict[str, Any]:
+    """Hard-link the retained stage under the one fixed D-0041 authority.
+
+    The source stage, original acquisition failure, and failed D-0039 recovery
+    remain in place. This function imports no provider, model, GPU, or token
+    surface and performs no deletion or overwrite of acquisition artifacts.
+    """
+
+    if not command.strip() or REVISION_RE.fullmatch(git_commit) is None:
+        raise SaoAcquisitionError("recovery-attempt-2 command/git identity is invalid")
+    config = validate_live_config(config_path, decisions_path)
+    acquisition = config["acquisition"]
+    if acquisition.get("run_id") != RECOVERY_SOURCE_RUN_ID:
+        raise SaoAcquisitionError("SAO recovery-attempt-2 source run ID changed")
+    failed_decision = validate_recovery_decision(decisions_path)
+    decision = validate_recovery_attempt2_decision(decisions_path)
+
+    run_root = Path(str(acquisition["run_root"]))
+    snapshot_root = Path(str(acquisition["snapshot_root"]))
+    source_run_dir = run_root / RECOVERY_SOURCE_RUN_ID
+    failed_run_dir = run_root / RECOVERY_RUN_ID
+    recovery_run_dir = run_root / RECOVERY_ATTEMPT2_RUN_ID
+    retained_stage = snapshot_root / f".{RECOVERY_SOURCE_RUN_ID}.partial"
+    final_snapshot = snapshot_root / RECOVERY_REVISION
+    failure_log_path = _attempt1_failure_log_path(run_root)
+    if not run_root.is_dir() or run_root.is_symlink():
+        raise SaoAcquisitionError("SAO acquisition run root is unavailable")
+    if not snapshot_root.is_dir() or snapshot_root.is_symlink():
+        raise SaoAcquisitionError("SAO snapshot root is unavailable")
+    if os.path.lexists(recovery_run_dir):
+        raise FileExistsError(recovery_run_dir)
+    if os.path.lexists(final_snapshot):
+        raise FileExistsError(final_snapshot)
+
+    lock_path = snapshot_root / ".sao-acquisition.lock"
+    if lock_path.is_symlink() or not lock_path.is_file():
+        raise SaoAcquisitionError("scoped SAO acquisition lock is unavailable")
+    lock_handle = lock_path.open("r+b")
+    try:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as exc:
+        lock_handle.close()
+        raise SaoAcquisitionError("another SAO acquisition holds the scoped lock") from exc
+
+    started = _utc_now()
+    artifacts_started = False
+    try:
+        if os.path.lexists(recovery_run_dir):
+            raise FileExistsError(recovery_run_dir)
+        if os.path.lexists(final_snapshot):
+            raise FileExistsError(final_snapshot)
+        source = _validate_source_failure(
+            source_run_dir=source_run_dir,
+            config_path=config_path,
+            config_sha256=sha256_file(config_path),
+        )
+        retained_files, retained_license_path = _validate_retained_stage(retained_stage)
+        failed = _validate_failed_recovery_attempt(
+            failed_run_dir=failed_run_dir,
+            failure_log_path=failure_log_path,
+            final_snapshot=final_snapshot,
+            retained_files=retained_files,
+            retained_license_path=retained_license_path,
+            source=source,
+            failed_decision=failed_decision,
+        )
+
+        # This probe is cleaned before either durable attempt-2 directory is
+        # created. Thus unsupported hard links cannot leave a second partial run.
+        _prevalidate_hardlink_support(snapshot_root)
+        if os.path.lexists(recovery_run_dir) or os.path.lexists(final_snapshot):
+            raise SaoAcquisitionError("SAO recovery target appeared during prevalidation")
+
+        recovery_run_dir.mkdir(mode=0o755, exist_ok=False)
+        artifacts_started = True
+        final_snapshot.mkdir(mode=0o755, exist_ok=False)
+        _hardlink_clone_snapshot(retained_stage, final_snapshot, retained_files)
+
+        manifest = {
+            "schema_version": 1,
+            "provider": "huggingface_hub",
+            "acquisition_mode": "OFFLINE_RETAINED_STAGE_RECOVERY_ATTEMPT2",
+            "materialization": RECOVERY_ATTEMPT2_MATERIALIZATION,
+            "model_id": MODEL_ID,
+            "revision": RECOVERY_REVISION,
+            "snapshot_dir": str(final_snapshot),
+            "snapshot_tree_sha256": _tree_sha256(retained_files),
+            "files": retained_files,
+            "source_run_id": RECOVERY_SOURCE_RUN_ID,
+            "failed_recovery_run_id": RECOVERY_RUN_ID,
+            "failed_recovery_access_receipt_sha256": failed[
+                "access_receipt_sha256"
+            ],
+            "failed_recovery_snapshot_manifest_sha256": failed[
+                "snapshot_manifest_sha256"
+            ],
+            "failed_recovery_tree_sha256": failed["failed_run_tree_sha256"],
+            "failed_recovery_log_path": failed["failure_log_path"],
+            "failed_recovery_log_sha256": failed["failure_log_sha256"],
+            "source_failure_terminal_path": source["failure_terminal_path"],
+            "source_failure_terminal_sha256": source["failure_terminal_sha256"],
+            "recovery_decision_id": decision["decision_id"],
+            "recovery_decision_block_sha256": decision["decision_block_sha256"],
+        }
+        manifest_path = _write_json_exclusive(
+            recovery_run_dir / "snapshot-manifest.json", manifest
+        )
+        if _strict_acquisition_json(manifest_path, "recovery-attempt-2 manifest") != manifest:
+            raise SaoAcquisitionError("recovery-attempt-2 manifest write verification failed")
+        receipt = {
+            "schema_version": 1,
+            "model_id": MODEL_ID,
+            "resolved_provider_revision": RECOVERY_REVISION,
+            "accepted_by": failed["accepted_by"],
+            "accepted_at_utc": failed["accepted_at_utc"],
+            "user_confirmed_acceptance": True,
+            "license_identifier": failed["license_identifier"],
+            "license_text_sha256": sha256_file(retained_license_path),
+            "snapshot_manifest_path": str(manifest_path),
+            "snapshot_manifest_sha256": sha256_file(manifest_path),
+        }
+        receipt_path = _write_json_exclusive(
+            recovery_run_dir / "access-receipt.json", receipt
+        )
+        if _strict_acquisition_json(receipt_path, "recovery-attempt-2 receipt") != receipt:
+            raise SaoAcquisitionError("recovery-attempt-2 receipt write verification failed")
+
+        from backbones.license_gate import validate_access_receipt
+
+        verified_receipt = validate_access_receipt(
+            receipt_path,
+            expected_model_id=MODEL_ID,
+            expected_snapshot_dir=final_snapshot,
+        )
+        if (
+            verified_receipt["resolved_provider_revision"] != RECOVERY_REVISION
+            or verified_receipt["receipt_sha256"] != sha256_file(receipt_path)
+            or [
+                {
+                    "path": row["path"],
+                    "size_bytes": row["size_bytes"],
+                    "sha256": row["sha256"],
+                }
+                for row in verified_receipt["verified_files"]
+            ]
+            != retained_files
+        ):
+            raise SaoAcquisitionError("recovery-attempt-2 exact receipt verification failed")
+
+        # Recheck identity and every small immutable evidence closure after the
+        # final receipt hashes the materialized files. The source stage remains.
+        for row in retained_files:
+            relative = Path(row["path"])
+            source_stat = (retained_stage / relative).stat(follow_symlinks=False)
+            final_stat = (final_snapshot / relative).stat(follow_symlinks=False)
+            if (
+                source_stat.st_dev != final_stat.st_dev
+                or source_stat.st_ino != final_stat.st_ino
+            ):
+                raise SaoAcquisitionError("final snapshot is not a hard-link clone")
+        if _snapshot_files(source_run_dir) != source["source_run_files"]:
+            raise SaoAcquisitionError("original failed SAO acquisition run changed")
+        if _snapshot_files(failed_run_dir) != failed["failed_run_files"]:
+            raise SaoAcquisitionError("failed SAO recovery-attempt-1 run changed")
+        if sha256_file(failure_log_path) != failed["failure_log_sha256"]:
+            raise SaoAcquisitionError("failed SAO recovery-attempt-1 log changed")
+
+        terminal = {
+            "schema_version": 1,
+            "status": "ACCESS_RECEIPT_RECOVERED_OFFLINE_HARDLINK_NO_GENERATION",
+            "run_id": RECOVERY_ATTEMPT2_RUN_ID,
+            "source_run_id": RECOVERY_SOURCE_RUN_ID,
+            "failed_recovery_run_id": RECOVERY_RUN_ID,
+            "started_at_utc": started,
+            "finished_at_utc": _utc_now(),
+            "node": socket.gethostname().split(".", 1)[0],
+            "command": command,
+            "git_commit": git_commit,
+            "model_id": MODEL_ID,
+            "resolved_provider_revision": RECOVERY_REVISION,
+            "snapshot_dir": str(final_snapshot),
+            "snapshot_manifest_path": str(manifest_path),
+            "snapshot_manifest_sha256": sha256_file(manifest_path),
+            "snapshot_tree_sha256": manifest["snapshot_tree_sha256"],
+            "access_receipt_path": str(receipt_path),
+            "access_receipt_sha256": sha256_file(receipt_path),
+            "source_failure_terminal_path": source["failure_terminal_path"],
+            "source_failure_terminal_sha256": source["failure_terminal_sha256"],
+            "source_acquisition_manifest_path": source["acquisition_manifest_path"],
+            "source_acquisition_manifest_sha256": source[
+                "acquisition_manifest_sha256"
+            ],
+            "failed_recovery_access_receipt_path": failed["access_receipt_path"],
+            "failed_recovery_access_receipt_sha256": failed[
+                "access_receipt_sha256"
+            ],
+            "failed_recovery_snapshot_manifest_path": failed[
+                "snapshot_manifest_path"
+            ],
+            "failed_recovery_snapshot_manifest_sha256": failed[
+                "snapshot_manifest_sha256"
+            ],
+            "failed_recovery_tree_sha256": failed["failed_run_tree_sha256"],
+            "failed_recovery_log_path": failed["failure_log_path"],
+            "failed_recovery_log_sha256": failed["failure_log_sha256"],
+            "recovery_decision_id": decision["decision_id"],
+            "recovery_decision_path": decision["decision_path"],
+            "recovery_decision_file_sha256": decision["decision_file_sha256"],
+            "recovery_decision_block_sha256": decision["decision_block_sha256"],
+            "materialization": RECOVERY_ATTEMPT2_MATERIALIZATION,
+            "source_stage_retained": True,
+            "original_failed_run_preserved": True,
+            "failed_recovery_run_preserved": True,
+            "network_access": False,
+            "token_access": False,
+            "gpu_count": 0,
+            "model_calls": 0,
+            "generated_audio": 0,
+        }
+        terminal_path = _write_json_exclusive(
+            recovery_run_dir / "terminal.json", terminal
+        )
+        return {**terminal, "terminal_path": str(terminal_path)}
+    except BaseException as exc:
+        if artifacts_started and recovery_run_dir.is_dir():
+            try:
+                _write_attempt2_failure_terminal(
+                    recovery_run_dir=recovery_run_dir,
+                    final_snapshot=final_snapshot,
+                    retained_stage=retained_stage,
+                    started_at_utc=started,
+                    command=command,
+                    git_commit=git_commit,
+                    error=exc,
+                )
+            except BaseException as terminal_exc:
+                raise SaoAcquisitionError(
+                    "SAO recovery-attempt-2 failed and its terminal could not be sealed"
+                ) from terminal_exc
+        raise
     finally:
         fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
         lock_handle.close()

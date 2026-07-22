@@ -2034,3 +2034,71 @@ and `d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d`.
 `DECISION_GRADE_AUDIO_GENERATION_AUTHORIZED = NO`
 
 `DECISION_GRADE_INITIAL_RUN_ID = decision-grade-v2-001`
+
+## D-0041 — SAO filesystem-compatible retained-stage recovery authorized
+
+- Date: 2026-07-22
+- Status: accepted single final offline recovery opening
+- Authority: PI SAO-live authorization, with D-0039 filesystem-failure evidence
+
+D-0039 stopped with zero model calls and zero generated audio because this
+Lustre mount rejects `renameat2(RENAME_NOREPLACE)`. Its exact 944-byte failure
+log has SHA-256
+`02a9d101c1c20cc9b73fb7e381f1c03cd6929c5eb4105203faf290f211dd1477`.
+The failed recovery run is preserved with exactly two regular files: its
+access receipt and snapshot manifest have SHA-256s
+`1fd37fc4e59ba8439f1dcc6c17b9b04a54f9652474e5fd72e8748bfb71188eb5`
+and `e3756f588cf5db90a122e597f3582f2a3c4ee66316b239383c78927402da0b39`;
+their canonical two-file tree SHA-256 is
+`354b42d6e427a3ab68558a427754dcd949a734d9bddd8cdb293a48d16fab3b8c`.
+That receipt is non-operative because its named final snapshot was never
+created.
+
+The retained stage independently rehashes to 25 regular files totaling
+15,680,736,700 bytes with tree SHA-256
+`282bd8c8601e6143939fc54286df40f9208dd38d89c11271089bab04143361a3`.
+This final attempt may, under the existing exclusive acquisition lock, create
+the exact revision directory and hard-link each already-validated regular file
+without overwriting any path. The retained stage and both earlier failed runs
+remain present. Hard links are byte-identical aliases, not an independent
+archive; publication is therefore explicitly non-atomic and becomes usable
+only after complete receipt-wide rehash and a terminal PASS. Any failure is
+terminal with all partial evidence retained and no further recovery attempt.
+No provider, token, GPU, model construction, audio generation, deletion, or
+redownload is authorized.
+
+`SAO_ACQUISITION_RECOVERY_AUTHORIZED = YES`
+
+`SAO_ACQUISITION_RECOVERY_SOURCE_RUN_ID = sao-acquisition-v2-001`
+
+`SAO_ACQUISITION_RECOVERY_FAILED_RECOVERY_RUN_ID = sao-acquisition-recovery-v2-001`
+
+`SAO_ACQUISITION_RECOVERY_RUN_ID = sao-acquisition-recovery-v2-002`
+
+`SAO_ACQUISITION_RECOVERY_REVISION = f21265c1e2710b3bd2386596943f0007f55f802e`
+
+`SAO_ACQUISITION_RECOVERY_FAILED_ACCESS_RECEIPT_SHA256 = 1fd37fc4e59ba8439f1dcc6c17b9b04a54f9652474e5fd72e8748bfb71188eb5`
+
+`SAO_ACQUISITION_RECOVERY_FAILED_SNAPSHOT_MANIFEST_SHA256 = e3756f588cf5db90a122e597f3582f2a3c4ee66316b239383c78927402da0b39`
+
+`SAO_ACQUISITION_RECOVERY_FAILED_RECOVERY_TREE_SHA256 = 354b42d6e427a3ab68558a427754dcd949a734d9bddd8cdb293a48d16fab3b8c`
+
+`SAO_ACQUISITION_RECOVERY_FAILURE_LOG_SHA256 = 02a9d101c1c20cc9b73fb7e381f1c03cd6929c5eb4105203faf290f211dd1477`
+
+`SAO_ACQUISITION_RECOVERY_NETWORK_ACCESS = NO`
+
+`SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS = NO`
+
+`SAO_ACQUISITION_RECOVERY_MODEL_CALLS = 0`
+
+`SAO_ACQUISITION_RECOVERY_MATERIALIZATION = HARDLINK_CLONE_RETAINED_STAGE`
+
+`SAO_RECOVERY_ATTEMPT2_GPU_COUNT = 0`
+
+`SAO_RECOVERY_ATTEMPT2_GENERATED_AUDIO = 0`
+
+`SAO_RECOVERY_ATTEMPT2_ATOMIC_PUBLICATION = NO`
+
+`SAO_RECOVERY_ATTEMPT2_RECEIPT_GATED_PUBLICATION = YES`
+
+`SAO_RECOVERY_ATTEMPT2_FURTHER_ATTEMPTS = NO`
