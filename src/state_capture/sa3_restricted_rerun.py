@@ -147,6 +147,176 @@ def _attempt_placement(
     }
 
 
+def _receipt_file_binding(
+    record: Mapping[str, Any],
+    *,
+    prefix: str,
+    context: str,
+) -> Path:
+    path_value = record.get(f"{prefix}_path")
+    expected_sha = record.get(f"{prefix}_sha256")
+    if not isinstance(path_value, str) or not isinstance(expected_sha, str):
+        raise RestrictedRerunError(f"{context} binding is absent")
+    unresolved = Path(path_value)
+    if unresolved.is_symlink():
+        raise RestrictedRerunError(f"{context} must not be a symlink")
+    source = unresolved.resolve(strict=True)
+    if not source.is_file() or sha256_file(source) != require_sha256(expected_sha, context):
+        raise RestrictedRerunError(f"{context} binding drifted")
+    return source
+
+
+def _validate_zero_call_carried_repair(
+    record: Mapping[str, Any],
+    *,
+    predecessor_run_id: str,
+    expected_scientific_bindings: Mapping[str, str],
+    completed_exclusion_path: Path | None,
+    remaining_manifest_path: Path | None,
+    config: RestrictedRerunConfig | None,
+    bundle: Mapping[str, Any] | None,
+    source_plan: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Revalidate a remaining-only package carried through a zero-call attempt."""
+
+    if (
+        completed_exclusion_path is None
+        or remaining_manifest_path is None
+        or config is None
+        or bundle is None
+        or source_plan is None
+    ):
+        raise RestrictedRerunError(
+            "zero-call carried repair lacks the exact completed exclusion/remaining package"
+        )
+    from state_capture.sa3_remaining_repair import validate_remaining_repair_package
+
+    repair = validate_remaining_repair_package(
+        remaining_manifest_path,
+        exclusion_path=completed_exclusion_path,
+        config=config,
+        bundle=bundle,
+        source_plan=source_plan,
+    )
+    claim_path = _receipt_file_binding(
+        record,
+        prefix="attempt_claim",
+        context="zero-call predecessor attempt claim",
+    )
+    manifest_path = _receipt_file_binding(
+        record,
+        prefix="run_manifest",
+        context="zero-call predecessor run manifest",
+    )
+    plan_path = _receipt_file_binding(
+        record,
+        prefix="stage1_execution_plan",
+        context="zero-call predecessor execution plan",
+    )
+    exclusion_source = _receipt_file_binding(
+        record,
+        prefix="completed_exclusion",
+        context="zero-call predecessor completed exclusion",
+    )
+    remaining_source = _receipt_file_binding(
+        record,
+        prefix="remaining_manifest",
+        context="zero-call predecessor remaining manifest",
+    )
+    run_root = manifest_path.parent
+    claim = load_json(claim_path)
+    manifest = load_json(manifest_path)
+    claim_predecessor = claim.get("predecessor_failure")
+    manifest_predecessor = manifest.get("predecessor_failure")
+    claim_repair = (
+        claim_predecessor.get("remaining_repair") if isinstance(claim_predecessor, dict) else None
+    )
+    manifest_repair = (
+        manifest_predecessor.get("remaining_repair")
+        if isinstance(manifest_predecessor, dict)
+        else None
+    )
+    carried_plan = _plan_for_attempt(source_plan, {"remaining_repair": repair})
+    placement = claim.get("placement")
+    receipt_placement = {
+        "authorized_execution_replica_count": 1,
+        "node": "an12",
+        "physical_gpu_ids": [4],
+        "tensor_parallel_width": 1,
+    }
+    remaining_decision = claim.get("remaining_repair_decision")
+    if (
+        record.get("remaining_repair_carried_forward") is not True
+        or record.get("valid_completed_units_rerun") is not False
+        or record.get("worker_started") is not False
+        or record.get("gpu_seconds") != 0
+        or not isinstance(record.get("failure_kind"), str)
+        or not record.get("failure_kind")
+        or not isinstance(record.get("repair"), dict)
+        or record["repair"].get("scientific_configuration_changed") is not False
+        or record["repair"].get("thresholds_changed") is not False
+        or record.get("placement") != receipt_placement
+        or exclusion_source != Path(repair["completed_exclusion_path"])
+        or remaining_source != Path(repair["remaining_manifest_path"])
+        or run_root.name != predecessor_run_id
+        or manifest_path != run_root / "run-manifest.json"
+        or plan_path != run_root / "control" / "stage1-survivor-execution-plan.json"
+        or manifest.get("run_id") != predecessor_run_id
+        or claim.get("run_id") != predecessor_run_id
+        or manifest.get("attempt_claim_path") != str(claim_path)
+        or manifest.get("attempt_claim_sha256") != sha256_file(claim_path)
+        or claim.get("scientific_bindings") != dict(expected_scientific_bindings)
+        or manifest.get("scientific_bindings") != dict(expected_scientific_bindings)
+        or claim_repair != repair
+        or manifest_repair != repair
+        or not isinstance(remaining_decision, dict)
+        or manifest.get("remaining_repair_decision") != remaining_decision
+        or claim.get("one_root_validation_required") is not False
+        or placement
+        != {
+            "node": "an12",
+            "physical_gpu_ids": [4],
+            "placement_justification": (
+                "1 independent TP1 SA3 state replica(s) on exact an12 GPU IDs [4]; "
+                "every worker retains live idle/headroom and cooperative-lock checks."
+            ),
+            "replica_count": 1,
+            "tensor_parallel_width": 1,
+        }
+        or manifest.get("placement") != placement
+        or manifest.get("stage1_plan_path") != str(plan_path)
+        or manifest.get("stage1_plan_sha256") != sha256_file(plan_path)
+        or claim.get("stage1_plan_path") != str(plan_path)
+        or claim.get("stage1_plan_sha256") != sha256_file(plan_path)
+        or load_json(plan_path) != carried_plan
+    ):
+        raise RestrictedRerunError("zero-call predecessor carried-repair lineage drifted")
+    prohibited_outputs = (
+        run_root / "state-ledger.jsonl",
+        run_root / "artifacts",
+        run_root / "staging",
+        run_root / "workers",
+        run_root / "control" / "shared-state-claims",
+    )
+    if any(path.exists() for path in prohibited_outputs):
+        raise RestrictedRerunError("zero-call predecessor contains worker/model artifacts")
+    decision_id = remaining_decision.get("decision_id")
+    decision_path = claim.get("engineering_governance_decisions_path")
+    if not isinstance(decision_id, str) or not isinstance(decision_path, str):
+        raise RestrictedRerunError("zero-call predecessor remaining-repair decision is absent")
+    _, live_decision_sha = verify_remaining_repair_decision(
+        Path(decision_path),
+        decision_id=decision_id,
+        run_id=predecessor_run_id,
+        predecessor=claim_predecessor,
+        placement=placement,
+        scientific_bindings=expected_scientific_bindings,
+    )
+    if remaining_decision.get("block_sha256") != live_decision_sha:
+        raise RestrictedRerunError("zero-call predecessor remaining-repair decision drifted")
+    return repair
+
+
 def _repair_predecessor(
     path: Path | None,
     *,
@@ -200,13 +370,23 @@ def _repair_predecessor(
     status = record.get("status")
     remaining_repair: dict[str, Any] | None = None
     if status == "FAILED_PRE_MODEL_ENGINEERING":
-        if (
-            record.get("model_calls") != 0
-            or record.get("generated_outputs") != 0
-            or completed_exclusion_path is not None
-            or remaining_manifest_path is not None
-        ):
-            raise RestrictedRerunError("zero-call predecessor has a remaining-work package")
+        if record.get("model_calls") != 0 or record.get("generated_outputs") != 0:
+            raise RestrictedRerunError("pre-model predecessor is not zero-call")
+        carries_repair = record.get("remaining_repair_carried_forward") is True
+        package_named = completed_exclusion_path is not None or remaining_manifest_path is not None
+        if carries_repair != package_named:
+            raise RestrictedRerunError("zero-call predecessor carried-repair declaration drifted")
+        if carries_repair:
+            remaining_repair = _validate_zero_call_carried_repair(
+                record,
+                predecessor_run_id=str(predecessor_run_id),
+                expected_scientific_bindings=expected_scientific_bindings,
+                completed_exclusion_path=completed_exclusion_path,
+                remaining_manifest_path=remaining_manifest_path,
+                config=config,
+                bundle=bundle,
+                source_plan=source_plan,
+            )
     elif status == "FAILED_ENGINEERING_ATTEMPT":
         if (
             record.get("model_calls") != 4

@@ -301,6 +301,176 @@ def test_remaining_repair_decision_binds_exact_scope_and_placement(tmp_path: Pat
         )
 
 
+def test_zero_call_attempt_carries_exact_remaining_scope_into_next_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, bundle, source_plan, run_002 = _repair_fixture(tmp_path, monkeypatch)
+    package = remaining_module.materialize_remaining_repair_package(
+        tmp_path / "unused-config.json",
+        repo_root=tmp_path,
+        predecessor_run_dir=run_002,
+        predecessor_run_id=run_002.name,
+        output_dir=tmp_path / "repair",
+    )
+    repair = remaining_module.validate_remaining_repair_package(
+        Path(package["remaining_manifest_path"]),
+        exclusion_path=Path(package["completed_exclusion_path"]),
+        config=config,
+        bundle=bundle,
+        source_plan=source_plan,
+    )
+    science = {
+        "config_sha256": config.source_sha256,
+        "queue_manifest_sha256": config.raw["source_run"]["queue"]["manifest"]["sha256"],
+        "stage1_result_sha256": _digest("stage1-result"),
+        "stage1_summary_sha256": _digest("stage1-summary"),
+    }
+    old_predecessor = {
+        "path": str(tmp_path / "run-002-failure.json"),
+        "remaining_repair": repair,
+        "sha256": _digest("run-002-failure"),
+        "status": "FAILED_ENGINEERING_ATTEMPT",
+    }
+    run_003 = tmp_path / "runs" / "sa3-state-v2-restricted-rerun-003"
+    plan_path = run_003 / "control" / "stage1-survivor-execution-plan.json"
+    carried_plan = rerun_module._plan_for_attempt(
+        source_plan,
+        {"remaining_repair": repair},
+    )
+    _write_json(plan_path, carried_plan)
+    placement = {
+        "node": "an12",
+        "physical_gpu_ids": [4],
+        "placement_justification": (
+            "1 independent TP1 SA3 state replica(s) on exact an12 GPU IDs [4]; "
+            "every worker retains live idle/headroom and cooperative-lock checks."
+        ),
+        "replica_count": 1,
+        "tensor_parallel_width": 1,
+    }
+    repair_decision = {"block_sha256": _digest("D-0099"), "decision_id": "D-0099"}
+    claim_path = tmp_path / "claims" / "sa3-state-v2-restricted-rerun-003.claim.json"
+    _write_json(
+        claim_path,
+        {
+            "engineering_governance_decisions_path": str(tmp_path / "DECISIONS.md"),
+            "one_root_validation_required": False,
+            "placement": placement,
+            "predecessor_failure": old_predecessor,
+            "remaining_repair_decision": repair_decision,
+            "run_id": run_003.name,
+            "scientific_bindings": science,
+            "stage1_plan_path": str(plan_path),
+            "stage1_plan_sha256": sha256_file(plan_path),
+        },
+    )
+    manifest_path = run_003 / "run-manifest.json"
+    _write_json(
+        manifest_path,
+        {
+            "attempt_claim_path": str(claim_path),
+            "attempt_claim_sha256": sha256_file(claim_path),
+            "placement": placement,
+            "predecessor_failure": old_predecessor,
+            "remaining_repair_decision": repair_decision,
+            "run_id": run_003.name,
+            "scientific_bindings": science,
+            "stage1_plan_path": str(plan_path),
+            "stage1_plan_sha256": sha256_file(plan_path),
+        },
+    )
+    receipt_path = run_003 / "control" / "pre-model-engineering-failure.terminal.json"
+    _write_json(
+        receipt_path,
+        {
+            "attempt_claim_path": str(claim_path),
+            "attempt_claim_sha256": sha256_file(claim_path),
+            "completed_exclusion_path": repair["completed_exclusion_path"],
+            "completed_exclusion_sha256": repair["completed_exclusion_sha256"],
+            "failed_attempt_immutable": True,
+            "failure_classification": "ENGINEERING_BUG",
+            "failure_kind": "EXECUTION_REPLICA_COUNT_NOT_PROPAGATED",
+            "generated_outputs": 0,
+            "gpu_seconds": 0,
+            "model_calls": 0,
+            "placement": {
+                "authorized_execution_replica_count": 1,
+                "node": "an12",
+                "physical_gpu_ids": [4],
+                "tensor_parallel_width": 1,
+            },
+            "remaining_manifest_path": repair["remaining_manifest_path"],
+            "remaining_manifest_sha256": repair["remaining_manifest_sha256"],
+            "remaining_repair_carried_forward": True,
+            "repair": {
+                "scientific_configuration_changed": False,
+                "thresholds_changed": False,
+            },
+            "repair_requires_new_claim": True,
+            "repair_requires_new_run_id": True,
+            "run_id": run_003.name,
+            "run_manifest_path": str(manifest_path),
+            "run_manifest_sha256": sha256_file(manifest_path),
+            "schema_version": 1,
+            "scientific_bindings": science,
+            "scientific_design_changed": False,
+            "scientific_outputs_retained": True,
+            "stage1_execution_plan_path": str(plan_path),
+            "stage1_execution_plan_sha256": sha256_file(plan_path),
+            "status": "FAILED_PRE_MODEL_ENGINEERING",
+            "valid_completed_units_rerun": False,
+            "worker_started": False,
+        },
+    )
+    monkeypatch.setattr(
+        rerun_module,
+        "verify_remaining_repair_decision",
+        lambda *_args, **_kwargs: ("fixture", repair_decision["block_sha256"]),
+    )
+    predecessor = rerun_module._repair_predecessor(
+        receipt_path,
+        base_run_id="sa3-state-v2-restricted-rerun-001",
+        next_run_id="sa3-state-v2-restricted-rerun-004",
+        expected_scientific_bindings=science,
+        completed_exclusion_path=Path(repair["completed_exclusion_path"]),
+        remaining_manifest_path=Path(repair["remaining_manifest_path"]),
+        config=config,
+        bundle=bundle,
+        source_plan=source_plan,
+    )
+    assert predecessor is not None
+    assert predecessor["remaining_repair"] == repair
+    next_plan = rerun_module._plan_for_attempt(source_plan, predecessor)
+    assert next_plan["validation_rerun_authorized"] is False
+    assert len(next_plan["remaining_group_request_sha256s"]) == 47
+    assert len(next_plan["remaining_lane_request_sha256s"]) == 141
+    selected = RestrictedExecutionScope(
+        phase="continuation",
+        run_dir=run_003,
+        plan=next_plan,
+    ).select(
+        units=bundle["units"],
+        groups=bundle["prefix_groups"],
+        replica_index=0,
+        replica_count=1,
+    )
+    assert len(selected) == 47
+    (run_003 / "workers").mkdir()
+    with pytest.raises(RestrictedRerunError, match="worker/model artifacts"):
+        rerun_module._repair_predecessor(
+            receipt_path,
+            base_run_id="sa3-state-v2-restricted-rerun-001",
+            next_run_id="sa3-state-v2-restricted-rerun-004",
+            expected_scientific_bindings=science,
+            completed_exclusion_path=Path(repair["completed_exclusion_path"]),
+            remaining_manifest_path=Path(repair["remaining_manifest_path"]),
+            config=config,
+            bundle=bundle,
+            source_plan=source_plan,
+        )
+
+
 def test_restricted_worker_uses_exact_attempt_replica_count(tmp_path: Path) -> None:
     placement = SimpleNamespace(
         allowed_physical_gpu_ids=(4, 5, 6, 7),
