@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from backbones import sao_operational_claims
+from backbones import sao_engineering_retry, sao_operational_claims
 from backbones.contracts import (
     DEFAULT_SAO_CONFIG,
     BackbonePreflight,
@@ -106,7 +106,9 @@ def _write_mini_evidence(
     receipt_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     use_pre_model_replacement: bool = False,
+    use_engineering_retry: bool = False,
 ) -> Path:
+    assert not (use_pre_model_replacement and use_engineering_retry)
     receipt = validate_access_receipt(
         receipt_path,
         expected_model_id=SAO_MODEL_ID,
@@ -214,6 +216,57 @@ def _write_mini_evidence(
         )
         run = replacement_run
         execution_git = "d" * 40
+    elif use_engineering_retry:
+        engineering_run = tmp_path / "sao-mini-smoke-v2-003"
+        engineering_claim = tmp_path / "sao-mini-smoke-v2-003.engineering-repair.claim.json"
+        execution_git = "e" * 40
+        claim_value = {
+            "backbone_config_sha256": sha256_file(DEFAULT_SAO_CONFIG),
+            "claimed_at_utc": "2026-07-22T00:00:00Z",
+            "git_commit": execution_git,
+            "live_config_path": str(live_config.resolve()),
+            "live_config_sha256": sha256_file(live_config),
+            "run_dir": str(engineering_run.resolve()),
+            "run_id": engineering_run.name,
+            "runtime_authorization_path": str(authorization.resolve()),
+            "runtime_authorization_sha256": sha256_file(authorization),
+        }
+        _write_json(engineering_claim, claim_value)
+        claim_value.update(
+            {
+                "path": str(engineering_claim.resolve()),
+                "sha256": sha256_file(engineering_claim),
+            }
+        )
+        monkeypatch.setattr(
+            sao_engineering_retry,
+            "SAO_ENGINEERING_RETRY_RUN_DIR",
+            engineering_run,
+        )
+        monkeypatch.setattr(
+            sao_engineering_retry,
+            "SAO_ENGINEERING_RETRY_CLAIM_PATH",
+            engineering_claim,
+        )
+
+        def validate_engineering_lineage(path: Path) -> dict[str, object]:
+            if path.resolve() != engineering_claim.resolve():
+                raise sao_operational_claims.SaoOperationalAuthorizationError(
+                    "fixture engineering claim path drifted"
+                )
+            if sha256_file(path) != claim_value["sha256"]:
+                raise sao_operational_claims.SaoOperationalAuthorizationError(
+                    "fixture engineering claim hash drifted"
+                )
+            return dict(claim_value)
+
+        monkeypatch.setattr(
+            sao_engineering_retry,
+            "validate_sao_engineering_retry_terminal_lineage",
+            validate_engineering_lineage,
+        )
+        attempt_claim = claim_value
+        run = engineering_run
     request_values = [
         (prompt_id, prompt, seed_id, seed)
         for (prompt_id, prompt), (seed_id, seed) in zip(
@@ -272,6 +325,7 @@ def _sao_ready_config(
     monkeypatch: pytest.MonkeyPatch,
     *,
     use_pre_model_replacement: bool = False,
+    use_engineering_retry: bool = False,
 ) -> Path:
     config_path = _core_config(tmp_path, scheduled_calls=1536)
     sa3_receipt, _queue = _write_completed_sa3_fixture(tmp_path, config_path)
@@ -342,6 +396,7 @@ def _sao_ready_config(
         receipt_path=receipt,
         monkeypatch=monkeypatch,
         use_pre_model_replacement=use_pre_model_replacement,
+        use_engineering_retry=use_engineering_retry,
     )
     core_authorization = tmp_path / "sao-core-authorization.json"
     _write_json(
@@ -484,6 +539,33 @@ def test_sao_run_002_replacement_terminal_passes_deep_core_gate(
     assert json.loads(terminal_path.read_text(encoding="utf-8"))["status"] == (
         "PASS_MEASURED_READY"
     )
+
+
+def test_sao_run_003_engineering_terminal_passes_only_its_exact_lineage_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _sao_ready_config(
+        tmp_path,
+        monkeypatch,
+        use_engineering_retry=True,
+    )
+    config = _load_test_config(path)
+    sao = next(model for model in config.models if model.model_id == SAO_MODEL_ID)
+    assert sao.sao_runtime is not None
+    assert Path(sao.sao_runtime.mini_smoke_result_path).parent.name == "sao-mini-smoke-v2-003"
+
+    def reject_lineage(_path: Path) -> dict[str, object]:
+        raise sao_operational_claims.SaoOperationalAuthorizationError(
+            "fixture environment decision binding drifted"
+        )
+
+    monkeypatch.setattr(
+        sao_engineering_retry,
+        "validate_sao_engineering_retry_terminal_lineage",
+        reject_lineage,
+    )
+    with pytest.raises(CoreConfigurationError, match="environment decision binding drifted"):
+        _load_test_config(path)
 
 
 def test_sao_core_gate_fails_closed_on_state_scope_or_receipt_drift(

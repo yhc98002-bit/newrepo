@@ -45,18 +45,19 @@ def test_retry_decision_vocabulary_freezes_scientific_request_and_new_identity()
     assert all(len(value) == 64 for key, value in assignments.items() if key.endswith("_SHA256"))
 
 
-def test_committed_repair_opening_matches_current_integrated_sources() -> None:
+def test_committed_repair_opening_retains_the_exact_consumed_terminal_block() -> None:
     decisions = ROOT / "DECISIONS.md"
-    block = retry._decision_block(decisions.read_text(encoding="utf-8"), "D-0050")
-    block_sha256 = hashlib.sha256(block.encode()).hexdigest()
-
-    observed = retry.verify_sao_engineering_retry_decision(
-        decisions,
-        decision_id="D-0050",
-        expected_decision_block_sha256=block_sha256,
+    observed = retry.validate_sao_engineering_retry_terminal_decision(
+        {
+            "decision_block_sha256": retry.SAO_ENGINEERING_RETRY_DECISION_BLOCK_SHA256,
+            "decision_id": retry.SAO_ENGINEERING_RETRY_DECISION_ID,
+            "decisions_path": str(decisions.resolve()),
+        }
     )
     assert observed["decision_id"] == "D-0050"
-    assert observed["decision_block_sha256"] == block_sha256
+    assert observed["decision_block_sha256"] == (
+        retry.SAO_ENGINEERING_RETRY_DECISION_BLOCK_SHA256
+    )
 
 
 def test_committed_cpu_receipt_binds_zero_gpu_repair_and_exact_patch() -> None:
@@ -247,6 +248,76 @@ def test_retry_claim_is_atomic_replay_proof_and_lineage_bound(
 
     with pytest.raises(SaoOperationalAuthorizationError, match="already consumed"):
         _prepare(fixture)
+
+
+def _consume_terminal_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, Path | str]:
+    fixture = _claim_fixture(tmp_path, monkeypatch)
+    retry.consume_sao_engineering_retry_attempt(
+        Path(fixture["authorization"]),
+        requested_run_dir=Path(fixture["run_dir"]),
+        live_config_path=Path(fixture["live_config"]),
+        git_commit="a" * 40,
+        decisions_path=Path(fixture["decisions"]),
+        decision_id="D-SAO-REPAIR",
+        decision_block_sha256="8" * 64,
+        environment_manifest_path=Path(fixture["environment_manifest"]),
+    )
+    claim_path = Path(fixture["claim"])
+    monkeypatch.setattr(retry, "SAO_ENGINEERING_RETRY_CLAIM_SHA256", retry._sha256_file(claim_path))
+    monkeypatch.setattr(
+        retry,
+        "validate_sao_engineering_retry_terminal_decision",
+        lambda _claim: {
+            "decision_block_sha256": "8" * 64,
+            "decision_id": "D-SAO-REPAIR",
+            "decisions_path": str(Path(fixture["decisions"]).resolve()),
+        },
+    )
+    return fixture
+
+
+def test_terminal_lineage_reopens_every_claim_environment_and_decision_binding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _consume_terminal_fixture(tmp_path, monkeypatch)
+
+    observed = retry.validate_sao_engineering_retry_terminal_lineage(
+        Path(fixture["claim"])
+    )
+
+    assert observed["run_id"] == "sao-mini-smoke-v2-003"
+    assert observed["environment_manifest_identity_sha256"] == "6" * 64
+    assert observed["decision_block_sha256"] == "8" * 64
+
+
+def test_terminal_lineage_rejects_claim_or_environment_rebinding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _consume_terminal_fixture(tmp_path, monkeypatch)
+    claim_path = Path(fixture["claim"])
+
+    monkeypatch.setattr(retry, "SAO_ENGINEERING_RETRY_CLAIM_SHA256", "0" * 64)
+    with pytest.raises(SaoOperationalAuthorizationError, match="terminal claim hash drifted"):
+        retry.validate_sao_engineering_retry_terminal_lineage(claim_path)
+
+    monkeypatch.setattr(retry, "SAO_ENGINEERING_RETRY_CLAIM_SHA256", retry._sha256_file(claim_path))
+    monkeypatch.setattr(
+        retry,
+        "validate_sao_engineering_environment",
+        lambda *_args, **_kwargs: {
+            "environment_path": str(tmp_path / "environment"),
+            "manifest_identity_sha256": "9" * 64,
+            "path": str(Path(fixture["environment_manifest"]).resolve()),
+            "sha256": "3" * 64,
+        },
+    )
+    with pytest.raises(
+        SaoOperationalAuthorizationError,
+        match="environment_manifest_identity_sha256",
+    ):
+        retry.validate_sao_engineering_retry_terminal_lineage(claim_path)
 
 
 def test_retry_preparation_rejects_bound_input_drift(

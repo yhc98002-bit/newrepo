@@ -76,6 +76,13 @@ SAO_PREVIOUS_MINI_SMOKE_TERMINAL_SHA256 = (
     "3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097"
 )
 SAO_DECISIONS_PATH = Path(__file__).resolve().parents[2] / "DECISIONS.md"
+SAO_ENGINEERING_RETRY_DECISION_ID = "D-0050"
+SAO_ENGINEERING_RETRY_DECISION_BLOCK_SHA256 = (
+    "a14e4a2db3b2a968c480a453c549e9f5389ced392d1507c0cad004c8bd6d9845"
+)
+SAO_ENGINEERING_RETRY_CLAIM_SHA256 = (
+    "173c6bd534730e8da01aa5b3c5afef73b709389ed1c39a6d64a328c1c7ce4f7c"
+)
 DECISION_ID_RE = re.compile(r"^D-[A-Za-z0-9._-]+$")
 
 _CLAIM_KEYS = {
@@ -585,3 +592,100 @@ def validate_sao_engineering_retry_claim(path: Path) -> dict[str, Any]:
     ]:
         raise SaoOperationalAuthorizationError("SAO engineering seed schedule drifted")
     return {**value, "path": str(source), "sha256": _sha256_file(source)}
+
+
+def validate_sao_engineering_retry_terminal_decision(
+    claim: Mapping[str, Any],
+) -> dict[str, str]:
+    """Validate the immutable D-0050 block used by the completed v2-003 run.
+
+    The preparation-time verifier intentionally hashes then-current runner
+    sources.  A later core-gate engineering repair must not reinterpret that
+    historical opening against newer validator bytes, so terminal evidence is
+    instead bound to the exact decision ID and block hash consumed by v2-003.
+    """
+
+    if claim.get("decision_id") != SAO_ENGINEERING_RETRY_DECISION_ID:
+        raise SaoOperationalAuthorizationError("SAO engineering terminal decision ID drifted")
+    if claim.get("decision_block_sha256") != SAO_ENGINEERING_RETRY_DECISION_BLOCK_SHA256:
+        raise SaoOperationalAuthorizationError("SAO engineering terminal decision hash drifted")
+    raw_path = claim.get("decisions_path")
+    if not isinstance(raw_path, str):
+        raise SaoOperationalAuthorizationError("SAO engineering terminal decision path is absent")
+    path = Path(raw_path)
+    if not path.is_absolute() or path.is_symlink():
+        raise SaoOperationalAuthorizationError(
+            "SAO engineering terminal decision path is not canonical"
+        )
+    try:
+        source = path.resolve(strict=True)
+        canonical = SAO_DECISIONS_PATH.resolve(strict=True)
+        if source != canonical:
+            raise SaoOperationalAuthorizationError(
+                "SAO engineering terminal decision is not repository DECISIONS.md"
+            )
+        block = _decision_block(
+            source.read_text(encoding="utf-8"),
+            SAO_ENGINEERING_RETRY_DECISION_ID,
+        )
+    except SaoOperationalAuthorizationError:
+        raise
+    except (OSError, UnicodeDecodeError) as exc:
+        raise SaoOperationalAuthorizationError(
+            "SAO engineering terminal decision is unavailable"
+        ) from exc
+    block_sha256 = hashlib.sha256(block.encode()).hexdigest()
+    if block_sha256 != SAO_ENGINEERING_RETRY_DECISION_BLOCK_SHA256:
+        raise SaoOperationalAuthorizationError("SAO engineering terminal decision changed")
+    return {
+        "decision_block_sha256": block_sha256,
+        "decision_id": SAO_ENGINEERING_RETRY_DECISION_ID,
+        "decisions_path": str(source),
+    }
+
+
+def validate_sao_engineering_retry_terminal_lineage(path: Path) -> dict[str, Any]:
+    """Revalidate every external v2-003 engineering binding for core admission."""
+
+    claim = validate_sao_engineering_retry_claim(path)
+    if claim["sha256"] != SAO_ENGINEERING_RETRY_CLAIM_SHA256:
+        raise SaoOperationalAuthorizationError("SAO engineering terminal claim hash drifted")
+    decision = validate_sao_engineering_retry_terminal_decision(claim)
+    environment = validate_sao_engineering_environment(
+        Path(str(claim["environment_manifest_path"])),
+        require_live_prefix=False,
+    )
+    failures = validate_sao_engineering_failure_lineage()
+    authorization_path, authorization = _runtime_authorization(
+        Path(str(claim["runtime_authorization_path"]))
+    )
+    live_config = Path(str(claim["live_config_path"]))
+    try:
+        live_config = live_config.resolve(strict=True)
+    except OSError as exc:
+        raise SaoOperationalAuthorizationError(
+            "SAO engineering terminal live config is unavailable"
+        ) from exc
+
+    expected = {
+        "access_receipt_sha256": authorization["access_receipt_sha256"],
+        "backbone_config_sha256": authorization["backbone_config_sha256"],
+        "decision_block_sha256": decision["decision_block_sha256"],
+        "decision_id": decision["decision_id"],
+        "decisions_path": decision["decisions_path"],
+        "environment_manifest_identity_sha256": environment["manifest_identity_sha256"],
+        "environment_manifest_path": environment["path"],
+        "environment_manifest_sha256": environment["sha256"],
+        "environment_path": environment["environment_path"],
+        "live_config_path": str(live_config),
+        "live_config_sha256": _sha256_file(live_config),
+        "runtime_authorization_path": str(authorization_path),
+        "runtime_authorization_sha256": _sha256_file(authorization_path),
+        **failures,
+    }
+    for field, wanted in expected.items():
+        if claim.get(field) != wanted:
+            raise SaoOperationalAuthorizationError(
+                f"SAO engineering terminal lineage mismatch: {field}"
+            )
+    return claim

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from audio_duration_policy import duration_within_tolerance
-from backbones import sao_operational_claims
+from backbones import sao_engineering_retry, sao_operational_claims
 from backbones.contracts import (
     DEFAULT_SAO_CONFIG,
     BackboneAdapter,
@@ -374,20 +374,33 @@ def _validate_sao_mini_smoke_evidence(
     claim_path = claim_path.resolve(strict=True)
     original_run_root = sao_operational_claims.SAO_MINI_SMOKE_RUN_DIR.resolve()
     replacement_run_root = sao_operational_claims.SAO_MINI_SMOKE_REPLACEMENT_RUN_DIR.resolve()
+    engineering_retry_run_root = sao_engineering_retry.SAO_ENGINEERING_RETRY_RUN_DIR.resolve()
     _evidence(
-        run_root in {original_run_root, replacement_run_root},
-        "SAO mini-smoke run is neither the original nor D-0042 replacement path",
+        run_root in {original_run_root, replacement_run_root, engineering_retry_run_root},
+        "SAO mini-smoke run is not an authorized fixed attempt path",
     )
-    expected_claim_path = (
-        sao_operational_claims.SAO_MINI_SMOKE_ATTEMPT_CLAIM.resolve()
-        if run_root == original_run_root
-        else sao_operational_claims.SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIM.resolve()
-    )
+    if run_root == original_run_root:
+        expected_claim_path = sao_operational_claims.SAO_MINI_SMOKE_ATTEMPT_CLAIM.resolve()
+    elif run_root == replacement_run_root:
+        expected_claim_path = (
+            sao_operational_claims.SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIM.resolve()
+        )
+    else:
+        expected_claim_path = sao_engineering_retry.SAO_ENGINEERING_RETRY_CLAIM_PATH.resolve()
     _evidence(
         claim_path == expected_claim_path,
         "SAO attempt claim is not the fixed global claim",
     )
-    claim = sao_operational_claims.validate_sao_mini_smoke_attempt_claim(claim_path)
+    try:
+        claim = (
+            sao_engineering_retry.validate_sao_engineering_retry_terminal_lineage(claim_path)
+            if run_root == engineering_retry_run_root
+            else sao_operational_claims.validate_sao_mini_smoke_attempt_claim(claim_path)
+        )
+    except sao_operational_claims.SaoOperationalAuthorizationError as exc:
+        raise SaoMiniSmokeEvidenceError(
+            f"SAO attempt claim lineage is invalid: {exc}"
+        ) from exc
     _evidence(
         claim["sha256"] == observation["operational_attempt_claim_sha256"],
         "SAO attempt claim hash mismatch",
