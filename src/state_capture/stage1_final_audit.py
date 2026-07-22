@@ -659,6 +659,7 @@ def _scan_artifact_root(role: str, root: Path, registry: _Registry) -> dict[str,
         "file_count": 0,
         "group_identity_references": 0,
         "lane_identity_references": 0,
+        "opaque_log_file_count": 0,
         "payload_file_count": 0,
         "source_queue_files_exempted": 0,
     }
@@ -676,7 +677,15 @@ def _scan_artifact_root(role: str, root: Path, registry: _Registry) -> dict[str,
         metadata = path.stat(follow_symlinks=False)
         if not stat.S_ISREG(metadata.st_mode):
             raise Stage1FinalAuditError(f"artifact is not a regular file: {path}")
-        if path.suffix in {".json", ".jsonl"}:
+        relative_path = Path(relative)
+        if relative_path.parts and relative_path.parts[0] == "logs":
+            cancelled = _stream_cancelled_hash(path, registry)
+            if cancelled is not None:
+                raise Stage1FinalAuditError(
+                    f"cancelled identity appears in state log: {path}"
+                )
+            counts["opaque_log_file_count"] += 1
+        elif path.suffix in {".json", ".jsonl"}:
             payload = path.read_bytes()
             for value in _json_values(path, payload):
                 lanes, groups = _validate_json_tree(value, registry, path)

@@ -183,6 +183,32 @@ def test_final_audit_is_read_only_and_accepts_only_exact_survivor_artifacts(
     assert before == after
 
 
+def test_mixed_process_log_is_opaque_but_still_scanned_for_cancelled_ids(
+    tmp_path: Path,
+) -> None:
+    result, summary, config, artifact_root = _fixture(tmp_path)
+    survivor, cancelled = _ids(result, "ace-step-v1")
+    logs = artifact_root / "logs"
+    logs.mkdir()
+    mixed = logs / "worker.jsonl"
+    mixed.write_text(
+        '{"event":"WORKER_STARTED"}\n'
+        "2026-07-22 23:56:11 | INFO | upstream model loader\n"
+        f"completed survivor {survivor}\n",
+        encoding="utf-8",
+    )
+    report = _audit(result, summary, config, artifact_root)
+    assert report["artifact_roots"][0]["opaque_log_file_count"] == 1
+
+    contaminated = logs / "cancelled-unit.log"
+    contaminated.write_text(
+        f"unexpected request identity {cancelled}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(Stage1FinalAuditError, match="cancelled identity appears in state log"):
+        _audit(result, summary, config, artifact_root)
+
+
 @pytest.mark.parametrize("role", ["materialized", "executed", "scored"])
 def test_cancelled_unit_never_enters_any_state_artifact_role(tmp_path: Path, role: str) -> None:
     result, summary, config, artifact_root = _fixture(tmp_path)
