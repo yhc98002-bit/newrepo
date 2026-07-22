@@ -38,6 +38,10 @@ from rater.bundle_common import (
     sha256_json,
     write_json_exclusive,
 )
+from scoring.published_tables import (
+    CANDIDATE_INDEX_KEYS,
+    validate_candidate_index_publication,
+)
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
@@ -55,12 +59,6 @@ DEFECTS = ("clipping", "dropout", "silence", "crackle")
 TEMPO_THRESHOLD = math.log2(1.05)
 PACKET_AUDIO_REQUESTED_SECONDS = 30.0
 PACKET_AUDIO_DURATION_TOLERANCE_SECONDS = 0.25
-CANDIDATE_INDEX_KEYS = {
-    "primary_backbones",
-    "rows",
-    "schema_version",
-    "source_ledger_sha256",
-}
 CANDIDATE_ROW_KEYS = {
     "audio_path",
     "audio_sha256",
@@ -388,7 +386,8 @@ def validate_candidate_index(value: Any, schema: dict[str, Any]) -> list[dict[st
     if not isinstance(value, dict):
         raise ValueError("candidate index must be an object")
     require_exact_keys(value, CANDIDATE_INDEX_KEYS, "candidate index")
-    if value["schema_version"] != 2 or not _valid_sha(value["source_ledger_sha256"]):
+    validate_candidate_index_publication(value)
+    if not _valid_sha(value["source_ledger_sha256"]):
         raise ValueError("candidate index identity is invalid")
     packet = _validate_schema(schema)
     if value["primary_backbones"] != packet["primary_backbones"]:

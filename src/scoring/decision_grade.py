@@ -19,9 +19,9 @@ from scoring.common import (
     sha256_file,
     sha256_json,
 )
+from scoring.published_tables import WATERMARK, validate_automatic_table_language
 from scoring.statistics import cluster_bootstrap_prevalence, prevalence_table
 
-WATERMARK = "AUTOMATIC-INSTRUMENT OUTCOMES"
 REGISTERED_BACKBONES = (
     "stable-audio-3-medium-base",
     "stable-audio-open-1.0",
@@ -895,8 +895,7 @@ def validate_output_language(tables: dict[str, Any]) -> None:
     for token in FORBIDDEN_OUTPUT_TOKENS:
         if token in payload:
             raise ValueError(f"decision-grade output contains prohibited token {token!r}")
-    if tables.get("watermark") != WATERMARK:
-        raise ValueError("decision-grade output lacks its automatic-instrument watermark")
+    validate_automatic_table_language(tables, "decision-grade output")
     source_completeness = tables.get("source_completeness")
     if source_completeness not in {COMPLETE_SOURCE_STATUS, PARTIAL_SOURCE_STATUS}:
         raise ValueError("decision-grade output has an invalid source-completeness label")

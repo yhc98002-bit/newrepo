@@ -24,6 +24,12 @@ from scoring.feature_worker import (
     runtime_identity,
 )
 from scoring.gpu_guard import acquire_idle_gpu
+from scoring.published_tables import (
+    WATERMARK,
+    validate_candidate_index_publication,
+    validate_evaluator_audit_publication,
+    validate_prevalence_publication,
+)
 from scoring.snapshot import build_completed_snapshot
 from scoring.statistics import prevalence_table
 from scoring.storage import ImmutableRun, write_json_exclusive
@@ -337,7 +343,6 @@ def finalize_integrity_first(
     )
     bootstrap = _statistics_config(repo_root)
     table = {
-        "human_gold_claims": False,
         "rows": prevalence_table(
             rows,
             replicates=int(bootstrap["replicates"]),
@@ -345,10 +350,12 @@ def finalize_integrity_first(
             confidence_level=float(bootstrap["confidence_level"]),
             headline_only=True,
         ),
-        "schema_version": 1,
+        "schema_version": 2,
         "source_snapshot_sha256": snapshot["snapshot_sha256"],
         "status": "INTEGRITY_FIRST_PREVALENCE_COMPLETE_AUTOMATIC_DSP_ONLY",
+        "watermark": WATERMARK,
     }
+    validate_prevalence_publication(table, integrity_first=True)
     path = run.write_json("tables/integrity-prevalence-first.json", table)
     run.ledger.append(
         "INTEGRITY_FIRST_TABLE_COMPLETE",
@@ -394,6 +401,7 @@ def finalize_all(config_path: Path, repo_root: Path) -> dict[str, Any]:
     )
     schema = load_json(repo_root / "rater" / "schema_v2.json")
     validate_candidate_index(candidate, schema)
+    validate_candidate_index_publication(candidate)
     backbone_counts = Counter(row["backbone"] for row in rows)
     missing, incomplete = _primary_progress(config, snapshot)
     if missing:
@@ -434,25 +442,22 @@ def finalize_all(config_path: Path, repo_root: Path) -> dict[str, Any]:
         "status": overall_status,
     }
     run.write_jsonl("rows/automatic-endpoint-outcomes.jsonl", rows)
-    run.write_json(
-        "tables/prevalence.json",
-        {
-            "human_gold_claims": False,
-            "rows": prevalence,
-            "schema_version": 1,
-            "status": "AUTOMATIC_PREVALENCE_COMPLETE",
-        },
-    )
-    run.write_json(
-        "tables/evaluator-audit.json",
-        {
-            "accuracy_claim_authorized": False,
-            "human_gold_claims": False,
-            "rows": audits,
-            "schema_version": 1,
-            "status": "FRESH_OUTPUT_OPERATIONALIZATION_DISCORDANCE_ONLY",
-        },
-    )
+    prevalence_publication = {
+        "rows": prevalence,
+        "schema_version": 2,
+        "status": "AUTOMATIC_PREVALENCE_COMPLETE",
+        "watermark": WATERMARK,
+    }
+    validate_prevalence_publication(prevalence_publication)
+    run.write_json("tables/prevalence.json", prevalence_publication)
+    evaluator_audit_publication = {
+        "rows": audits,
+        "schema_version": 2,
+        "status": "FRESH_OUTPUT_OPERATIONALIZATION_DISCORDANCE_ONLY",
+        "watermark": WATERMARK,
+    }
+    validate_evaluator_audit_publication(evaluator_audit_publication)
+    run.write_json("tables/evaluator-audit.json", evaluator_audit_publication)
     candidate_path = run.write_json("tables/human-audit-candidate-index.json", candidate)
     status_path = run.write_json("scoring-status.json", status)
     event = run.ledger.append(

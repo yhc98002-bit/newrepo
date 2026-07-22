@@ -22,6 +22,7 @@ from scoring.common import (
     require_sha256,
     sha256_json,
 )
+from scoring.published_tables import WATERMARK
 
 FEATURE_BUNDLE_KEYS = {
     "created_at_utc",
@@ -58,7 +59,7 @@ DROPOUT_KEYS = {
     "right_level_dbfs",
 }
 DEFECTS = ("clipping", "dropout", "silence", "crackle")
-FRESH_AUTOMATIC_REFERENCE = "FRESH_AUTOMATIC_OUTPUTS_ONLY_NOT_HUMAN_GOLD"
+FRESH_AUTOMATIC_REFERENCE = "FRESH_AUTOMATIC_OUTPUTS_ONLY"
 
 
 def _reject_gold_fields(value: Any, context: str) -> None:
@@ -514,10 +515,11 @@ def build_candidate_index(
         "rows": sorted(
             (row for row in candidates if row is not None), key=lambda value: value["row_id"]
         ),
-        "schema_version": 2,
+        "schema_version": 3,
         "source_ledger_sha256": require_sha256(
             source_ledger_sha256, "source_ledger_sha256"
         ),
+        "watermark": WATERMARK,
     }
 
 
@@ -569,7 +571,6 @@ def evaluator_audit_table(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             discordant = sum(left != right for left, right in comparable)
             output.append(
                 {
-                    "accuracy_claim_authorized": False,
                     "axis": axis,
                     "backbone": backbone,
                     "common_operationalization": comparator,
@@ -577,8 +578,7 @@ def evaluator_audit_table(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "comparator_positive_count": sum(right for _, right in comparable),
                     "discordance_count": discordant,
                     "discordance_rate": discordant / len(comparable) if comparable else None,
-                    "failure_claim": "NOT_EVALUATED_WITHOUT_POOLED_HUMAN_GOLD",
-                    "human_gold_claims": False,
+                    "interpretation": "OPERATIONALIZATION_DISCORDANCE_ONLY",
                     "primary_operationalization": primary_key,
                     "primary_positive_count": sum(left for left, _ in comparable),
                     "reference_basis": FRESH_AUTOMATIC_REFERENCE,

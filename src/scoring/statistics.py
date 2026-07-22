@@ -201,7 +201,6 @@ def prevalence_table(
                             "bootstrap_seed_namespace": namespace,
                             "condition": condition,
                             "confidence_level": confidence_level,
-                            "human_gold_claims": False,
                             "metric": metric,
                             "resampling_unit": "PROMPT_CLUSTER_THEN_MATCHED_SEED",
                             "slice": slice_value,

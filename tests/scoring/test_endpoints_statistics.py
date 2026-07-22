@@ -10,6 +10,13 @@ from scoring.endpoints import (
     evaluator_audit_table,
     normalize_feature_bundle,
 )
+from scoring.published_tables import (
+    FORBIDDEN_PUBLICATION_TOKENS,
+    WATERMARK,
+    validate_candidate_index_publication,
+    validate_evaluator_audit_publication,
+    validate_prevalence_publication,
+)
 from scoring.statistics import prevalence_table
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -169,10 +176,19 @@ def test_frozen_recomputation_candidate_schema_and_no_gold_audit() -> None:
         "stable-audio-3-medium-base"
     }
     validate_candidate_index(candidate, load_json_strict(ROOT / "rater" / "schema_v2.json"))
+    validate_candidate_index_publication(candidate)
+    assert candidate["watermark"] == WATERMARK
 
     audit = evaluator_audit_table(rows)
-    assert audit and all(row["human_gold_claims"] is False for row in audit)
-    assert all(row["accuracy_claim_authorized"] is False for row in audit)
+    publication = {
+        "rows": audit,
+        "schema_version": 2,
+        "status": "FRESH_OUTPUT_OPERATIONALIZATION_DISCORDANCE_ONLY",
+        "watermark": WATERMARK,
+    }
+    validate_evaluator_audit_publication(publication)
+    payload = str(publication).lower()
+    assert all(token not in payload for token in FORBIDDEN_PUBLICATION_TOKENS)
 
 
 def test_cluster_prevalence_is_deterministic_and_defect_separated() -> None:
@@ -198,6 +214,16 @@ def test_cluster_prevalence_is_deterministic_and_defect_separated() -> None:
         headline_only=True,
     )
     assert first == second
+    validate_prevalence_publication(
+        {
+            "rows": first,
+            "schema_version": 2,
+            "status": "INTEGRITY_FIRST_PREVALENCE_COMPLETE_AUTOMATIC_DSP_ONLY",
+            "source_snapshot_sha256": "d" * 64,
+            "watermark": WATERMARK,
+        },
+        integrity_first=True,
+    )
     integrity_metrics = {
         row["metric"] for row in first if row["axis"] == "integrity"
     }

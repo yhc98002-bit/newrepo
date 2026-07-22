@@ -674,8 +674,9 @@ def _candidate_index() -> tuple[dict, dict]:
     return {
         "primary_backbones": schema["human_packet"]["primary_backbones"],
         "rows": rows,
-        "schema_version": 2,
+        "schema_version": 3,
         "source_ledger_sha256": "b" * 64,
+        "watermark": "AUTOMATIC-INSTRUMENT OUTCOMES",
     }, schema
 
 

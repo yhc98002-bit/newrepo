@@ -39,7 +39,8 @@ conservative PI-time projection and stops if it exceeds 180 minutes.
 
 The future selector consumes a strict automatic-only candidate index with
 top-level keys `schema_version`, `primary_backbones`,
-`source_ledger_sha256`, and `rows`. Its row contract is exported as
+`source_ledger_sha256`, `watermark`, and `rows`. Schema v3 requires the exact
+`AUTOMATIC-INSTRUMENT OUTCOMES` watermark. Its row contract is exported as
 `CANDIDATE_ROW_KEYS` in `build_human_packet.py`. It implements the frozen voice
 and tempo slots, defect-separated integrity flagged/clean-side strata, two
 sharp/percussive controls, three blocks, and the per-backbone 2/2/1 hidden
