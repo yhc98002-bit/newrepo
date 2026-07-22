@@ -8,11 +8,14 @@ Importing this module performs no network access and writes nothing.
 
 from __future__ import annotations
 
+import ctypes
+import errno
 import fcntl
 import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import socket
 from collections.abc import Callable, MutableMapping
@@ -29,6 +32,16 @@ from backbones.contracts import (
 
 MODEL_ID = "stabilityai/stable-audio-open-1.0"
 DECISION_ID = "D-0037"
+RECOVERY_DECISION_ID = "D-0039"
+RECOVERY_SOURCE_RUN_ID = "sao-acquisition-v2-001"
+RECOVERY_RUN_ID = "sao-acquisition-recovery-v2-001"
+RECOVERY_REVISION = "f21265c1e2710b3bd2386596943f0007f55f802e"
+RECOVERY_FAILURE_TERMINAL_SHA256 = (
+    "d1b7f3c35ab211372910db3ba9a0a73abcf2b24d49745f3d0717cdb77096db82"
+)
+RECOVERY_ACQUISITION_MANIFEST_SHA256 = (
+    "65d1f48497ec451f5620327b006b85d1f34e084c164802b5ddfe0230b402f8e9"
+)
 EXECUTE_ACK = "I_ACKNOWLEDGE_SAO_ACQUISITION_USES_ONE_EPHEMERAL_READ_TOKEN"
 TOKEN_ENVIRONMENT_VARIABLE = "HF_TOKEN"
 CONFIG_STATUS = "CLOSED_UNTIL_D0037_LIVE_BINDING"
@@ -40,6 +53,9 @@ REQUIRED_DECISION_ASSIGNMENTS = (
     "SAO_ELIGIBILITY_SCOPE_EXPANDED = NO",
 )
 LICENSE_CANDIDATES = ("LICENSE", "LICENSE.md", "LICENSE.txt")
+RECOVERY_SOURCE_RUN_FILES = frozenset(
+    {"acquisition-manifest.json", "terminal-failure.json"}
+)
 
 
 class SaoAcquisitionError(RuntimeError):
@@ -77,13 +93,86 @@ def _write_json_exclusive(path: Path, value: Any) -> Path:
 
 
 def _decision_block(text: str, decision_id: str) -> str:
-    match = re.search(
+    matches = list(
+        re.finditer(
         rf"(?ms)^## {re.escape(decision_id)}\b.*?(?=^## D-\d+\b|\Z)",
         text,
+        )
     )
-    if match is None:
+    if not matches:
         raise SaoAcquisitionError(f"required decision is absent: {decision_id}")
-    return match.group(0)
+    if len(matches) != 1:
+        raise SaoAcquisitionError(f"required decision is duplicated: {decision_id}")
+    return matches[0].group(0)
+
+
+def _single_decision_assignment(block: str, key: str) -> str:
+    values: list[str] = []
+    pattern = re.compile(rf"{re.escape(key)}\s*=\s*(\S+)")
+    for line in block.splitlines():
+        candidate = line.strip()
+        if candidate.startswith("`") and candidate.endswith("`"):
+            candidate = candidate[1:-1].strip()
+        match = pattern.fullmatch(candidate)
+        if match is not None:
+            values.append(match.group(1))
+    if len(values) != 1:
+        raise SaoAcquisitionError(
+            f"{RECOVERY_DECISION_ID} must contain exactly one {key} assignment"
+        )
+    return values[0]
+
+
+def validate_recovery_decision(decisions_path: Path) -> dict[str, str]:
+    """Validate the one fixed, offline retained-stage recovery authority."""
+
+    try:
+        source = decisions_path.resolve(strict=True)
+        text = source.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise SaoAcquisitionError("cannot read SAO recovery decision") from exc
+    block = _decision_block(text, RECOVERY_DECISION_ID)
+    expected = {
+        "SAO_ACQUISITION_RECOVERY_AUTHORIZED": "YES",
+        "SAO_ACQUISITION_RECOVERY_SOURCE_RUN_ID": RECOVERY_SOURCE_RUN_ID,
+        "SAO_ACQUISITION_RECOVERY_RUN_ID": RECOVERY_RUN_ID,
+        "SAO_ACQUISITION_RECOVERY_REVISION": RECOVERY_REVISION,
+        "SAO_ACQUISITION_RECOVERY_FAILURE_TERMINAL_SHA256": (
+            RECOVERY_FAILURE_TERMINAL_SHA256
+        ),
+        "SAO_ACQUISITION_RECOVERY_NETWORK_ACCESS": "NO",
+        "SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS": "NO",
+        "SAO_ACQUISITION_RECOVERY_MODEL_CALLS": "0",
+    }
+    observed_keys: list[str] = []
+    assignment_pattern = re.compile(r"(SAO_ACQUISITION_RECOVERY_[A-Z0-9_]+)\s*=\s*\S+")
+    for line in block.splitlines():
+        candidate = line.strip()
+        if candidate.startswith("`") and candidate.endswith("`"):
+            candidate = candidate[1:-1].strip()
+        match = assignment_pattern.fullmatch(candidate)
+        if match is not None:
+            observed_keys.append(match.group(1))
+    if set(observed_keys) != set(expected):
+        extra = sorted(set(observed_keys).difference(expected))
+        missing = sorted(set(expected).difference(observed_keys))
+        raise SaoAcquisitionError(
+            f"{RECOVERY_DECISION_ID} recovery assignment vocabulary changed: "
+            f"missing={missing}, extra={extra}"
+        )
+    for key, expected_value in expected.items():
+        if _single_decision_assignment(block, key) != expected_value:
+            raise SaoAcquisitionError(
+                f"{RECOVERY_DECISION_ID} assignment mismatch: {key}"
+            )
+    if re.search(r"\b(?:PENDING|PLACEHOLDER|TBD|ESTIMATE)\b", block, re.IGNORECASE):
+        raise SaoAcquisitionError(f"{RECOVERY_DECISION_ID} contains an unresolved marker")
+    return {
+        "decision_id": RECOVERY_DECISION_ID,
+        "decision_path": str(source),
+        "decision_file_sha256": sha256_file(source),
+        "decision_block_sha256": hashlib.sha256(block.encode("utf-8")).hexdigest(),
+    }
 
 
 def validate_live_config(config_path: Path, decisions_path: Path) -> dict[str, Any]:
@@ -166,12 +255,16 @@ def consume_read_token(environment: MutableMapping[str, str]) -> str:
 
 
 def _snapshot_files(snapshot: Path) -> list[dict[str, Any]]:
+    if snapshot.is_symlink() or not snapshot.is_dir():
+        raise SaoAcquisitionError("SAO snapshot root must be a real directory")
     rows: list[dict[str, Any]] = []
     for path in sorted(snapshot.rglob("*")):
         if path.is_symlink():
             raise SaoAcquisitionError(
                 f"provider snapshot contains a forbidden symlink: {path.relative_to(snapshot)}"
             )
+        if path.is_dir():
+            continue
         if path.is_file():
             rows.append(
                 {
@@ -180,6 +273,10 @@ def _snapshot_files(snapshot: Path) -> list[dict[str, Any]]:
                     "sha256": sha256_file(path),
                 }
             )
+            continue
+        raise SaoAcquisitionError(
+            f"provider snapshot contains a non-regular entry: {path.relative_to(snapshot)}"
+        )
     if not rows:
         raise SaoAcquisitionError("downloaded SAO snapshot is empty")
     return rows
@@ -189,13 +286,50 @@ def _tree_sha256(files: list[dict[str, Any]]) -> str:
     return hashlib.sha256(_canonical({"files": files})).hexdigest()
 
 
-def _validate_download(snapshot: Path) -> tuple[list[dict[str, Any]], Path]:
-    control_cache = snapshot / ".cache" / "huggingface"
-    if control_cache.exists():
-        shutil.rmtree(control_cache)
-        cache_parent = snapshot / ".cache"
-        if cache_parent.exists() and not any(cache_parent.iterdir()):
-            cache_parent.rmdir()
+def _rename_no_replace(source: Path, destination: Path) -> None:
+    """Atomically rename one directory while refusing every existing target."""
+
+    renameat2 = getattr(ctypes.CDLL(None, use_errno=True), "renameat2", None)
+    if renameat2 is None:  # pragma: no cover - production platform contract
+        raise SaoAcquisitionError("atomic no-replace rename is unavailable")
+    renameat2.argtypes = [
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    ]
+    renameat2.restype = ctypes.c_int
+    at_fdcwd = -100
+    rename_noreplace = 1
+    result = renameat2(
+        at_fdcwd,
+        os.fsencode(source),
+        at_fdcwd,
+        os.fsencode(destination),
+        rename_noreplace,
+    )
+    if result == 0:
+        return
+    error_number = ctypes.get_errno()
+    if error_number == errno.EEXIST:
+        raise FileExistsError(destination)
+    if error_number in {errno.ENOSYS, errno.EINVAL, errno.EOPNOTSUPP}:
+        raise SaoAcquisitionError("filesystem lacks atomic no-replace rename support")
+    raise OSError(error_number, os.strerror(error_number), str(destination))
+
+
+def _reject_incomplete_entries(snapshot: Path) -> None:
+    for path in snapshot.rglob("*"):
+        relative = path.relative_to(snapshot)
+        if any(".incomplete" in part for part in relative.parts):
+            raise SaoAcquisitionError(
+                f"provider snapshot contains an incomplete entry: {relative}"
+            )
+
+
+def _validate_snapshot_payload(snapshot: Path) -> tuple[list[dict[str, Any]], Path]:
+    _reject_incomplete_entries(snapshot)
     if not (snapshot / "model_config.json").is_file():
         raise SaoAcquisitionError("downloaded snapshot lacks model_config.json")
     weights = [
@@ -203,14 +337,389 @@ def _validate_download(snapshot: Path) -> tuple[list[dict[str, Any]], Path]:
         for path in (snapshot / "model.safetensors", snapshot / "model.ckpt")
         if path.is_file()
     ]
-    if len(weights) != 1:
+    if not weights:
         raise SaoAcquisitionError(
-            "downloaded snapshot must contain exactly one supported model weight file"
+            "downloaded snapshot lacks a supported root model weight file"
         )
     licenses = [snapshot / name for name in LICENSE_CANDIDATES if (snapshot / name).is_file()]
     if len(licenses) != 1:
         raise SaoAcquisitionError("downloaded snapshot lacks one unambiguous license text file")
     return _snapshot_files(snapshot), licenses[0]
+
+
+def _validate_download(snapshot: Path) -> tuple[list[dict[str, Any]], Path]:
+    control_cache = snapshot / ".cache" / "huggingface"
+    if control_cache.exists():
+        shutil.rmtree(control_cache)
+        cache_parent = snapshot / ".cache"
+        if cache_parent.exists() and not any(cache_parent.iterdir()):
+            cache_parent.rmdir()
+    return _validate_snapshot_payload(snapshot)
+
+
+def _validate_retained_stage(snapshot: Path) -> tuple[list[dict[str, Any]], Path]:
+    """Hash one untouched stage after rejecting all download-control residue."""
+
+    if snapshot.is_symlink() or not snapshot.is_dir():
+        raise SaoAcquisitionError("retained SAO stage is absent or not a real directory")
+    for path in snapshot.rglob("*"):
+        relative = path.relative_to(snapshot)
+        if ".cache" in relative.parts:
+            raise SaoAcquisitionError(
+                f"retained SAO stage contains forbidden provider cache: {relative}"
+            )
+        if any(".incomplete" in part for part in relative.parts):
+            raise SaoAcquisitionError(
+                f"retained SAO stage contains an incomplete entry: {relative}"
+            )
+    return _validate_snapshot_payload(snapshot)
+
+
+def _validate_utc_timestamp(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise SaoAcquisitionError(f"{field} must be a non-empty UTC timestamp")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise SaoAcquisitionError(f"{field} is not ISO-8601") from exc
+    if parsed.utcoffset() is None or parsed.utcoffset().total_seconds() != 0:
+        raise SaoAcquisitionError(f"{field} must be UTC")
+    return value
+
+
+def _require_exact_keys(record: dict[str, Any], expected: set[str], label: str) -> None:
+    if set(record) != expected:
+        missing = sorted(expected.difference(record))
+        unexpected = sorted(set(record).difference(expected))
+        raise SaoAcquisitionError(
+            f"{label} keys are invalid: missing={missing}, unexpected={unexpected}"
+        )
+
+
+def _source_command_value(command: Any, flag: str) -> str:
+    if not isinstance(command, str) or not command.strip():
+        raise SaoAcquisitionError("original acquisition command is invalid")
+    try:
+        arguments = shlex.split(command)
+    except ValueError as exc:
+        raise SaoAcquisitionError("original acquisition command cannot be parsed") from exc
+    values: list[str] = []
+    for index, argument in enumerate(arguments):
+        if argument == flag:
+            if index + 1 >= len(arguments):
+                raise SaoAcquisitionError(f"original acquisition command lacks {flag} value")
+            values.append(arguments[index + 1])
+        elif argument.startswith(f"{flag}="):
+            values.append(argument.split("=", 1)[1])
+    if len(values) != 1 or not values[0].strip():
+        raise SaoAcquisitionError(
+            f"original acquisition command must contain exactly one {flag} value"
+        )
+    return values[0]
+
+
+def _strict_acquisition_json(path: Path, label: str) -> dict[str, Any]:
+    try:
+        return strict_json_object(path)
+    except Exception as exc:
+        if isinstance(exc, SaoAcquisitionError):
+            raise
+        raise SaoAcquisitionError(f"cannot validate {label}") from exc
+
+
+def _validate_source_failure(
+    *,
+    source_run_dir: Path,
+    config_path: Path,
+    config_sha256: str,
+) -> dict[str, Any]:
+    """Verify the immutable zero-call failure that retained the official stage."""
+
+    if source_run_dir.is_symlink() or not source_run_dir.is_dir():
+        raise SaoAcquisitionError("original failed SAO acquisition run is absent")
+    source_entries = list(source_run_dir.iterdir())
+    if any(path.is_symlink() for path in source_entries):
+        raise SaoAcquisitionError("original failed SAO acquisition run contains a symlink")
+    if {path.name for path in source_entries} != RECOVERY_SOURCE_RUN_FILES or any(
+        not path.is_file() for path in source_entries
+    ):
+        raise SaoAcquisitionError("original failed SAO acquisition run closure changed")
+
+    failure_path = source_run_dir / "terminal-failure.json"
+    if sha256_file(failure_path) != RECOVERY_FAILURE_TERMINAL_SHA256:
+        raise SaoAcquisitionError("original SAO failure terminal SHA-256 mismatch")
+    failure = _strict_acquisition_json(failure_path, "original SAO failure terminal")
+    _require_exact_keys(
+        failure,
+        {
+            "schema_version",
+            "status",
+            "run_id",
+            "started_at_utc",
+            "finished_at_utc",
+            "error_type",
+            "acquisition_manifest_path",
+            "acquisition_manifest_sha256",
+            "credential_mechanism",
+            "partial_snapshot_retained",
+            "model_calls",
+            "generated_audio",
+        },
+        "original SAO failure terminal",
+    )
+    expected_failure = {
+        "schema_version": 1,
+        "status": "ACQUISITION_FAILED_STOPPED",
+        "run_id": RECOVERY_SOURCE_RUN_ID,
+        "error_type": "SaoAcquisitionError",
+        "credential_mechanism": "HF_TOKEN_ENV_CONSUMED_AND_UNSET",
+        "partial_snapshot_retained": True,
+        "model_calls": 0,
+        "generated_audio": 0,
+    }
+    for field, expected in expected_failure.items():
+        if failure.get(field) != expected:
+            raise SaoAcquisitionError(f"original SAO failure terminal mismatch: {field}")
+    _validate_utc_timestamp(failure["started_at_utc"], "failure started_at_utc")
+    _validate_utc_timestamp(failure["finished_at_utc"], "failure finished_at_utc")
+
+    manifest_path = source_run_dir / "acquisition-manifest.json"
+    try:
+        recorded_manifest_path = Path(str(failure["acquisition_manifest_path"])).resolve(
+            strict=True
+        )
+    except OSError as exc:
+        raise SaoAcquisitionError("original acquisition manifest path is unavailable") from exc
+    if recorded_manifest_path != manifest_path.resolve(strict=True):
+        raise SaoAcquisitionError("original failure terminal points to the wrong manifest")
+    manifest_sha256 = sha256_file(manifest_path)
+    if manifest_sha256 != RECOVERY_ACQUISITION_MANIFEST_SHA256:
+        raise SaoAcquisitionError("original acquisition manifest fixed SHA-256 mismatch")
+    if failure["acquisition_manifest_sha256"] != manifest_sha256:
+        raise SaoAcquisitionError("original acquisition manifest SHA-256 mismatch")
+    manifest = _strict_acquisition_json(manifest_path, "original acquisition manifest")
+    _require_exact_keys(
+        manifest,
+        {
+            "schema_version",
+            "status",
+            "run_id",
+            "started_at_utc",
+            "node",
+            "command",
+            "git_commit",
+            "live_config_path",
+            "live_config_sha256",
+            "model_id",
+            "provider",
+            "credential_mechanism",
+            "gpu_count",
+            "model_calls",
+            "generated_audio",
+        },
+        "original acquisition manifest",
+    )
+    expected_manifest = {
+        "schema_version": 1,
+        "status": "STARTED_NO_MODEL_CALLS",
+        "run_id": RECOVERY_SOURCE_RUN_ID,
+        "model_id": MODEL_ID,
+        "provider": "huggingface_hub",
+        "credential_mechanism": "HF_TOKEN_ENV_CONSUMED_AND_UNSET",
+        "gpu_count": 0,
+        "model_calls": 0,
+        "generated_audio": 0,
+        "live_config_sha256": config_sha256,
+        "started_at_utc": failure["started_at_utc"],
+    }
+    for field, expected in expected_manifest.items():
+        if manifest.get(field) != expected:
+            raise SaoAcquisitionError(f"original acquisition manifest mismatch: {field}")
+    if not isinstance(manifest.get("node"), str) or not manifest["node"].strip():
+        raise SaoAcquisitionError("original acquisition node is invalid")
+    if not isinstance(manifest.get("git_commit"), str) or REVISION_RE.fullmatch(
+        manifest["git_commit"]
+    ) is None:
+        raise SaoAcquisitionError("original acquisition Git revision is invalid")
+    try:
+        recorded_config_path = Path(str(manifest["live_config_path"])).resolve(strict=True)
+    except OSError as exc:
+        raise SaoAcquisitionError("original acquisition live config is unavailable") from exc
+    if recorded_config_path != config_path.resolve(strict=True):
+        raise SaoAcquisitionError("original acquisition live config path mismatch")
+    accepted_by = _source_command_value(manifest["command"], "--accepted-by")
+    accepted_at_utc = _source_command_value(manifest["command"], "--accepted-at-utc")
+    _validate_utc_timestamp(accepted_at_utc, "original accepted_at_utc")
+    return {
+        "failure_terminal_path": str(failure_path.resolve(strict=True)),
+        "failure_terminal_sha256": RECOVERY_FAILURE_TERMINAL_SHA256,
+        "acquisition_manifest_path": str(manifest_path.resolve(strict=True)),
+        "acquisition_manifest_sha256": manifest_sha256,
+        "accepted_by": accepted_by,
+        "accepted_at_utc": accepted_at_utc,
+        "source_run_files": _snapshot_files(source_run_dir),
+    }
+
+
+def finalize_retained_acquisition_recovery(
+    config_path: Path,
+    decisions_path: Path,
+    *,
+    command: str,
+    git_commit: str,
+) -> dict[str, Any]:
+    """Finalize the one authorized retained snapshot without external access.
+
+    This path imports no provider, model, GPU, or token surface. It verifies the
+    original immutable zero-call failure and the complete retained stage before
+    performing one same-root rename and sealing a new receipt run.
+    """
+
+    if not command.strip() or REVISION_RE.fullmatch(git_commit) is None:
+        raise SaoAcquisitionError("recovery command/git identity is invalid")
+    config = validate_live_config(config_path, decisions_path)
+    acquisition = config["acquisition"]
+    if acquisition.get("run_id") != RECOVERY_SOURCE_RUN_ID:
+        raise SaoAcquisitionError("SAO recovery source run ID changed")
+    decision = validate_recovery_decision(decisions_path)
+
+    run_root = Path(str(acquisition["run_root"]))
+    snapshot_root = Path(str(acquisition["snapshot_root"]))
+    source_run_dir = run_root / RECOVERY_SOURCE_RUN_ID
+    recovery_run_dir = run_root / RECOVERY_RUN_ID
+    retained_stage = snapshot_root / f".{RECOVERY_SOURCE_RUN_ID}.partial"
+    final_snapshot = snapshot_root / RECOVERY_REVISION
+    if not run_root.is_dir() or run_root.is_symlink():
+        raise SaoAcquisitionError("SAO acquisition run root is unavailable")
+    if not snapshot_root.is_dir() or snapshot_root.is_symlink():
+        raise SaoAcquisitionError("SAO snapshot root is unavailable")
+    if os.path.lexists(recovery_run_dir):
+        raise FileExistsError(recovery_run_dir)
+    if os.path.lexists(final_snapshot):
+        raise FileExistsError(final_snapshot)
+
+    lock_path = snapshot_root / ".sao-acquisition.lock"
+    if lock_path.is_symlink() or not lock_path.is_file():
+        raise SaoAcquisitionError("scoped SAO acquisition lock is unavailable")
+    lock_handle = lock_path.open("r+b")
+    try:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as exc:
+        lock_handle.close()
+        raise SaoAcquisitionError("another SAO acquisition holds the scoped lock") from exc
+
+    started = _utc_now()
+    try:
+        # Repeat no-clobber checks while holding the same lock used by ordinary
+        # acquisition; the final move also uses kernel-enforced RENAME_NOREPLACE.
+        if os.path.lexists(recovery_run_dir):
+            raise FileExistsError(recovery_run_dir)
+        if os.path.lexists(final_snapshot):
+            raise FileExistsError(final_snapshot)
+        source = _validate_source_failure(
+            source_run_dir=source_run_dir,
+            config_path=config_path,
+            config_sha256=sha256_file(config_path),
+        )
+        files, license_path = _validate_retained_stage(retained_stage)
+        source_run_tree_sha256 = _tree_sha256(source["source_run_files"])
+        snapshot_tree_sha256 = _tree_sha256(files)
+
+        recovery_run_dir.mkdir(mode=0o755, exist_ok=False)
+        manifest = {
+            "schema_version": 1,
+            "provider": "huggingface_hub",
+            "acquisition_mode": "OFFLINE_RETAINED_STAGE_RECOVERY",
+            "model_id": MODEL_ID,
+            "revision": RECOVERY_REVISION,
+            "snapshot_dir": str(final_snapshot),
+            "snapshot_tree_sha256": snapshot_tree_sha256,
+            "files": files,
+            "source_run_id": RECOVERY_SOURCE_RUN_ID,
+            "source_failure_terminal_path": source["failure_terminal_path"],
+            "source_failure_terminal_sha256": source["failure_terminal_sha256"],
+            "recovery_decision_id": decision["decision_id"],
+            "recovery_decision_block_sha256": decision["decision_block_sha256"],
+        }
+        manifest_path = _write_json_exclusive(
+            recovery_run_dir / "snapshot-manifest.json", manifest
+        )
+        receipt = {
+            "schema_version": 1,
+            "model_id": MODEL_ID,
+            "resolved_provider_revision": RECOVERY_REVISION,
+            "accepted_by": source["accepted_by"],
+            "accepted_at_utc": source["accepted_at_utc"],
+            "user_confirmed_acceptance": True,
+            "license_identifier": acquisition["license_identifier"],
+            "license_text_sha256": sha256_file(license_path),
+            "snapshot_manifest_path": str(manifest_path),
+            "snapshot_manifest_sha256": sha256_file(manifest_path),
+        }
+        receipt_path = _write_json_exclusive(
+            recovery_run_dir / "access-receipt.json", receipt
+        )
+
+        # The stage and destination share snapshot_root. The scoped acquisition
+        # lock plus the no-clobber destination check makes this the sole mutation
+        # of retained model bytes; no file is deleted, copied, or redownloaded.
+        _rename_no_replace(retained_stage, final_snapshot)
+        if os.path.lexists(retained_stage) or not final_snapshot.is_dir():
+            raise SaoAcquisitionError("retained SAO stage rename did not complete")
+        if _snapshot_files(source_run_dir) != source["source_run_files"]:
+            raise SaoAcquisitionError("original failed SAO acquisition run changed")
+        from backbones.license_gate import validate_access_receipt
+
+        verified_receipt = validate_access_receipt(
+            receipt_path,
+            expected_model_id=MODEL_ID,
+            expected_snapshot_dir=final_snapshot,
+        )
+        if verified_receipt["resolved_provider_revision"] != RECOVERY_REVISION:
+            raise SaoAcquisitionError("recovered access receipt revision mismatch")
+
+        terminal = {
+            "schema_version": 1,
+            "status": "ACCESS_RECEIPT_RECOVERED_OFFLINE_NO_GENERATION",
+            "run_id": RECOVERY_RUN_ID,
+            "source_run_id": RECOVERY_SOURCE_RUN_ID,
+            "started_at_utc": started,
+            "finished_at_utc": _utc_now(),
+            "node": socket.gethostname().split(".", 1)[0],
+            "command": command,
+            "git_commit": git_commit,
+            "model_id": MODEL_ID,
+            "resolved_provider_revision": RECOVERY_REVISION,
+            "snapshot_dir": str(final_snapshot),
+            "snapshot_manifest_path": str(manifest_path),
+            "snapshot_manifest_sha256": sha256_file(manifest_path),
+            "snapshot_tree_sha256": snapshot_tree_sha256,
+            "access_receipt_path": str(receipt_path),
+            "access_receipt_sha256": sha256_file(receipt_path),
+            "source_failure_terminal_path": source["failure_terminal_path"],
+            "source_failure_terminal_sha256": source["failure_terminal_sha256"],
+            "source_acquisition_manifest_path": source["acquisition_manifest_path"],
+            "source_acquisition_manifest_sha256": source[
+                "acquisition_manifest_sha256"
+            ],
+            "source_run_tree_sha256": source_run_tree_sha256,
+            "recovery_decision_id": decision["decision_id"],
+            "recovery_decision_path": decision["decision_path"],
+            "recovery_decision_file_sha256": decision["decision_file_sha256"],
+            "recovery_decision_block_sha256": decision["decision_block_sha256"],
+            "recovery_mode": "RETAINED_STAGE_RENAME_ONLY",
+            "network_access": False,
+            "token_access": False,
+            "gpu_count": 0,
+            "model_calls": 0,
+            "generated_audio": 0,
+            "original_failed_run_preserved": True,
+        }
+        terminal_path = _write_json_exclusive(recovery_run_dir / "terminal.json", terminal)
+        return {**terminal, "terminal_path": str(terminal_path)}
+    finally:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+        lock_handle.close()
 
 
 def acquire_snapshot(

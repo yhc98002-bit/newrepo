@@ -30,6 +30,7 @@ DEFAULT_FROZEN_FILES = tuple(
         "src/backbones/license_gate.py",
         "src/backbones/runtime.py",
         "src/backbones/sao_mini_smoke.py",
+        "src/backbones/sao_t5.py",
         "src/backbones/stable_audio_3.py",
         "src/backbones/stable_audio_open.py",
         "src/benchmark_core/__init__.py",

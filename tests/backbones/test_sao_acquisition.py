@@ -1,18 +1,25 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import traceback
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+import backbones.sao_acquisition as acquisition_module
 from backbones.contracts import DEFAULT_SAO_CONFIG, sha256_file
 from backbones.license_gate import validate_access_receipt
 from backbones.sao_acquisition import (
     EXECUTE_ACK,
+    RECOVERY_REVISION,
+    RECOVERY_RUN_ID,
+    RECOVERY_SOURCE_RUN_ID,
     SaoAcquisitionError,
     acquire_snapshot,
+    finalize_retained_acquisition_recovery,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,6 +68,7 @@ def _download(**kwargs) -> str:
     root.mkdir(parents=True)
     (root / "model_config.json").write_text("{}\n", encoding="utf-8")
     (root / "model.safetensors").write_bytes(b"fixture-weight")
+    (root / "model.ckpt").write_bytes(b"fixture-legacy-weight")
     (root / "LICENSE").write_text("fixture license\n", encoding="utf-8")
     control = root / ".cache" / "huggingface"
     control.mkdir(parents=True)
@@ -105,6 +113,9 @@ def test_acquisition_consumes_env_token_and_persists_only_nonsecret_receipt(
         expected_snapshot_dir=snapshot,
     )
     assert verified["resolved_provider_revision"] == REVISION
+    assert {row["path"] for row in verified["verified_files"]}.issuperset(
+        {"model.safetensors", "model.ckpt"}
+    )
     persisted = b"".join(path.read_bytes() for path in tmp_path.rglob("*") if path.is_file())
     assert TOKEN_SENTINEL.encode() not in persisted
 
@@ -192,3 +203,252 @@ def test_provider_exception_cannot_expose_consumed_token(tmp_path: Path) -> None
     assert "HF_TOKEN" not in environment
     persisted = b"".join(path.read_bytes() for path in tmp_path.rglob("*") if path.is_file())
     assert TOKEN_SENTINEL.encode() not in persisted
+
+
+def _recovery_fixture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[str, Path]:
+    config = _config(tmp_path)
+    config_value = json.loads(config.read_text(encoding="utf-8"))
+    run_root = Path(config_value["acquisition"]["run_root"])
+    snapshot_root = Path(config_value["acquisition"]["snapshot_root"])
+    source_run = run_root / RECOVERY_SOURCE_RUN_ID
+    source_run.mkdir(parents=True)
+    stage = snapshot_root / f".{RECOVERY_SOURCE_RUN_ID}.partial"
+    stage.mkdir(parents=True)
+    (snapshot_root / ".sao-acquisition.lock").write_bytes(b"")
+    (stage / "model_config.json").write_text("{}\n", encoding="utf-8")
+    (stage / "model.safetensors").write_bytes(b"preferred-weight")
+    (stage / "model.ckpt").write_bytes(b"legacy-weight")
+    (stage / "LICENSE.md").write_text("fixture license\n", encoding="utf-8")
+    nested = stage / "tokenizer"
+    nested.mkdir()
+    (nested / "tokenizer.json").write_text("{}\n", encoding="utf-8")
+
+    started = "2026-07-22T08:25:24.996923Z"
+    acquisition_manifest = source_run / "acquisition-manifest.json"
+    _write_json(
+        acquisition_manifest,
+        {
+            "schema_version": 1,
+            "status": "STARTED_NO_MODEL_CALLS",
+            "run_id": RECOVERY_SOURCE_RUN_ID,
+            "started_at_utc": started,
+            "node": "fixture-node",
+            "command": (
+                "scripts/acquire_sao_live_v2.py --config configs/sao_live_v2.json "
+                "--decisions DECISIONS.md --accepted-by 'Fixture PI' "
+                "--accepted-at-utc 2026-07-22T08:25:24Z --execute-ack fixture"
+            ),
+            "git_commit": "1" * 40,
+            "live_config_path": str(config.resolve()),
+            "live_config_sha256": sha256_file(config),
+            "model_id": "stabilityai/stable-audio-open-1.0",
+            "provider": "huggingface_hub",
+            "credential_mechanism": "HF_TOKEN_ENV_CONSUMED_AND_UNSET",
+            "gpu_count": 0,
+            "model_calls": 0,
+            "generated_audio": 0,
+        },
+    )
+    monkeypatch.setattr(
+        acquisition_module,
+        "RECOVERY_ACQUISITION_MANIFEST_SHA256",
+        sha256_file(acquisition_manifest),
+    )
+    failure = source_run / "terminal-failure.json"
+    _write_json(
+        failure,
+        {
+            "schema_version": 1,
+            "status": "ACQUISITION_FAILED_STOPPED",
+            "run_id": RECOVERY_SOURCE_RUN_ID,
+            "started_at_utc": started,
+            "finished_at_utc": "2026-07-22T08:41:41.717344Z",
+            "error_type": "SaoAcquisitionError",
+            "acquisition_manifest_path": str(acquisition_manifest.resolve()),
+            "acquisition_manifest_sha256": sha256_file(acquisition_manifest),
+            "credential_mechanism": "HF_TOKEN_ENV_CONSUMED_AND_UNSET",
+            "partial_snapshot_retained": True,
+            "model_calls": 0,
+            "generated_audio": 0,
+        },
+    )
+    failure_sha256 = sha256_file(failure)
+    monkeypatch.setattr(
+        acquisition_module,
+        "RECOVERY_FAILURE_TERMINAL_SHA256",
+        failure_sha256,
+    )
+    decisions = _decisions(tmp_path, config)
+    decisions.write_text(
+        decisions.read_text(encoding="utf-8")
+        + "\n".join(
+            (
+                "## D-0039 — fixture retained-stage recovery",
+                "SAO_ACQUISITION_RECOVERY_AUTHORIZED = YES",
+                f"SAO_ACQUISITION_RECOVERY_SOURCE_RUN_ID = {RECOVERY_SOURCE_RUN_ID}",
+                f"SAO_ACQUISITION_RECOVERY_RUN_ID = {RECOVERY_RUN_ID}",
+                f"SAO_ACQUISITION_RECOVERY_REVISION = {RECOVERY_REVISION}",
+                "SAO_ACQUISITION_RECOVERY_FAILURE_TERMINAL_SHA256 = "
+                f"{failure_sha256}",
+                "SAO_ACQUISITION_RECOVERY_NETWORK_ACCESS = NO",
+                "SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS = NO",
+                "SAO_ACQUISITION_RECOVERY_MODEL_CALLS = 0",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    return {
+        "config": config,
+        "decisions": decisions,
+        "run_root": run_root,
+        "snapshot_root": snapshot_root,
+        "source_run": source_run,
+        "stage": stage,
+        "failure": failure,
+    }
+
+
+def _run_recovery(paths: dict[str, Path]) -> dict[str, object]:
+    return finalize_retained_acquisition_recovery(
+        paths["config"],
+        paths["decisions"],
+        command="scripts/finalize_sao_acquisition_recovery_v2.py --config fixture",
+        git_commit="2" * 40,
+    )
+
+
+def test_retained_dual_format_stage_recovers_offline_and_preserves_failed_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = _recovery_fixture(tmp_path, monkeypatch)
+    source_before = {
+        path.name: path.read_bytes() for path in paths["source_run"].iterdir()
+    }
+    monkeypatch.setenv("HF_TOKEN", TOKEN_SENTINEL)
+
+    result = _run_recovery(paths)
+
+    assert os.environ["HF_TOKEN"] == TOKEN_SENTINEL
+    assert result["status"] == "ACCESS_RECEIPT_RECOVERED_OFFLINE_NO_GENERATION"
+    assert result["network_access"] is False
+    assert result["token_access"] is False
+    assert result["gpu_count"] == result["model_calls"] == result["generated_audio"] == 0
+    assert result["original_failed_run_preserved"] is True
+    assert {
+        path.name: path.read_bytes() for path in paths["source_run"].iterdir()
+    } == source_before
+    final_snapshot = paths["snapshot_root"] / RECOVERY_REVISION
+    assert final_snapshot.is_dir()
+    assert not os.path.lexists(paths["stage"])
+    assert (final_snapshot / "model.safetensors").read_bytes() == b"preferred-weight"
+    assert (final_snapshot / "model.ckpt").read_bytes() == b"legacy-weight"
+    manifest = json.loads(Path(result["snapshot_manifest_path"]).read_text(encoding="utf-8"))
+    assert {row["path"] for row in manifest["files"]} == {
+        "LICENSE.md",
+        "model.ckpt",
+        "model.safetensors",
+        "model_config.json",
+        "tokenizer/tokenizer.json",
+    }
+    verified = validate_access_receipt(
+        Path(result["access_receipt_path"]),
+        expected_model_id="stabilityai/stable-audio-open-1.0",
+        expected_snapshot_dir=final_snapshot,
+    )
+    assert {row["path"] for row in verified["verified_files"]} == {
+        row["path"] for row in manifest["files"]
+    }
+    assert {path.name for path in (paths["run_root"] / RECOVERY_RUN_ID).iterdir()} == {
+        "access-receipt.json",
+        "snapshot-manifest.json",
+        "terminal.json",
+    }
+
+
+@pytest.mark.parametrize("forbidden", ["cache", "incomplete", "symlink"])
+def test_recovery_rejects_control_residue_and_symlinks_without_moving_stage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    forbidden: str,
+) -> None:
+    paths = _recovery_fixture(tmp_path, monkeypatch)
+    if forbidden == "cache":
+        residue = paths["stage"] / ".cache" / "huggingface"
+        residue.mkdir(parents=True)
+        (residue / "metadata").write_text("residue\n", encoding="utf-8")
+        match = "provider cache"
+    elif forbidden == "incomplete":
+        (paths["stage"] / "model.safetensors.incomplete").write_bytes(b"partial")
+        match = "incomplete entry"
+    else:
+        (paths["stage"] / "linked-weight").symlink_to(
+            paths["stage"] / "model.safetensors"
+        )
+        match = "forbidden symlink"
+
+    with pytest.raises(SaoAcquisitionError, match=match):
+        _run_recovery(paths)
+    assert paths["stage"].is_dir()
+    assert not (paths["run_root"] / RECOVERY_RUN_ID).exists()
+    assert not (paths["snapshot_root"] / RECOVERY_REVISION).exists()
+
+
+def test_recovery_rejects_changed_failure_even_when_decision_hash_is_rebound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = _recovery_fixture(tmp_path, monkeypatch)
+    failure = json.loads(paths["failure"].read_text(encoding="utf-8"))
+    failure["model_calls"] = 1
+    _write_json(paths["failure"], failure)
+    changed_sha = sha256_file(paths["failure"])
+    monkeypatch.setattr(
+        acquisition_module,
+        "RECOVERY_FAILURE_TERMINAL_SHA256",
+        changed_sha,
+    )
+    decisions_text = paths["decisions"].read_text(encoding="utf-8")
+    decisions_text = re.sub(
+        r"SAO_ACQUISITION_RECOVERY_FAILURE_TERMINAL_SHA256 = [0-9a-f]{64}",
+        f"SAO_ACQUISITION_RECOVERY_FAILURE_TERMINAL_SHA256 = {changed_sha}",
+        decisions_text,
+    )
+    paths["decisions"].write_text(decisions_text, encoding="utf-8")
+
+    with pytest.raises(SaoAcquisitionError, match="failure terminal mismatch: model_calls"):
+        _run_recovery(paths)
+    assert paths["stage"].is_dir()
+    assert not (paths["run_root"] / RECOVERY_RUN_ID).exists()
+
+
+def test_recovery_rejects_wrong_d0039_assignment_before_artifacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = _recovery_fixture(tmp_path, monkeypatch)
+    decisions = paths["decisions"].read_text(encoding="utf-8").replace(
+        "SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS = NO",
+        "SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS = YES",
+    )
+    paths["decisions"].write_text(decisions, encoding="utf-8")
+    with pytest.raises(SaoAcquisitionError, match="TOKEN_ACCESS"):
+        _run_recovery(paths)
+    assert paths["stage"].is_dir()
+    assert not (paths["run_root"] / RECOVERY_RUN_ID).exists()
+
+
+def test_recovery_is_no_clobber_and_cannot_replay(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = _recovery_fixture(tmp_path, monkeypatch)
+    first = _run_recovery(paths)
+    terminal_before = Path(first["terminal_path"]).read_bytes()
+    with pytest.raises(FileExistsError):
+        _run_recovery(paths)
+    assert Path(first["terminal_path"]).read_bytes() == terminal_before

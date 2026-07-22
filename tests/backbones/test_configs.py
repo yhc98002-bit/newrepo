@@ -157,6 +157,7 @@ def test_core_launch_directly_freezes_the_sa3_project_runtime_closure() -> None:
         REPOSITORY_ROOT / "src/backbones/contracts.py",
         REPOSITORY_ROOT / "src/backbones/io.py",
         REPOSITORY_ROOT / "src/backbones/runtime.py",
+        REPOSITORY_ROOT / "src/backbones/sao_t5.py",
         REPOSITORY_ROOT / "src/backbones/stable_audio_3.py",
         REPOSITORY_ROOT / "src/sa3_smoke/__init__.py",
         REPOSITORY_ROOT / "src/sa3_smoke/artifacts.py",

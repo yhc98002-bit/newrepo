@@ -47,6 +47,8 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0036",
         "D-0037",
         "D-0038",
+        "D-0039",
+        "D-0040",
     ]
 
 
@@ -151,6 +153,28 @@ def test_sao_live_and_packet_watcher_are_separate_hash_bound_openings() -> None:
     assert "ARMED_WAITING_FOR_PILOT_AND_SCORING_STRATA" in packet
     assert "HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO" in packet
     assert _sha256(ROOT / "configs/human_packet_autoassembly_v2_sao.json") in packet
+
+
+def test_sao_recovery_and_decision_grade_openings_preserve_scope() -> None:
+    recovery = _decision_block("D-0039")
+    for assignment in (
+        "SAO_ACQUISITION_RECOVERY_AUTHORIZED = YES",
+        "SAO_ACQUISITION_RECOVERY_NETWORK_ACCESS = NO",
+        "SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS = NO",
+        "SAO_ACQUISITION_RECOVERY_MODEL_CALLS = 0",
+    ):
+        assert assignment in recovery
+    assert (
+        "SAO_ACQUISITION_RECOVERY_FAILURE_TERMINAL_SHA256 = "
+        "d1b7f3c35ab211372910db3ba9a0a73abcf2b24d49745f3d0717cdb77096db82"
+    ) in recovery
+
+    tables = _decision_block("D-0040")
+    assert "DECISION_GRADE_AUTOMATIC_TABLES_AUTHORIZED = YES" in tables
+    assert "DECISION_GRADE_HUMAN_GOLD_CLAIMS = NO" in tables
+    assert "DECISION_GRADE_AUDIO_GENERATION_AUTHORIZED = NO" in tables
+    assert "SA3_PLUS_ACE_COMPLETE" in tables
+    assert "COMPLETED_SCORED_SHARDS_ONLY" in tables
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

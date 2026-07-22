@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from contextlib import contextmanager
 from pathlib import Path
@@ -18,12 +19,69 @@ from backbones.contracts import (
     LicenseGateBlocked,
 )
 from backbones.license_gate import validate_access_receipt, validate_core_authorization
+from backbones.sao_t5 import T5_BUNDLE_LAYOUT, conditioning_bundle_record
 from backbones.stable_audio_open import StableAudioOpenAdapter
 from sa3_smoke.artifacts import sha256_file
 
 
 def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_sao_t5_loader_fixture(snapshot: Path) -> list[dict[str, object]]:
+    text_encoder = snapshot / "text_encoder"
+    tokenizer = snapshot / "tokenizer"
+    text_encoder.mkdir()
+    tokenizer.mkdir()
+    _write_json(
+        text_encoder / "config.json",
+        {
+            "_name_or_path": "t5-base",
+            "architectures": ["T5EncoderModel"],
+            "d_model": 768,
+            "model_type": "t5",
+        },
+    )
+    (text_encoder / "model.safetensors").write_bytes(b"fixture-t5-encoder")
+    _write_json(tokenizer / "special_tokens_map.json", {"eos_token": "</s>"})
+    (tokenizer / "spiece.model").write_bytes(b"fixture-sentencepiece")
+    _write_json(tokenizer / "tokenizer.json", {"version": "1.0"})
+    _write_json(tokenizer / "tokenizer_config.json", {"tokenizer_class": "T5Tokenizer"})
+    rows: list[dict[str, object]] = []
+    for _bundle_name, relative in T5_BUNDLE_LAYOUT:
+        path = snapshot / relative
+        rows.append(
+            {
+                "path": relative,
+                "size_bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+                "hash_verified": True,
+            }
+        )
+    return rows
+
+
+def _sao_model_config() -> dict[str, object]:
+    return {
+        "model_type": "diffusion_cond",
+        "model": {
+            "conditioning": {
+                "cond_dim": 768,
+                "configs": [
+                    {
+                        "id": "prompt",
+                        "type": "t5",
+                        "config": {"t5_model_name": "t5-base", "max_length": 128},
+                    },
+                    {
+                        "id": "seconds_start",
+                        "type": "number",
+                        "config": {"min_val": 0, "max_val": 512},
+                    },
+                ],
+            }
+        },
+    }
 
 
 def _access_fixture(tmp_path: Path) -> tuple[Path, Path]:
@@ -285,9 +343,17 @@ def test_sao_loader_uses_only_receipt_bound_local_files(
 ) -> None:
     snapshot = tmp_path / "snapshot"
     snapshot.mkdir()
-    (snapshot / "model_config.json").write_text("{}\n", encoding="utf-8")
+    model_config_path = snapshot / "model_config.json"
+    _write_json(model_config_path, _sao_model_config())
+    original_config_bytes = model_config_path.read_bytes()
     weight = snapshot / "model.safetensors"
     weight.write_bytes(b"local-only-weight")
+    checkpoint = snapshot / "model.ckpt"
+    checkpoint.write_bytes(b"legacy-weight-must-not-load")
+    t5_rows = _write_sao_t5_loader_fixture(snapshot)
+    source_bytes = {
+        relative: (snapshot / relative).read_bytes() for _bundle, relative in T5_BUNDLE_LAYOUT
+    }
     observed: dict[str, object] = {}
 
     class Model:
@@ -304,15 +370,183 @@ def test_sao_loader_uses_only_receipt_bound_local_files(
             observed["eval"] = True
             return self
 
+    def fake_factory(config: dict[str, object]) -> Model:
+        observed["offline_environment"] = {
+            "HF_HUB_OFFLINE": os.environ.get("HF_HUB_OFFLINE"),
+            "TRANSFORMERS_OFFLINE": os.environ.get("TRANSFORMERS_OFFLINE"),
+            "HF_HUB_DISABLE_IMPLICIT_TOKEN": os.environ.get(
+                "HF_HUB_DISABLE_IMPLICIT_TOKEN"
+            ),
+        }
+        assert not any(
+            name in os.environ
+            for name in ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HUGGINGFACEHUB_API_TOKEN")
+        )
+        resolved = config["model"]["conditioning"]["configs"][0]["config"]
+        bundle = Path(str(resolved["model_path"]))
+        assert bundle.is_absolute() and bundle.is_dir()
+        assert {path.name for path in bundle.iterdir()} == {
+            bundle_name for bundle_name, _source in T5_BUNDLE_LAYOUT
+        }
+        for bundle_name, relative in T5_BUNDLE_LAYOUT:
+            linked = bundle / bundle_name
+            assert linked.is_symlink()
+            assert linked.resolve() == (snapshot / relative).resolve()
+            assert linked.read_bytes() == source_bytes[relative]
+        assert resolved == {
+            "t5_model_name": "t5-base",
+            "max_length": 128,
+            "model_path": str(bundle),
+        }
+        observed["resolved_conditioner"] = dict(resolved)
+        return Model()
+
     monkeypatch.setitem(
         sys.modules,
         "stable_audio_tools.models.factory",
-        SimpleNamespace(create_model_from_config=lambda config: Model()),
+        SimpleNamespace(create_model_from_config=fake_factory),
     )
     monkeypatch.setitem(
         sys.modules,
         "stable_audio_tools.models.utils",
         SimpleNamespace(load_ckpt_state_dict=lambda path: {"loaded_from": path}),
+    )
+    for name in (
+        "HF_TOKEN",
+        "HUGGING_FACE_HUB_TOKEN",
+        "HUGGINGFACEHUB_API_TOKEN",
+        "HF_HUB_OFFLINE",
+        "TRANSFORMERS_OFFLINE",
+        "HF_HUB_DISABLE_IMPLICIT_TOKEN",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    adapter = StableAudioOpenAdapter(snapshot_dir=snapshot, device="cuda:0")
+    adapter._preflight = BackbonePreflight(
+        status="READY_FOR_MINI_SMOKE",
+        model_id=adapter.model_id,
+        config_sha256=adapter.config_sha256,
+        details={
+            "receipt": {
+                "verified_files": [
+                    {
+                        "path": "model.safetensors",
+                        "size_bytes": weight.stat().st_size,
+                        "sha256": sha256_file(weight),
+                        "hash_verified": True,
+                    },
+                    {
+                        "path": "model.ckpt",
+                        "size_bytes": checkpoint.stat().st_size,
+                        "sha256": sha256_file(checkpoint),
+                        "hash_verified": True,
+                    },
+                    {
+                        "path": "model_config.json",
+                        "size_bytes": model_config_path.stat().st_size,
+                        "sha256": sha256_file(model_config_path),
+                        "hash_verified": True,
+                    },
+                    *t5_rows,
+                ]
+            }
+        },
+    )
+    adapter._ensure_loaded()
+    assert observed["offline_environment"] == {
+        "HF_HUB_OFFLINE": "1",
+        "TRANSFORMERS_OFFLINE": "1",
+        "HF_HUB_DISABLE_IMPLICIT_TOKEN": "1",
+    }
+    assert observed["device"] == "cuda:0"
+    assert observed["eval"] is True
+    assert observed["state"] == {"loaded_from": str(weight)}
+    assert adapter._weight_file_sha256 == sha256_file(weight)
+    assert adapter._conditioning_bundle_sha256 == conditioning_bundle_record(t5_rows)[
+        "conditioning_bundle_sha256"
+    ]
+    assert not Path(observed["resolved_conditioner"]["model_path"]).exists()
+    assert model_config_path.read_bytes() == original_config_bytes
+    assert {
+        relative: (snapshot / relative).read_bytes() for _bundle, relative in T5_BUNDLE_LAYOUT
+    } == source_bytes
+    assert "model_path" not in _sao_model_config()["model"]["conditioning"]["configs"][0][
+        "config"
+    ]
+    assert "HF_HUB_OFFLINE" not in os.environ
+    assert "TRANSFORMERS_OFFLINE" not in os.environ
+    assert "HF_HUB_DISABLE_IMPLICIT_TOKEN" not in os.environ
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("missing", "source file is absent"),
+        ("drift", "changed after receipt"),
+        ("unbound", "does not uniquely bind T5 file"),
+        ("config-drift", "model config changed after receipt preflight"),
+        ("wrong-root-model", "conditioner config is unexpected"),
+        ("wrong-encoder-model", "not the expected T5-base"),
+    ],
+)
+def test_sao_t5_binding_failures_stop_before_factory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+    message: str,
+) -> None:
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    model_config_path = snapshot / "model_config.json"
+    model_config = _sao_model_config()
+    _write_json(model_config_path, model_config)
+    weight = snapshot / "model.safetensors"
+    weight.write_bytes(b"root-weight")
+    t5_rows = _write_sao_t5_loader_fixture(snapshot)
+    model_config_row = {
+        "path": "model_config.json",
+        "size_bytes": model_config_path.stat().st_size,
+        "sha256": sha256_file(model_config_path),
+        "hash_verified": True,
+    }
+
+    if mutation == "missing":
+        (snapshot / "tokenizer" / "spiece.model").unlink()
+    elif mutation == "drift":
+        (snapshot / "tokenizer" / "tokenizer.json").write_text(
+            '{"changed":true}\n', encoding="utf-8"
+        )
+    elif mutation == "unbound":
+        t5_rows = [row for row in t5_rows if row["path"] != "tokenizer/tokenizer.json"]
+    elif mutation == "config-drift":
+        model_config["drift_after_cached_preflight"] = True
+        _write_json(model_config_path, model_config)
+    elif mutation == "wrong-root-model":
+        model_config["model"]["conditioning"]["configs"][0]["config"][
+            "t5_model_name"
+        ] = "t5-large"
+        _write_json(model_config_path, model_config)
+        model_config_row["size_bytes"] = model_config_path.stat().st_size
+        model_config_row["sha256"] = sha256_file(model_config_path)
+    else:
+        encoder_config = snapshot / "text_encoder" / "config.json"
+        value = json.loads(encoder_config.read_text(encoding="utf-8"))
+        value["_name_or_path"] = "t5-large"
+        _write_json(encoder_config, value)
+        row = next(row for row in t5_rows if row["path"] == "text_encoder/config.json")
+        row["size_bytes"] = encoder_config.stat().st_size
+        row["sha256"] = sha256_file(encoder_config)
+
+    factory_called = False
+
+    def forbidden_factory(_config):
+        nonlocal factory_called
+        factory_called = True
+        raise AssertionError("factory must not run after a T5 binding failure")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "stable_audio_tools.models.factory",
+        SimpleNamespace(create_model_from_config=forbidden_factory),
     )
     adapter = StableAudioOpenAdapter(snapshot_dir=snapshot, device="cuda:0")
     adapter._preflight = BackbonePreflight(
@@ -324,16 +558,71 @@ def test_sao_loader_uses_only_receipt_bound_local_files(
                 "verified_files": [
                     {
                         "path": "model.safetensors",
+                        "size_bytes": weight.stat().st_size,
                         "sha256": sha256_file(weight),
-                    }
+                        "hash_verified": True,
+                    },
+                    model_config_row,
+                    *t5_rows,
                 ]
             }
         },
     )
-    adapter._ensure_loaded()
-    assert observed == {
-        "device": "cuda:0",
-        "eval": True,
-        "state": {"loaded_from": str(weight)},
-    }
-    assert adapter._weight_file_sha256 == sha256_file(weight)
+    with pytest.raises(BackboneConfigurationError, match=message):
+        adapter._ensure_loaded()
+    assert factory_called is False
+
+
+def test_sao_loader_rejects_token_environment_before_factory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    snapshot = tmp_path / "snapshot"
+    snapshot.mkdir()
+    model_config_path = snapshot / "model_config.json"
+    _write_json(model_config_path, _sao_model_config())
+    weight = snapshot / "model.safetensors"
+    weight.write_bytes(b"root-weight")
+    t5_rows = _write_sao_t5_loader_fixture(snapshot)
+    factory_called = False
+
+    def forbidden_factory(_config):
+        nonlocal factory_called
+        factory_called = True
+        raise AssertionError("factory must not run with a token environment")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "stable_audio_tools.models.factory",
+        SimpleNamespace(create_model_from_config=forbidden_factory),
+    )
+    monkeypatch.setenv("HF_TOKEN", "SENTINEL_MUST_NOT_APPEAR_IN_ERRORS")
+    adapter = StableAudioOpenAdapter(snapshot_dir=snapshot, device="cuda:0")
+    adapter._preflight = BackbonePreflight(
+        status="READY_FOR_MINI_SMOKE",
+        model_id=adapter.model_id,
+        config_sha256=adapter.config_sha256,
+        details={
+            "receipt": {
+                "verified_files": [
+                    {
+                        "path": "model.safetensors",
+                        "size_bytes": weight.stat().st_size,
+                        "sha256": sha256_file(weight),
+                        "hash_verified": True,
+                    },
+                    {
+                        "path": "model_config.json",
+                        "size_bytes": model_config_path.stat().st_size,
+                        "sha256": sha256_file(model_config_path),
+                        "hash_verified": True,
+                    },
+                    *t5_rows,
+                ]
+            }
+        },
+    )
+    with pytest.raises(BackboneConfigurationError) as caught:
+        adapter._ensure_loaded()
+    assert "SENTINEL_MUST_NOT_APPEAR_IN_ERRORS" not in str(caught.value)
+    assert "HF_TOKEN" in str(caught.value)
+    assert factory_called is False

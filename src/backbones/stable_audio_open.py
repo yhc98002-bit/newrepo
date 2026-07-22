@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import copy
 import os
+import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +30,121 @@ from backbones.license_gate import (
 )
 from backbones.runtime import CudaTelemetry
 from backbones.sao_mini_smoke import validate_sao_mini_smoke_evidence
+from backbones.sao_t5 import T5_BUNDLE_LAYOUT, T5_MODEL_NAME, conditioning_bundle_record
 from sa3_smoke.audio import save_float_wav_exclusive
+
+HF_TOKEN_ENVIRONMENT_VARIABLES = (
+    "HF_TOKEN",
+    "HUGGING_FACE_HUB_TOKEN",
+    "HUGGINGFACEHUB_API_TOKEN",
+)
+
+
+def _prompt_t5_conditioner(model_config: dict[str, Any]) -> dict[str, Any]:
+    try:
+        conditioning = model_config["model"]["conditioning"]
+        conditioners = conditioning["configs"]
+    except (KeyError, TypeError) as exc:
+        raise BackboneConfigurationError(
+            "SAO model config is missing model.conditioning.configs"
+        ) from exc
+    if conditioning.get("cond_dim") != 768 or not isinstance(conditioners, list):
+        raise BackboneConfigurationError("SAO T5 conditioning layout is invalid")
+    prompt_entries = [
+        entry for entry in conditioners if isinstance(entry, dict) and entry.get("id") == "prompt"
+    ]
+    t5_entries = [
+        entry for entry in conditioners if isinstance(entry, dict) and entry.get("type") == "t5"
+    ]
+    if len(prompt_entries) != 1 or len(t5_entries) != 1 or prompt_entries[0] is not t5_entries[0]:
+        raise BackboneConfigurationError("SAO config requires exactly one prompt/T5 conditioner")
+    conditioner = prompt_entries[0]
+    configuration = conditioner.get("config")
+    if configuration != {"t5_model_name": T5_MODEL_NAME, "max_length": 128}:
+        raise BackboneConfigurationError("SAO prompt/T5 conditioner config is unexpected")
+    return configuration
+
+
+def _verify_receipt_file(
+    snapshot: Path,
+    row: dict[str, Any],
+) -> Path:
+    relative = Path(str(row["snapshot_path"]))
+    source = snapshot / relative
+    cursor = snapshot
+    for part in relative.parts:
+        cursor /= part
+        if cursor.is_symlink():
+            raise BackboneConfigurationError(f"SAO T5 source may not be a symlink: {relative}")
+    if not source.is_file():
+        raise BackboneConfigurationError(f"SAO T5 source file is absent: {relative}")
+    if source.stat().st_size != row["size_bytes"] or sha256_file(source) != row["sha256"]:
+        raise BackboneConfigurationError(f"SAO T5 source changed after receipt: {relative}")
+    return source.resolve(strict=True)
+
+
+@contextmanager
+def _local_t5_factory_config(
+    snapshot: Path,
+    model_config: dict[str, Any],
+    verified_files: list[dict[str, Any]],
+):
+    """Yield an in-memory config pointing at one ephemeral receipt-bound bundle."""
+
+    _prompt_t5_conditioner(model_config)
+    bundle_record = conditioning_bundle_record(verified_files)
+    verified_sources = {
+        row["bundle_path"]: _verify_receipt_file(snapshot, row)
+        for row in bundle_record["files"]
+    }
+    encoder_config = strict_json_object(verified_sources["config.json"])
+    if (
+        encoder_config.get("_name_or_path") != T5_MODEL_NAME
+        or encoder_config.get("model_type") != "t5"
+        or encoder_config.get("architectures") != ["T5EncoderModel"]
+        or encoder_config.get("d_model") != 768
+    ):
+        raise BackboneConfigurationError("SAO local text encoder is not the expected T5-base")
+    tokenizer_config = strict_json_object(verified_sources["tokenizer_config.json"])
+    if tokenizer_config.get("tokenizer_class") != "T5Tokenizer":
+        raise BackboneConfigurationError("SAO local tokenizer is not the expected T5 tokenizer")
+
+    resolved_config = copy.deepcopy(model_config)
+    resolved_conditioner = _prompt_t5_conditioner(resolved_config)
+    with tempfile.TemporaryDirectory(prefix="sao-t5-base-") as temporary:
+        bundle = Path(temporary).resolve()
+        for bundle_name, _snapshot_name in T5_BUNDLE_LAYOUT:
+            (bundle / bundle_name).symlink_to(verified_sources[bundle_name])
+        if {path.name for path in bundle.iterdir()} != set(verified_sources):
+            raise BackboneConfigurationError("SAO ephemeral T5 bundle closure is invalid")
+        resolved_conditioner["model_path"] = str(bundle)
+        yield resolved_config, str(bundle_record["conditioning_bundle_sha256"])
+
+
+@contextmanager
+def _offline_transformers_environment():
+    """Reject credentials and make local-only factory resolution fail closed."""
+
+    present_tokens = [name for name in HF_TOKEN_ENVIRONMENT_VARIABLES if name in os.environ]
+    if present_tokens:
+        raise BackboneConfigurationError(
+            f"SAO model loading refuses token environment variables: {present_tokens}"
+        )
+    requested = {
+        "HF_HUB_OFFLINE": "1",
+        "TRANSFORMERS_OFFLINE": "1",
+        "HF_HUB_DISABLE_IMPLICIT_TOKEN": "1",
+    }
+    previous = {name: os.environ.get(name) for name in requested}
+    os.environ.update(requested)
+    try:
+        yield
+    finally:
+        for name, value in previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
 
 
 class StableAudioOpenAdapter:
@@ -74,6 +191,7 @@ class StableAudioOpenAdapter:
         self._model: Any | None = None
         self._load_wall_seconds: float | None = None
         self._weight_file_sha256: str | None = None
+        self._conditioning_bundle_sha256: str | None = None
 
     def preflight(self) -> BackbonePreflight:
         """Return the adjudicated blocker or verify both later offline gate records."""
@@ -141,6 +259,11 @@ class StableAudioOpenAdapter:
         if self._model is not None:
             return
         self.preflight()
+        present_tokens = [name for name in HF_TOKEN_ENVIRONMENT_VARIABLES if name in os.environ]
+        if present_tokens:
+            raise BackboneConfigurationError(
+                f"SAO model loading refuses token environment variables: {present_tokens}"
+            )
         assert self.snapshot_dir is not None
         started = time.perf_counter()
         snapshot = self.snapshot_dir.resolve()
@@ -149,30 +272,57 @@ class StableAudioOpenAdapter:
         checkpoint_path = snapshot / "model.ckpt"
         if not config_path.is_file():
             raise BackboneConfigurationError("SAO snapshot lacks model_config.json")
-        candidates = [path for path in (safetensors_path, checkpoint_path) if path.is_file()]
-        if len(candidates) != 1:
+        if safetensors_path.is_file():
+            weight_path = safetensors_path
+        elif checkpoint_path.is_file():
+            weight_path = checkpoint_path
+        else:
             raise BackboneConfigurationError(
-                "SAO snapshot must contain exactly one of model.safetensors or model.ckpt"
+                "SAO snapshot lacks model.safetensors and model.ckpt"
             )
-        try:
-            from stable_audio_tools.models.factory import create_model_from_config
-            from stable_audio_tools.models.utils import load_ckpt_state_dict
-        except ImportError as exc:
-            raise ImportError(
-                "stable-audio-tools local model factory is required after the license gate clears"
-            ) from exc
-        model_config = strict_json_object(config_path)
-        model = create_model_from_config(model_config)
-        model.load_state_dict(load_ckpt_state_dict(str(candidates[0])))
-        expected_sample_rate = int(self.config["generation"]["sample_rate"])
-        if getattr(model, "sample_rate", None) != expected_sample_rate:
-            raise BackboneConfigurationError("SAO local model sample rate differs from config")
-        weight_relative = candidates[0].relative_to(snapshot).as_posix()
+        weight_relative = weight_path.relative_to(snapshot).as_posix()
         verified_files = self._preflight.details["receipt"]["verified_files"]
         weight_rows = [row for row in verified_files if row["path"] == weight_relative]
         if len(weight_rows) != 1:
             raise BackboneConfigurationError("SAO weight is not uniquely bound by receipt")
-        self._weight_file_sha256 = str(weight_rows[0]["sha256"])
+        weight_row = weight_rows[0]
+        if (
+            weight_row.get("hash_verified") is not True
+            or weight_row.get("size_bytes") != weight_path.stat().st_size
+            or weight_row.get("sha256") != sha256_file(weight_path)
+        ):
+            raise BackboneConfigurationError("SAO selected weight changed after receipt preflight")
+        self._weight_file_sha256 = str(weight_row["sha256"])
+        config_rows = [row for row in verified_files if row["path"] == "model_config.json"]
+        if len(config_rows) != 1:
+            raise BackboneConfigurationError("SAO model config is not uniquely bound by receipt")
+        config_row = config_rows[0]
+        if (
+            config_row.get("hash_verified") is not True
+            or config_row.get("size_bytes") != config_path.stat().st_size
+            or config_row.get("sha256") != sha256_file(config_path)
+        ):
+            raise BackboneConfigurationError("SAO model config changed after receipt preflight")
+        model_config = strict_json_object(config_path)
+        with _local_t5_factory_config(
+            snapshot,
+            model_config,
+            verified_files,
+        ) as (resolved_config, conditioning_bundle_sha256), _offline_transformers_environment():
+            try:
+                from stable_audio_tools.models.factory import create_model_from_config
+                from stable_audio_tools.models.utils import load_ckpt_state_dict
+            except ImportError as exc:
+                raise ImportError(
+                    "stable-audio-tools local model factory is required after the license "
+                    "gate clears"
+                ) from exc
+            model = create_model_from_config(resolved_config)
+            model.load_state_dict(load_ckpt_state_dict(str(weight_path)))
+        self._conditioning_bundle_sha256 = conditioning_bundle_sha256
+        expected_sample_rate = int(self.config["generation"]["sample_rate"])
+        if getattr(model, "sample_rate", None) != expected_sample_rate:
+            raise BackboneConfigurationError("SAO local model sample rate differs from config")
         self._model = model.to(self.device).eval()
         self._load_wall_seconds = time.perf_counter() - started
 
@@ -259,6 +409,7 @@ class StableAudioOpenAdapter:
                 "execution_scope": self.execution_scope,
                 "requested_sample_size": 1_323_000,
                 "weight_file_sha256": self._weight_file_sha256,
+                "conditioning_bundle_sha256": self._conditioning_bundle_sha256,
                 "resolved_provider_revision": self._preflight.details["receipt"][
                     "resolved_provider_revision"
                 ],

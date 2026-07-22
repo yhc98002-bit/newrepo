@@ -1959,3 +1959,78 @@ provides every required stratum. Otherwise it emits heartbeat state only.
 `HUMAN_AUDIT_PACKET_HUMAN_GOLD_CLAIMS = NO`
 
 `HUMAN_AUDIT_PACKET_AUTOASSEMBLY_CONFIG_SHA256 = 68b74081056136ef2b72d90cdd7466b5ae4aafc3da2f4ffac6942d16526ff144`
+
+## D-0039 — Stable Audio Open retained-stage acquisition recovery authorized
+
+- Date: 2026-07-22
+- Status: accepted one-time offline artifact-finalization opening
+- Authority: PI SAO-live authorization, implemented under D-0037
+
+The exact Hugging Face revision
+`f21265c1e2710b3bd2386596943f0007f55f802e` downloaded completely before
+the D-0037 acquisition stopped on a local layout assumption: the official
+snapshot legitimately contains both root `model.safetensors` and
+`model.ckpt`. The immutable source failure records zero model calls and zero
+generated audio. This one-time recovery may validate and atomically rename
+only that retained stage, hash every regular snapshot file, and seal a new
+receipt in a distinct run. It may not contact a provider, inherit a provider
+token, redownload or delete files, use a GPU, construct a model, or generate
+audio. The original failed run remains intact.
+
+For inference, the receipt-bound root `model.safetensors` is selected
+deterministically; `model.ckpt` remains retained and hashed. The bundled
+tokenizer and text encoder must likewise be loaded only from receipt-bound
+local files with provider networking disabled. This correction changes no
+model identity, generation configuration, state scope, or call budget.
+
+`SAO_ACQUISITION_RECOVERY_AUTHORIZED = YES`
+
+`SAO_ACQUISITION_RECOVERY_SOURCE_RUN_ID = sao-acquisition-v2-001`
+
+`SAO_ACQUISITION_RECOVERY_RUN_ID = sao-acquisition-recovery-v2-001`
+
+`SAO_ACQUISITION_RECOVERY_REVISION = f21265c1e2710b3bd2386596943f0007f55f802e`
+
+`SAO_ACQUISITION_RECOVERY_FAILURE_TERMINAL_SHA256 = d1b7f3c35ab211372910db3ba9a0a73abcf2b24d49745f3d0717cdb77096db82`
+
+`SAO_ACQUISITION_RECOVERY_NETWORK_ACCESS = NO`
+
+`SAO_ACQUISITION_RECOVERY_TOKEN_ACCESS = NO`
+
+`SAO_ACQUISITION_RECOVERY_MODEL_CALLS = 0`
+
+## D-0040 — Decision-grade automatic-instrument tables opened
+
+- Date: 2026-07-22
+- Status: accepted CPU execution opening
+- Authority: PI decision-grade-table authorization
+
+The automatic-only decision-grade builder may summarize the already complete
+SA3 and ACE scored rows now, then emit separate immutable extensions as
+completed SAO shards are scored. This CPU lane is not state execution and does
+not bypass the blocked Stage-1 outcome gate. Every row remains watermarked
+`AUTOMATIC-INSTRUMENT OUTCOMES`; no human-gold or accuracy claim is permitted.
+Outputs include per-axis and per-backbone prevalence, tempo results at both the
+5% primary and 10% sensitivity bands with separate window drift, defect-
+specific integrity rates, and instrument-disagreement summaries.
+
+The initial source rows, scoring status, and completed snapshot SHA-256s are
+respectively
+`e2961646ad811cab4c917ec9056f2127ff1454ddeaf7dd4b668d3617ba368f63`,
+`9fc9b01e19af41bb588ef4feb3a88da1d3de9540a087e730a17ce3d65b3789b6`,
+and `150ddcf36b2d6aab1e1e232a4af43c650fdd2a8b137e3b9f236eec20658bfdd5`.
+The frozen scoring and statistics config SHA-256s are
+`1e03782323d469fe8bcae09aabd9d86aecf740050d54cbe95b26e14d39d1cbdd`
+and `d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d`.
+
+`DECISION_GRADE_AUTOMATIC_TABLES_AUTHORIZED = YES`
+
+`DECISION_GRADE_INITIAL_SOURCE_SCOPE = SA3_PLUS_ACE_COMPLETE`
+
+`DECISION_GRADE_SAO_EXTENSION = COMPLETED_SCORED_SHARDS_ONLY`
+
+`DECISION_GRADE_HUMAN_GOLD_CLAIMS = NO`
+
+`DECISION_GRADE_AUDIO_GENERATION_AUTHORIZED = NO`
+
+`DECISION_GRADE_INITIAL_RUN_ID = decision-grade-v2-001`

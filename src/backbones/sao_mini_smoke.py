@@ -23,6 +23,7 @@ from backbones.contracts import (
 )
 from backbones.license_gate import validate_runtime_authorization
 from backbones.mini_smoke import RunContext
+from backbones.sao_t5 import conditioning_bundle_record
 from sa3_smoke.artifacts import (
     PROVENANCE_REQUIRED_FIELDS,
     adjacent_provenance_path,
@@ -490,13 +491,37 @@ def _validate_sao_mini_smoke_evidence(
     previous = "0" * 64
     output_paths: set[Path] = set()
     prompt_hashes: list[str] = []
-    weight_rows = [
+    safetensors_rows = [
         row
         for row in expected_receipt_dict.get("verified_files", [])
-        if isinstance(row, dict) and row.get("path") in {"model.safetensors", "model.ckpt"}
+        if isinstance(row, dict) and row.get("path") == "model.safetensors"
     ]
-    _evidence(len(weight_rows) == 1, "receipt does not bind exactly one SAO weight file")
-    expected_weight_sha = weight_rows[0].get("sha256")
+    checkpoint_rows = [
+        row
+        for row in expected_receipt_dict.get("verified_files", [])
+        if isinstance(row, dict) and row.get("path") == "model.ckpt"
+    ]
+    if safetensors_rows:
+        _evidence(
+            len(safetensors_rows) == 1,
+            "receipt does not uniquely bind the preferred SAO safetensors weight",
+        )
+        selected_weight_row = safetensors_rows[0]
+    else:
+        _evidence(
+            len(checkpoint_rows) == 1,
+            "receipt does not uniquely bind a supported SAO weight file",
+        )
+        selected_weight_row = checkpoint_rows[0]
+    expected_weight_sha = selected_weight_row.get("sha256")
+    try:
+        expected_conditioning_bundle_sha = conditioning_bundle_record(
+            expected_receipt_dict.get("verified_files", [])
+        )["conditioning_bundle_sha256"]
+    except ValueError as exc:
+        raise SaoMiniSmokeEvidenceError(
+            "receipt does not bind the exact offline SAO T5 bundle"
+        ) from exc
     expected_steps = int(generation["inference_steps"])
     expected_sampler = str(generation["sampler_type"])
     expected_revision = expected_receipt_dict.get("resolved_provider_revision")
@@ -592,6 +617,7 @@ def _validate_sao_mini_smoke_evidence(
             and set(metadata)
             == {
                 "config_sha256",
+                "conditioning_bundle_sha256",
                 "execution_scope",
                 "load_wall_seconds",
                 "requested_sample_size",
@@ -604,6 +630,7 @@ def _validate_sao_mini_smoke_evidence(
         _positive_number(metadata["load_wall_seconds"], "load_wall_seconds", allow_zero=True)
         _evidence(
             metadata["config_sha256"] == expected_config_sha256
+            and metadata["conditioning_bundle_sha256"] == expected_conditioning_bundle_sha
             and metadata["execution_scope"] == "MINI_SMOKE"
             and metadata["requested_sample_size"] == 1_323_000
             and metadata["resolved_provider_revision"] == expected_revision

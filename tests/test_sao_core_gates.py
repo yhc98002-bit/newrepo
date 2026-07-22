@@ -17,6 +17,7 @@ from backbones.contracts import (
 from backbones.license_gate import validate_access_receipt
 from backbones.mini_smoke import RunContext
 from backbones.sao_mini_smoke import EXPECTED_PROMPTS, EXPECTED_SEEDS, run_sao_mini_smoke
+from backbones.sao_t5 import conditioning_bundle_record
 from benchmark_core.adapter_bridge import build_production_bridge
 from benchmark_core.config import (
     ACE_MODEL_ID,
@@ -86,6 +87,9 @@ class _EvidenceSao:
             metadata={
                 "load_wall_seconds": 10.0,
                 "config_sha256": self.config_sha256,
+                "conditioning_bundle_sha256": conditioning_bundle_record(
+                    self.receipt["verified_files"]
+                )["conditioning_bundle_sha256"],
                 "execution_scope": "MINI_SMOKE",
                 "requested_sample_size": 1_323_000,
                 "weight_file_sha256": self.weight_sha,
@@ -195,14 +199,35 @@ def _sao_ready_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     snapshot.mkdir()
     (snapshot / "model_config.json").write_text("{}\n", encoding="utf-8")
     (snapshot / "model.safetensors").write_bytes(b"fixture-sao-weight")
+    (snapshot / "model.ckpt").write_bytes(b"fixture-sao-legacy-weight")
     (snapshot / "LICENSE").write_text("fixture license\n", encoding="utf-8")
+    (snapshot / "text_encoder").mkdir()
+    (snapshot / "tokenizer").mkdir()
+    _write_json(
+        snapshot / "text_encoder" / "config.json",
+        {
+            "_name_or_path": "t5-base",
+            "architectures": ["T5EncoderModel"],
+            "d_model": 768,
+            "model_type": "t5",
+        },
+    )
+    (snapshot / "text_encoder" / "model.safetensors").write_bytes(b"fixture-t5-weight")
+    _write_json(snapshot / "tokenizer" / "special_tokens_map.json", {"eos": "</s>"})
+    (snapshot / "tokenizer" / "spiece.model").write_bytes(b"fixture-spiece")
+    _write_json(snapshot / "tokenizer" / "tokenizer.json", {"version": "1.0"})
+    _write_json(
+        snapshot / "tokenizer" / "tokenizer_config.json",
+        {"tokenizer_class": "T5Tokenizer"},
+    )
     files = [
         {
-            "path": path.name,
+            "path": path.relative_to(snapshot).as_posix(),
             "size_bytes": path.stat().st_size,
             "sha256": sha256_file(path),
         }
-        for path in sorted(snapshot.iterdir())
+        for path in sorted(snapshot.rglob("*"))
+        if path.is_file()
     ]
     manifest = tmp_path / "sao-snapshot-manifest.json"
     _write_json(
@@ -328,7 +353,7 @@ def _rebind_mini_outer_hashes(config_path: Path) -> None:
     _write_json(config_path, raw)
 
 
-def test_sao_ready_requires_receipt_smoke_and_generation_only_core_authorization(
+def test_sao_dual_format_receipt_selects_safetensors_through_smoke_and_core(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     path = _sao_ready_config(tmp_path, monkeypatch)
@@ -342,6 +367,22 @@ def test_sao_ready_requires_receipt_smoke_and_generation_only_core_authorization
     assert bridge.backbone.execution_scope == "BENCHMARK_CORE"
     assert bridge.backbone.mini_smoke_result_sha256 == sao.sao_runtime.mini_smoke_result_sha256
     assert bridge.backbone.preflight().status == "READY_FOR_CORE"
+    assert sao.sao_runtime is not None
+    receipt = validate_access_receipt(
+        sao.sao_runtime.access_receipt_path,
+        expected_model_id=SAO_MODEL_ID,
+        expected_snapshot_dir=Path(sao.sao_runtime.snapshot_dir),
+    )
+    assert {row["path"] for row in receipt["verified_files"]}.issuperset(
+        {"model.safetensors", "model.ckpt"}
+    )
+    selected_sha = sha256_file(Path(sao.sao_runtime.snapshot_dir) / "model.safetensors")
+    terminal = json.loads(
+        Path(sao.sao_runtime.mini_smoke_result_path).read_text(encoding="utf-8")
+    )
+    assert {
+        row["measurement_metadata"]["weight_file_sha256"] for row in terminal["rows"]
+    } == {selected_sha}
 
 
 def test_sao_core_gate_fails_closed_on_state_scope_or_receipt_drift(
