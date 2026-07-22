@@ -53,6 +53,8 @@ def test_lane_decisions_are_a_true_append_only_suffix() -> None:
         "D-0042",
         "D-0043",
         "D-0044",
+        "D-0045",
+        "D-0046",
     ]
 
 
@@ -127,7 +129,7 @@ def test_stage1_and_scoped_state_openings_are_fail_closed_and_hash_bound() -> No
     assert "STAGE1_OUTCOME_GATE_STATUS = BLOCKED_MISSING_FROZEN_THRESHOLDS" in stage1
     assert "STAGE1_VERDICTS_COMPUTED = NO" in stage1
     assert "STAGE1_CANCELLATION_LEDGER_CREATED = NO" in stage1
-    assert _sha256(ROOT / "configs/stage1_outcome_gates_v2.json") in stage1
+    assert "bc54978d8257e14dd373c34c2401f99beb20be78fc4a7a97f762dad67a1b82bd" in stage1
 
     sa3 = _decision_block("D-0035")
     assert "SA3_STATE_RESTRICTED_RERUN_AUTHORIZED = YES" in sa3
@@ -242,6 +244,37 @@ def test_sao_recovery_and_decision_grade_openings_preserve_scope() -> None:
         "DECISION_GRADE_HUMAN_GOLD_CLAIMS = NO",
     ):
         assert assignment in sealed_tables
+
+
+def test_engineering_repair_and_stage1_policy_are_separate_append_only_decisions() -> None:
+    repair = _decision_block("D-0045")
+    for assignment in (
+        "ENGINEERING_FAILURES_REPAIRABLE = YES",
+        "WITHIN_ATTEMPT_RETRY = NO",
+        "ENGINEERING_REPAIR_REQUIRES_NEW_RUN_ID = YES",
+        "ENGINEERING_REPAIR_REQUIRES_NEW_CLAIM = YES",
+        "SCIENTIFIC_RERUNS_FOR_WEAK_RESULTS = NO",
+        "FROZEN_SCIENTIFIC_DESIGN_CHANGES_AUTHORIZED = NO",
+        "FAILED_ATTEMPTS_IMMUTABLE = YES",
+        "STOP_AXIS_UNITS_EXECUTABLE = NO",
+        "SAO_OFFLINE_TOKEN_ACCESS_AUTHORIZED = NO",
+    ):
+        assert assignment in repair
+
+    policy = _decision_block("D-0046")
+    config = ROOT / "configs" / "stage1_outcome_gates_v2.json"
+    schema = ROOT / "configs" / "stage1_outcome_gates_v2.schema.json"
+    for assignment in (
+        "STAGE1_POLICY_STATUS = FROZEN_BEFORE_OUTCOME_READ",
+        f"STAGE1_POLICY_CONFIG_SHA256 = {_sha256(config)}",
+        f"STAGE1_POLICY_SCHEMA_SHA256 = {_sha256(schema)}",
+        "STAGE1_BASELINE_FAILURE_RATE_MINIMUM = 0.10",
+        "STAGE1_BASELINE_FAILURE_RATE_MAXIMUM = 0.60",
+        "STAGE1_MIXED_OUTCOME_PROMPT_SHARE_MINIMUM = 0.20",
+        "STAGE1_OUTCOME_ROWS_READ_AT_FREEZE = NO",
+        "STAGE1_STOP_UNIT_OPERATIONS = CANCELLED_EXECUTE_AND_SCORE",
+    ):
+        assert assignment in policy
 
 
 def test_ace_core_completion_receipt_is_terminal_and_complete() -> None:

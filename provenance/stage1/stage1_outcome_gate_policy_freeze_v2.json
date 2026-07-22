@@ -1,0 +1,28 @@
+{
+  "config": {
+    "path": "configs/stage1_outcome_gates_v2.json",
+    "sha256": "913a87d8286ba91094d2916b3ac9a601afe7e99fa3701803001b13557cca55eb"
+  },
+  "decision_id": "D-0046",
+  "freeze_order": [
+    "validate schema-v2 policy bytes",
+    "verify append-only D-0046 binds the exact config SHA and complete policy",
+    "validate immutable input bindings",
+    "read scored outcome rows"
+  ],
+  "mixed_outcome_prompt_definition": "registered BASE prompt with at least one success and at least one failure among its eight registered roots",
+  "outcome_rows_read_during_policy_selection": false,
+  "policy_origin": "PI-supplied Rescue Experiment recovery values; not selected from current outcomes",
+  "schema": {
+    "path": "configs/stage1_outcome_gates_v2.schema.json",
+    "sha256": "4c49948dd9d9471f6d66f737ad5858d2662c7c37d16c5a501baf1905d889f0a6"
+  },
+  "schema_version": 1,
+  "source_git_commit": "f519ad0422aa4b2f0678ca4438770aacf7330075",
+  "status": "POLICY_FROZEN_D0046",
+  "thresholds": {
+    "baseline_failure_rate_maximum": 0.6,
+    "baseline_failure_rate_minimum": 0.1,
+    "mixed_outcome_prompt_share_minimum": 0.2
+  }
+}

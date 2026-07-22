@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/stage1_outcome_gates_v2.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "bindings": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome_rows": {
+          "$ref": "#/$defs/fileBinding"
+        },
+        "state_queues": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "backbone": {
+                "enum": [
+                  "ACE-Step v1",
+                  "stable-audio-3-medium-base"
+                ]
+              },
+              "path": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            },
+            "required": [
+              "backbone",
+              "path",
+              "sha256"
+            ],
+            "type": "object"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "statistics_config": {
+          "$ref": "#/$defs/fileBinding"
+        }
+      },
+      "required": [
+        "outcome_rows",
+        "state_queues",
+        "statistics_config"
+      ],
+      "type": "object"
+    },
+    "bootstrap": {
+      "const": {
+        "confidence_level": 0.95,
+        "replicates": 10000,
+        "seed": 2026072001,
+        "two_stage_order": [
+          "stratified_prompt_cluster",
+          "matched_seed_within_cluster"
+        ]
+      }
+    },
+    "decision_id": {
+      "const": "D-0046"
+    },
+    "gate_rule": {
+      "const": "OUTCOME_SCREEN_PASS iff frozen minimum <= point baseline_failure_rate <= frozen maximum AND point mixed_outcome_prompt_share >= frozen minimum; STOP_AXIS_STAGE1 otherwise"
+    },
+    "population": {
+      "const": {
+        "axes": [
+          "integrity",
+          "tempo",
+          "vocal_instrumental"
+        ],
+        "backbones": [
+          "ACE-Step v1",
+          "stable-audio-3-medium-base"
+        ],
+        "condition": "BASE",
+        "expected_roots": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "mixed_outcome_prompt_definition": "registered BASE prompt with at least one success and at least one failure among its eight registered roots",
+        "prompt_source": "statistics_v2.eligibility.prompt_selection.axis_prompt_ids"
+      }
+    },
+    "schema_binding": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "const": "configs/stage1_outcome_gates_v2.schema.json"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "schema_version": {
+      "const": 2
+    },
+    "status": {
+      "const": "FROZEN"
+    },
+    "thresholds": {
+      "const": {
+        "baseline_failure_rate_maximum": 0.6,
+        "baseline_failure_rate_minimum": 0.1,
+        "mixed_outcome_prompt_share_minimum": 0.2
+      }
+    }
+  },
+  "required": [
+    "bindings",
+    "bootstrap",
+    "decision_id",
+    "gate_rule",
+    "population",
+    "schema_binding",
+    "schema_version",
+    "status",
+    "thresholds"
+  ],
+  "type": "object",
+  "$defs": {
+    "fileBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    }
+  }
+}

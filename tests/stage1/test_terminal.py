@@ -80,6 +80,10 @@ def _minimum(value: dict[str, Any]) -> None:
     value["rows"][0]["baseline_failure_rate"]["minimum"] = 0.125
 
 
+def _maximum(value: dict[str, Any]) -> None:
+    value["rows"][0]["baseline_failure_rate"]["maximum"] = 0.601
+
+
 def _point(value: dict[str, Any]) -> None:
     row = next(row for row in value["rows"] if row["verdict"] == "OUTCOME_SCREEN_PASS")
     row["baseline_failure_rate"]["point"] = 0.0
@@ -108,12 +112,21 @@ def _metric(value: dict[str, Any]) -> None:
     [
         (_config_sha, "config SHA-256 binding drifted"),
         (_minimum, "minimum differs from the frozen policy"),
+        (_maximum, "maximum differs from the frozen policy"),
         (_point, "verdict was not recomputed"),
         (_verdict, "verdict was not recomputed"),
         (_point_and_verdict, "differ from recomputation over bound outcomes"),
         (_metric, "metric contract drifted"),
     ],
-    ids=("config-sha", "minimum", "point", "verdict", "point-and-verdict", "metric"),
+    ids=(
+        "config-sha",
+        "minimum",
+        "maximum",
+        "point",
+        "verdict",
+        "point-and-verdict",
+        "metric",
+    ),
 )
 def test_terminal_rejects_mutated_six_label_evidence(
     tmp_path: Path,

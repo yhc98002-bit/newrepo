@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,9 @@ from stage1.gates import (
     compute_gate_results,
     load_gate_policy,
     plan_cancellations,
+    plan_survivors,
+    policy_decision_assignments,
+    verify_policy_decision,
     write_stage1_artifacts,
 )
 
@@ -43,9 +47,10 @@ def build_terminal(
     *,
     queue_bindings: list[dict[str, str]],
     stopped_cells: set[tuple[str, str]],
-    decision_id: str = "D-STAGE1-FIXTURE",
-    baseline_minimum: float = 0.25,
-    mixed_minimum: float = 0.25,
+    decision_id: str = "D-0046",
+    baseline_minimum: float = 0.10,
+    baseline_maximum: float = 0.60,
+    mixed_minimum: float = 0.20,
 ) -> tuple[Path, Path, Path]:
     """Build evidence with the same deep schema and bindings as the production writer."""
 
@@ -57,6 +62,39 @@ def build_terminal(
     prompt_ids = {
         axis: [f"{axis}-prompt-{index:02d}" for index in range(12)] for axis in AXES
     }
+    # State-lane tests may pass an empty queue for the irrelevant backbone. The
+    # production Stage-1 writer requires an exact survivor manifest for both
+    # backbones, so complete only those deliberately empty test bindings with a
+    # canonical synthetic initial queue.
+    completed_bindings: list[dict[str, str]] = []
+    for binding in queue_bindings:
+        path = Path(binding["path"])
+        if path.stat().st_size == 0:
+            queue_rows: list[dict[str, Any]] = []
+            for axis in AXES:
+                for prompt in prompt_ids[axis]:
+                    for root in range(4):
+                        for checkpoint in (0.25, 0.5, 0.75):
+                            identity = (
+                                f"{binding['backbone']}|{axis}|{prompt}|{root}|{checkpoint}"
+                            )
+                            queue_rows.append(
+                                {
+                                    "axis": axis,
+                                    "eligibility_unit": {
+                                        "checkpoint": checkpoint,
+                                        "prompt": prompt,
+                                        "root": root,
+                                    },
+                                    "lane_request_sha256": hashlib.sha256(
+                                        identity.encode()
+                                    ).hexdigest(),
+                                }
+                            )
+            write_jsonl(path, queue_rows)
+            binding = queue_binding(path, str(binding["backbone"]))
+        completed_bindings.append(binding)
+    queue_bindings = completed_bindings
     statistics_value = {
         "eligibility": {"prompt_selection": {"axis_prompt_ids": prompt_ids}}
     }
@@ -98,6 +136,7 @@ def build_terminal(
     config["status"] = "FROZEN"
     config["decision_id"] = decision_id
     config["thresholds"] = {
+        "baseline_failure_rate_maximum": baseline_maximum,
         "baseline_failure_rate_minimum": baseline_minimum,
         "mixed_outcome_prompt_share_minimum": mixed_minimum,
     }
@@ -114,6 +153,14 @@ def build_terminal(
     }
     config_path = tmp_path / "configs" / "stage1_outcome_gates_v2.json"
     write_json(config_path, config)
+    decisions_path = tmp_path / "STAGE1_POLICY_DECISIONS.md"
+    decisions_path.write_text(
+        "## D-0046 — Stage-1 outcome-screen policy freeze\n\n"
+        + "\n".join(policy_decision_assignments(config_path))
+        + "\n",
+        encoding="utf-8",
+    )
+    decision_binding = verify_policy_decision(config_path, decisions_path)
 
     rows = compute_gate_results(
         outcome_values,
@@ -121,16 +168,22 @@ def build_terminal(
         load_gate_policy(config_path),
     )
     cancellations = plan_cancellations(rows, queue_bindings)
+    survivors = plan_survivors(rows, queue_bindings)
     stage1_root = tmp_path / "stage1"
     write_stage1_artifacts(
         stage1_root,
         results=rows,
         cancellations=cancellations,
+        survivors=survivors,
+        queue_bindings=queue_bindings,
         provenance={
             "config_path": str(config_path.resolve()),
             "config_sha256": sha256_file(config_path),
             "outcome_rows_path": str(outcome_rows.resolve()),
             "outcome_rows_sha256": sha256_file(outcome_rows),
+            "policy_decision_block_sha256": decision_binding["decision_block_sha256"],
+            "policy_decision_id": decision_binding["decision_id"],
+            "policy_decisions_path": decision_binding["decisions_path"],
             "statistics_config_path": str(statistics.resolve()),
             "statistics_config_sha256": sha256_file(statistics),
         },

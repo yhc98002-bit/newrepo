@@ -30,8 +30,8 @@
       "matched_seed_within_cluster"
     ]
   },
-  "decision_id": null,
-  "gate_rule": "OUTCOME_SCREEN_PASS iff point baseline_failure_rate >= frozen minimum AND point mixed_outcome_prompt_share >= frozen minimum; STOP_AXIS_STAGE1 otherwise",
+  "decision_id": "D-0046",
+  "gate_rule": "OUTCOME_SCREEN_PASS iff frozen minimum <= point baseline_failure_rate <= frozen maximum AND point mixed_outcome_prompt_share >= frozen minimum; STOP_AXIS_STAGE1 otherwise",
   "population": {
     "axes": [
       "integrity",
@@ -53,12 +53,18 @@
       6,
       7
     ],
+    "mixed_outcome_prompt_definition": "registered BASE prompt with at least one success and at least one failure among its eight registered roots",
     "prompt_source": "statistics_v2.eligibility.prompt_selection.axis_prompt_ids"
   },
-  "schema_version": 1,
-  "status": "BLOCKED_MISSING_FROZEN_THRESHOLDS",
+  "schema_binding": {
+    "path": "configs/stage1_outcome_gates_v2.schema.json",
+    "sha256": "4c49948dd9d9471f6d66f737ad5858d2662c7c37d16c5a501baf1905d889f0a6"
+  },
+  "schema_version": 2,
+  "status": "FROZEN",
   "thresholds": {
-    "baseline_failure_rate_minimum": null,
-    "mixed_outcome_prompt_share_minimum": null
+    "baseline_failure_rate_maximum": 0.6,
+    "baseline_failure_rate_minimum": 0.1,
+    "mixed_outcome_prompt_share_minimum": 0.2
   }
 }

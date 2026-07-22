@@ -2277,3 +2277,97 @@ a zero-rate observation, and D-0043 prevents an SAO extension this cycle.
 `DECISION_GRADE_INITIAL_WATERMARK = AUTOMATIC-INSTRUMENT_OUTCOMES`
 
 `DECISION_GRADE_HUMAN_GOLD_CLAIMS = NO`
+
+## D-0045 — Repairable pre-scientific engineering failures
+
+- Date: 2026-07-22
+- Status: accepted governance correction; scientific design remains frozen
+- Authority: PI consolidated goal `Unblock Stage-1, restore Stable Audio Open, and execute all eligible state lanes`
+
+This decision supersedes every earlier blanket no-retry or permanent-stop rule
+only for failures that occur before a valid scientific result and are caused by
+dependency/ABI, import/package/path/cache/environment, checkpoint-sidecar,
+serialization/manifest/provenance/adapter, launch/publication, or incorrect
+engineering-validator bugs. D-0043's PyWavelets/NumPy ABI stop and the
+engineering-stop clauses in the formal state lanes are therefore repairable
+under new immutable run IDs and claims. Every prior failed attempt, claim,
+ledger row, log, and artifact remains immutable and reportable.
+
+This correction does not authorize changing prompts, seeds, weights, inference
+budgets, evaluators, endpoints, thresholds, roots, checkpoints, actions,
+features, folds, or mappings. It does not permit rerunning a valid experiment
+because its result is weak, selecting favorable outputs, or silently replacing
+a registered model. Within one claimed attempt, fail-closed execution remains
+the rule; an engineering repair is a separately claimed attempt.
+
+`ENGINEERING_FAILURES_REPAIRABLE = YES`
+
+`WITHIN_ATTEMPT_RETRY = NO`
+
+`ENGINEERING_REPAIR_REQUIRES_NEW_RUN_ID = YES`
+
+`ENGINEERING_REPAIR_REQUIRES_NEW_CLAIM = YES`
+
+`SCIENTIFIC_RERUNS_FOR_WEAK_RESULTS = NO`
+
+`FROZEN_SCIENTIFIC_DESIGN_CHANGES_AUTHORIZED = NO`
+
+`FAILED_ATTEMPTS_IMMUTABLE = YES`
+
+`STOP_AXIS_UNITS_EXECUTABLE = NO`
+
+`SAO_D0043_ENGINEERING_STOP_SUPERSEDED = YES`
+
+`SAO_EXACT_MODEL_REVISION_RETAINED = f21265c1e2710b3bd2386596943f0007f55f802e`
+
+`SAO_OFFLINE_TOKEN_ACCESS_AUTHORIZED = NO`
+
+`HUMAN_PACKET_THREE_BACKBONE_REQUIREMENT_CHANGED = NO`
+
+## D-0046 — Stage-1 bounded outcome-screen policy frozen before outcome read
+
+- Date: 2026-07-22
+- Status: accepted prospective policy amendment; CPU execution may follow only from this pushed freeze
+- Authority: PI-supplied Rescue Experiment recovery values in the consolidated goal
+
+The complete Stage-1 screen is frozen before the Stage-1 runner opens the bound
+scored-row JSONL. These values were supplied by the PI as recovery of the prior
+Rescue Experiment design and were not selected from current outcomes. A mixed
+prompt is defined over the eight registered BASE roots exactly as stated below.
+The failure-rate bounds are inclusive. Point estimates use all 12 registered
+prompts; confidence intervals retain the frozen 10,000-replicate stratified
+prompt-cluster and matched-root bootstrap. A STOP cell cancels every one of its
+materialized initial state units and prohibits both execution and scoring.
+
+The schema-v2 loader validates this policy and this append-only decision block,
+including the exact config SHA-256, before it validates input bindings or reads
+any scored outcome row. The historical blocked readiness record remains
+unchanged; `provenance/stage1/stage1_outcome_gate_policy_freeze_v2.json`,
+SHA-256 `830ce5b9fc7f4899138a588d2593ce296b477f54a5f8482e859bf4c9407a6301`,
+records this superseding freeze.
+
+`STAGE1_POLICY_STATUS = FROZEN_BEFORE_OUTCOME_READ`
+
+`STAGE1_POLICY_CONFIG_PATH = configs/stage1_outcome_gates_v2.json`
+
+`STAGE1_POLICY_CONFIG_SHA256 = 913a87d8286ba91094d2916b3ac9a601afe7e99fa3701803001b13557cca55eb`
+
+`STAGE1_POLICY_SCHEMA_SHA256 = 4c49948dd9d9471f6d66f737ad5858d2662c7c37d16c5a501baf1905d889f0a6`
+
+`STAGE1_BASELINE_FAILURE_RATE_MINIMUM = 0.10`
+
+`STAGE1_BASELINE_FAILURE_RATE_MAXIMUM = 0.60`
+
+`STAGE1_MIXED_OUTCOME_PROMPT_SHARE_MINIMUM = 0.20`
+
+`STAGE1_MIXED_OUTCOME_PROMPT_DEFINITION = registered BASE prompt with at least one success and at least one failure among its eight registered roots`
+
+`STAGE1_GATE_RULE = OUTCOME_SCREEN_PASS iff frozen minimum <= point baseline_failure_rate <= frozen maximum AND point mixed_outcome_prompt_share >= frozen minimum; STOP_AXIS_STAGE1 otherwise`
+
+`STAGE1_OUTCOME_ROWS_READ_AT_FREEZE = NO`
+
+`STAGE1_BOOTSTRAP_REPLICATES = 10000`
+
+`STAGE1_CONFIDENCE_LEVEL = 0.95`
+
+`STAGE1_STOP_UNIT_OPERATIONS = CANCELLED_EXECUTE_AND_SCORE`

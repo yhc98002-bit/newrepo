@@ -1,13 +1,15 @@
-"""CPU-only Stage-1 outcome gates and immutable cancellation evidence.
+"""CPU-only Stage-1 outcome gates and immutable state-unit evidence.
 
-The evaluator deliberately refuses to infer gate thresholds.  It can run only
-after both minima have been explicitly frozen in the bound configuration.
+The evaluator deliberately refuses to infer gate thresholds. It can run only
+after the complete bounded policy has been explicitly frozen in the bound
+configuration.
 """
 
 from __future__ import annotations
 
 import hashlib
 import math
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,15 +24,27 @@ from scoring.common import (
     require_sha256,
     sha256_file,
 )
-from scoring.storage import ImmutableEventLog, write_json_exclusive
+from scoring.storage import ImmutableEventLog, write_json_exclusive, write_jsonl_exclusive
 
 AXES = ("integrity", "tempo", "vocal_instrumental")
 BACKBONES = ("ACE-Step v1", "stable-audio-3-medium-base")
 BASE_CONDITION = "BASE"
 GATE_RULE = (
-    "OUTCOME_SCREEN_PASS iff point baseline_failure_rate >= frozen minimum AND "
-    "point mixed_outcome_prompt_share >= frozen minimum; STOP_AXIS_STAGE1 otherwise"
+    "OUTCOME_SCREEN_PASS iff frozen minimum <= point baseline_failure_rate <= frozen "
+    "maximum AND point mixed_outcome_prompt_share >= frozen minimum; "
+    "STOP_AXIS_STAGE1 otherwise"
 )
+MIXED_OUTCOME_PROMPT_DEFINITION = (
+    "registered BASE prompt with at least one success and at least one failure among its "
+    "eight registered roots"
+)
+POLICY_DECISION_ID = "D-0046"
+POLICY_SCHEMA_VERSION = 2
+POLICY_SCHEMA_RELATIVE_PATH = "configs/stage1_outcome_gates_v2.schema.json"
+POLICY_SCHEMA_SHA256 = "4c49948dd9d9471f6d66f737ad5858d2662c7c37d16c5a501baf1905d889f0a6"
+FROZEN_BASELINE_FAILURE_MINIMUM = 0.10
+FROZEN_BASELINE_FAILURE_MAXIMUM = 0.60
+FROZEN_MIXED_PROMPT_MINIMUM = 0.20
 PRIMARY_METRICS = {
     "integrity": "integrity_failure",
     "tempo": "full_clip_primary_5pct_success",
@@ -45,6 +59,10 @@ VERDICTS = {"OUTCOME_SCREEN_PASS", "STOP_AXIS_STAGE1"}
 EXPECTED_ROOTS = tuple(range(8))
 EXPECTED_STATE_ROOTS = tuple(range(4))
 EXPECTED_CHECKPOINTS = (0.25, 0.5, 0.75)
+BACKBONE_SLUGS = {
+    "ACE-Step v1": "ace-step-v1",
+    "stable-audio-3-medium-base": "stable-audio-3-medium-base",
+}
 
 
 class Stage1SpecificationError(ValueError):
@@ -55,6 +73,7 @@ class Stage1SpecificationError(ValueError):
 class GatePolicy:
     decision_id: str
     baseline_failure_rate_minimum: float
+    baseline_failure_rate_maximum: float
     mixed_outcome_prompt_share_minimum: float
     bootstrap_replicates: int = 10_000
     bootstrap_seed: int = 2_026_072_001
@@ -92,40 +111,84 @@ def load_gate_policy(path: Path) -> GatePolicy:
             "decision_id",
             "gate_rule",
             "population",
+            "schema_binding",
             "schema_version",
             "status",
             "thresholds",
         },
         "Stage-1 configuration",
     )
-    if value["schema_version"] != 1:
-        raise Stage1SpecificationError("Stage-1 schema_version must equal 1")
+    if value["schema_version"] != POLICY_SCHEMA_VERSION:
+        raise Stage1SpecificationError(
+            f"Stage-1 schema_version must equal {POLICY_SCHEMA_VERSION}"
+        )
     if value["status"] != "FROZEN":
         raise Stage1SpecificationError(
-            "Stage-1 gate is not frozen: both numerical thresholds and a decision binding "
-            "are required before any outcome calculation or cancellation"
+            "Stage-1 gate is not frozen: the complete bounded policy and a decision binding "
+            "are required before any outcome calculation or state-unit partition"
         )
     decision_id = _nonempty_string(value["decision_id"], "decision_id")
+    if decision_id != POLICY_DECISION_ID:
+        raise Stage1SpecificationError(
+            f"Stage-1 policy must be bound to {POLICY_DECISION_ID}"
+        )
     if value["gate_rule"] != GATE_RULE:
         raise Stage1SpecificationError("Stage-1 gate rule differs from the fail-closed rule")
 
+    schema_binding = require_exact_keys(
+        value["schema_binding"], {"path", "sha256"}, "Stage-1 schema binding"
+    )
+    if (
+        schema_binding["path"] != POLICY_SCHEMA_RELATIVE_PATH
+        or schema_binding["sha256"] != POLICY_SCHEMA_SHA256
+    ):
+        raise Stage1SpecificationError("Stage-1 JSON schema binding drifted")
+    schema_path = Path(__file__).resolve().parents[2] / POLICY_SCHEMA_RELATIVE_PATH
+    if not schema_path.is_file() or sha256_file(schema_path) != POLICY_SCHEMA_SHA256:
+        raise Stage1SpecificationError("Stage-1 JSON schema bytes are missing or changed")
+
     thresholds = require_exact_keys(
         value["thresholds"],
-        {"baseline_failure_rate_minimum", "mixed_outcome_prompt_share_minimum"},
+        {
+            "baseline_failure_rate_maximum",
+            "baseline_failure_rate_minimum",
+            "mixed_outcome_prompt_share_minimum",
+        },
         "Stage-1 thresholds",
     )
     baseline_minimum = _probability(
         thresholds["baseline_failure_rate_minimum"],
         "thresholds.baseline_failure_rate_minimum",
     )
+    baseline_maximum = _probability(
+        thresholds["baseline_failure_rate_maximum"],
+        "thresholds.baseline_failure_rate_maximum",
+    )
     mixed_minimum = _probability(
         thresholds["mixed_outcome_prompt_share_minimum"],
         "thresholds.mixed_outcome_prompt_share_minimum",
     )
+    if (
+        baseline_minimum != FROZEN_BASELINE_FAILURE_MINIMUM
+        or baseline_maximum != FROZEN_BASELINE_FAILURE_MAXIMUM
+        or mixed_minimum != FROZEN_MIXED_PROMPT_MINIMUM
+    ):
+        raise Stage1SpecificationError(
+            f"Stage-1 thresholds differ from the {POLICY_DECISION_ID} freeze"
+        )
+    if baseline_minimum > baseline_maximum:
+        raise Stage1SpecificationError("Stage-1 failure-rate bounds are reversed")
 
     population = require_exact_keys(
         value["population"],
-        {"axes", "backbones", "condition", "expected_roots", "prompt_source"},
+        {
+            "axes",
+            "backbones",
+            "condition",
+            "expected_roots",
+            "mixed_outcome_prompt_definition",
+            "prompt_source",
+        },
         "Stage-1 population",
     )
     if population["axes"] != list(AXES):
@@ -136,6 +199,8 @@ def load_gate_policy(path: Path) -> GatePolicy:
         raise Stage1SpecificationError("Stage-1 population must use BASE outcomes only")
     if population["expected_roots"] != list(EXPECTED_ROOTS):
         raise Stage1SpecificationError("Stage-1 outcome roots must be exactly 0..7")
+    if population["mixed_outcome_prompt_definition"] != MIXED_OUTCOME_PROMPT_DEFINITION:
+        raise Stage1SpecificationError("Stage-1 mixed-outcome prompt definition drifted")
     if population["prompt_source"] != "statistics_v2.eligibility.prompt_selection.axis_prompt_ids":
         raise Stage1SpecificationError("Stage-1 prompts must be the frozen eligibility prompts")
 
@@ -181,8 +246,62 @@ def load_gate_policy(path: Path) -> GatePolicy:
     return GatePolicy(
         decision_id=decision_id,
         baseline_failure_rate_minimum=baseline_minimum,
+        baseline_failure_rate_maximum=baseline_maximum,
         mixed_outcome_prompt_share_minimum=mixed_minimum,
     )
+
+
+def policy_decision_assignments(config_path: Path) -> tuple[str, ...]:
+    """Return the exact append-only assignments required by the D-0046 freeze."""
+
+    return (
+        "STAGE1_POLICY_STATUS = FROZEN_BEFORE_OUTCOME_READ",
+        "STAGE1_POLICY_CONFIG_PATH = configs/stage1_outcome_gates_v2.json",
+        f"STAGE1_POLICY_CONFIG_SHA256 = {sha256_file(config_path)}",
+        f"STAGE1_POLICY_SCHEMA_SHA256 = {POLICY_SCHEMA_SHA256}",
+        "STAGE1_BASELINE_FAILURE_RATE_MINIMUM = 0.10",
+        "STAGE1_BASELINE_FAILURE_RATE_MAXIMUM = 0.60",
+        "STAGE1_MIXED_OUTCOME_PROMPT_SHARE_MINIMUM = 0.20",
+        f"STAGE1_MIXED_OUTCOME_PROMPT_DEFINITION = {MIXED_OUTCOME_PROMPT_DEFINITION}",
+        f"STAGE1_GATE_RULE = {GATE_RULE}",
+        "STAGE1_OUTCOME_ROWS_READ_AT_FREEZE = NO",
+    )
+
+
+def verify_policy_decision(
+    config_path: Path,
+    decisions_path: Path,
+    *,
+    policy: GatePolicy | None = None,
+) -> dict[str, str]:
+    """Bind the frozen config to its append-only decision before outcome I/O."""
+
+    frozen_policy = policy or load_gate_policy(config_path)
+    try:
+        decisions_text = decisions_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise Stage1SpecificationError("Stage-1 policy decision record is unreadable") from exc
+    match = re.search(
+        rf"(?ms)^## {re.escape(frozen_policy.decision_id)}\b.*?(?=^## D-\d+\b|\Z)",
+        decisions_text,
+    )
+    if match is None:
+        raise Stage1SpecificationError(
+            f"Stage-1 policy decision is absent: {frozen_policy.decision_id}"
+        )
+    block = match.group(0)
+    required_assignments = policy_decision_assignments(config_path)
+    missing = [assignment for assignment in required_assignments if assignment not in block]
+    if missing:
+        raise Stage1SpecificationError(
+            "Stage-1 policy decision does not bind the complete frozen config: "
+            + "; ".join(missing)
+        )
+    return {
+        "decision_block_sha256": hashlib.sha256(block.encode("utf-8")).hexdigest(),
+        "decision_id": frozen_policy.decision_id,
+        "decisions_path": str(decisions_path.resolve()),
+    }
 
 
 def validated_bindings(config_path: Path) -> dict[str, Any]:
@@ -298,14 +417,14 @@ def _cell_values(
 
 
 def _point_estimates(cells: dict[str, dict[str, dict[int, bool]]]) -> tuple[float, float]:
-    failures: list[float] = []
-    mixed: list[float] = []
-    for prompts in cells.values():
-        prompt_failures = [float(np.mean(list(roots.values()))) for roots in prompts.values()]
-        prompt_mixed = [float(len(set(roots.values())) > 1) for roots in prompts.values()]
-        failures.append(float(np.mean(prompt_failures)))
-        mixed.append(float(np.mean(prompt_mixed)))
-    return float(np.mean(failures)), float(np.mean(mixed))
+    prompt_roots = [roots for prompts in cells.values() for roots in prompts.values()]
+    failure_rate = float(
+        np.mean([failure for roots in prompt_roots for failure in roots.values()])
+    )
+    mixed_prompt_share = float(
+        np.mean([any(roots.values()) and not all(roots.values()) for roots in prompt_roots])
+    )
+    return failure_rate, mixed_prompt_share
 
 
 def _bootstrap_intervals(
@@ -370,6 +489,23 @@ def _bootstrap_intervals(
     )
 
 
+def gate_verdict(
+    baseline_failure_rate: float,
+    mixed_outcome_prompt_share: float,
+    policy: GatePolicy,
+) -> str:
+    """Apply the frozen inclusive bounded Stage-1 rule to point estimates."""
+
+    return (
+        "OUTCOME_SCREEN_PASS"
+        if policy.baseline_failure_rate_minimum
+        <= baseline_failure_rate
+        <= policy.baseline_failure_rate_maximum
+        and mixed_outcome_prompt_share >= policy.mixed_outcome_prompt_share_minimum
+        else "STOP_AXIS_STAGE1"
+    )
+
+
 def compute_gate_results(
     rows: list[dict[str, Any]], statistics: dict[str, Any], policy: GatePolicy
 ) -> list[dict[str, Any]]:
@@ -390,12 +526,7 @@ def compute_gate_results(
             failure_ci, mixed_ci = _bootstrap_intervals(
                 cells, policy=policy, namespace=f"{backbone}|{axis}|stage1"
             )
-            verdict = (
-                "OUTCOME_SCREEN_PASS"
-                if failure_rate >= policy.baseline_failure_rate_minimum
-                and mixed_share >= policy.mixed_outcome_prompt_share_minimum
-                else "STOP_AXIS_STAGE1"
-            )
+            verdict = gate_verdict(failure_rate, mixed_share, policy)
             results.append(
                 {
                     "automatic_instrument_outcomes": True,
@@ -404,6 +535,7 @@ def compute_gate_results(
                     "baseline_failure_rate": {
                         "ci_high": failure_ci[1],
                         "ci_low": failure_ci[0],
+                        "maximum": policy.baseline_failure_rate_maximum,
                         "minimum": policy.baseline_failure_rate_minimum,
                         "point": failure_rate,
                     },
@@ -418,6 +550,7 @@ def compute_gate_results(
                     "mixed_outcome_prompt_share": {
                         "ci_high": mixed_ci[1],
                         "ci_low": mixed_ci[0],
+                        "definition": MIXED_OUTCOME_PROMPT_DEFINITION,
                         "minimum": policy.mixed_outcome_prompt_share_minimum,
                         "point": mixed_share,
                     },
@@ -438,15 +571,14 @@ def plan_cancellations(
 ) -> list[dict[str, Any]]:
     """Validate and return one deny row per materialized unit in STOP cells."""
 
+    cells = _validated_result_cells(results)
     stops = {
-        (row["backbone"], row["axis"]): row
-        for row in results
+        identity: row
+        for identity, row in cells.items()
         if row["verdict"] == "STOP_AXIS_STAGE1"
     }
-    if any(row.get("verdict") not in VERDICTS for row in results):
-        raise ValueError("Stage-1 result contains an unsupported verdict")
     output: list[dict[str, Any]] = []
-    for binding in queue_bindings:
+    for binding in _validated_queue_bindings(queue_bindings):
         backbone = str(binding["backbone"])
         path = Path(binding["path"])
         expected_sha = require_sha256(binding["sha256"], "state queue sha256")
@@ -455,26 +587,17 @@ def plan_cancellations(
         queue_rows = load_jsonl(path)
         for row in queue_rows:
             axis = row.get("axis")
+            unit, request_sha256 = _validated_state_queue_row(row, backbone=backbone)
             gate = stops.get((backbone, axis))
             if gate is None:
                 continue
-            unit = row.get("eligibility_unit")
-            if not isinstance(unit, dict) or set(unit) != {"prompt", "root", "checkpoint"}:
-                raise ValueError("state queue row lacks the exact eligibility unit")
-            if (
-                unit["root"] not in EXPECTED_STATE_ROOTS
-                or unit["checkpoint"] not in EXPECTED_CHECKPOINTS
-            ):
-                raise ValueError("state queue STOP unit is outside the frozen initial queue")
             output.append(
                 {
                     "axis": axis,
                     "backbone": backbone,
                     "cancellation_reason": "STOP_AXIS_STAGE1",
                     "eligibility_unit": dict(unit),
-                    "lane_request_sha256": require_sha256(
-                        row.get("lane_request_sha256"), "lane_request_sha256"
-                    ),
+                    "lane_request_sha256": request_sha256,
                     "prohibited_operations": ["EXECUTE", "SCORE"],
                     "source_queue_path": str(path.resolve()),
                     "source_queue_sha256": expected_sha,
@@ -513,23 +636,127 @@ def plan_cancellations(
     )
 
 
+def _validated_result_cells(
+    results: list[dict[str, Any]],
+) -> dict[tuple[str, str], dict[str, Any]]:
+    expected = {(backbone, axis) for backbone in BACKBONES for axis in AXES}
+    if len(results) != len(expected):
+        raise ValueError("Stage-1 result must contain exactly six cells")
+    cells: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in results:
+        identity = (row.get("backbone"), row.get("axis"))
+        if identity not in expected or identity in cells:
+            raise ValueError("Stage-1 result cell identity is invalid or duplicated")
+        if row.get("verdict") not in VERDICTS:
+            raise ValueError("Stage-1 result contains an unsupported verdict")
+        cells[identity] = row
+    if set(cells) != expected:
+        raise ValueError("Stage-1 result does not cover the exact six cells")
+    return cells
+
+
+def _validated_queue_bindings(
+    queue_bindings: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not isinstance(queue_bindings, list) or len(queue_bindings) != len(BACKBONES):
+        raise ValueError("state queue bindings must contain ACE and SA3 exactly")
+    observed = [binding.get("backbone") for binding in queue_bindings]
+    if len(set(observed)) != len(observed) or set(observed) != set(BACKBONES):
+        raise ValueError("state queue bindings must identify ACE and SA3 exactly")
+    return queue_bindings
+
+
+def _validated_state_queue_row(
+    row: dict[str, Any], *, backbone: str
+) -> tuple[dict[str, Any], str]:
+    axis = row.get("axis")
+    if axis not in AXES:
+        raise ValueError(f"state queue for {backbone} contains an unsupported axis")
+    unit = row.get("eligibility_unit")
+    if not isinstance(unit, dict) or set(unit) != {"prompt", "root", "checkpoint"}:
+        raise ValueError("state queue row lacks the exact eligibility unit")
+    prompt = unit.get("prompt")
+    if not isinstance(prompt, str) or not prompt:
+        raise ValueError("state queue eligibility prompt must be nonempty")
+    if unit.get("root") not in EXPECTED_STATE_ROOTS:
+        raise ValueError("state queue root is outside the frozen initial queue")
+    if unit.get("checkpoint") not in EXPECTED_CHECKPOINTS:
+        raise ValueError("state queue checkpoint is outside the frozen initial queue")
+    return dict(unit), require_sha256(row.get("lane_request_sha256"), "lane_request_sha256")
+
+
+def plan_survivors(
+    results: list[dict[str, Any]],
+    queue_bindings: list[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
+    """Return exact source-queue rows for PASS cells, partitioned by backbone."""
+
+    cells = _validated_result_cells(results)
+    passes = {
+        identity
+        for identity, row in cells.items()
+        if row["verdict"] == "OUTCOME_SCREEN_PASS"
+    }
+    survivors = {backbone: [] for backbone in BACKBONES}
+    identities: set[tuple[str, str, str, int, float]] = set()
+    for binding in _validated_queue_bindings(queue_bindings):
+        backbone = str(binding["backbone"])
+        path = Path(binding["path"])
+        expected_sha = require_sha256(binding["sha256"], "state queue sha256")
+        if not path.is_file() or sha256_file(path) != expected_sha:
+            raise ValueError(f"state queue bytes changed for {backbone}")
+        for row in load_jsonl(path):
+            unit, _ = _validated_state_queue_row(row, backbone=backbone)
+            axis = str(row["axis"])
+            if (backbone, axis) not in passes:
+                continue
+            identity = (
+                backbone,
+                axis,
+                str(unit["prompt"]),
+                int(unit["root"]),
+                float(unit["checkpoint"]),
+            )
+            if identity in identities:
+                raise ValueError("survivor plan contains duplicate eligibility units")
+            identities.add(identity)
+            survivors[backbone].append(dict(row))
+    expected_per_pass = 12 * len(EXPECTED_STATE_ROOTS) * len(EXPECTED_CHECKPOINTS)
+    expected_count = len(passes) * expected_per_pass
+    if sum(len(rows) for rows in survivors.values()) != expected_count:
+        raise ValueError(
+            "survivor plan covers "
+            f"{sum(len(rows) for rows in survivors.values())} units; expected {expected_count}"
+        )
+    return survivors
+
+
 def write_stage1_artifacts(
     output_root: Path,
     *,
     results: list[dict[str, Any]],
     cancellations: list[dict[str, Any]],
+    survivors: dict[str, list[dict[str, Any]]],
+    queue_bindings: list[dict[str, Any]],
     provenance: dict[str, Any],
 ) -> dict[str, Any]:
-    """Write a no-clobber result plus append-only cancellation hash chain."""
+    """Write no-clobber results, cancellation evidence, and survivor manifests."""
 
+    expected_cancellations = plan_cancellations(results, queue_bindings)
+    expected_survivors = plan_survivors(results, queue_bindings)
+    if cancellations != expected_cancellations:
+        raise ValueError("provided cancellations differ from the exact STOP-unit plan")
+    if survivors != expected_survivors:
+        raise ValueError("provided survivors differ from the exact PASS-unit plan")
     output_root.mkdir(parents=True, exist_ok=False)
+    result_path = output_root / "stage1-outcome-gates.json"
     write_json_exclusive(
-        output_root / "stage1-outcome-gates.json",
+        result_path,
         {
             "human_gold_claims": False,
             "provenance": provenance,
             "rows": results,
-            "schema_version": 1,
+            "schema_version": 2,
             "status": "STAGE1_OUTCOME_GATES_COMPLETE",
             "watermark": "AUTOMATIC-INSTRUMENT OUTCOMES",
         },
@@ -546,5 +773,82 @@ def write_stage1_artifacts(
         "status": "CANCELLATION_CHAIN_COMPLETE",
         "stop_cell_count": sum(row["verdict"] == "STOP_AXIS_STAGE1" for row in results),
     }
-    write_json_exclusive(output_root / "cancellations" / "summary.json", summary)
+    cancellation_root = output_root / "cancellations"
+    summary_path = cancellation_root / "summary.json"
+    write_json_exclusive(summary_path, summary)
+    cancellation_units_path = cancellation_root / "units.jsonl"
+    write_jsonl_exclusive(cancellation_units_path, cancellations)
+    write_json_exclusive(
+        cancellation_root / "manifest.json",
+        {
+            "event_count": len(cancellations),
+            "event_last_sha256": last_event_sha256,
+            "human_gold_claims": False,
+            "prohibited_operations": ["EXECUTE", "SCORE"],
+            "schema_version": 1,
+            "stage1_result_path": str(result_path.resolve()),
+            "stage1_result_sha256": sha256_file(result_path),
+            "status": "STAGE1_CANCELLATION_MANIFEST_COMPLETE",
+            "summary_path": str(summary_path.resolve()),
+            "summary_sha256": sha256_file(summary_path),
+            "units_path": str(cancellation_units_path.resolve()),
+            "units_sha256": sha256_file(cancellation_units_path),
+            "watermark": "AUTOMATIC-INSTRUMENT OUTCOMES",
+        },
+    )
+
+    bindings_by_backbone = {
+        str(binding["backbone"]): binding for binding in _validated_queue_bindings(queue_bindings)
+    }
+    result_cells = _validated_result_cells(results)
+    survivor_index: dict[str, dict[str, Any]] = {}
+    for backbone in BACKBONES:
+        backbone_root = output_root / "survivors" / BACKBONE_SLUGS[backbone]
+        units_path = backbone_root / "units.jsonl"
+        write_jsonl_exclusive(units_path, survivors[backbone])
+        binding = bindings_by_backbone[backbone]
+        pass_axes = [
+            axis
+            for axis in AXES
+            if result_cells[(backbone, axis)]["verdict"] == "OUTCOME_SCREEN_PASS"
+        ]
+        stop_axes = [axis for axis in AXES if axis not in pass_axes]
+        manifest_path = backbone_root / "manifest.json"
+        manifest = {
+            "automatic_instrument_outcomes": True,
+            "backbone": backbone,
+            "decision_id": results[0]["decision_id"],
+            "human_gold_claims": False,
+            "pass_axes": pass_axes,
+            "schema_version": 1,
+            "source_queue_path": str(Path(binding["path"]).resolve()),
+            "source_queue_sha256": require_sha256(
+                binding["sha256"], "state queue sha256"
+            ),
+            "stage1_result_path": str(result_path.resolve()),
+            "stage1_result_sha256": sha256_file(result_path),
+            "status": "STAGE1_SURVIVOR_MANIFEST_COMPLETE",
+            "stop_axes": stop_axes,
+            "unit_count": len(survivors[backbone]),
+            "units_path": str(units_path.resolve()),
+            "units_sha256": sha256_file(units_path),
+            "watermark": "AUTOMATIC-INSTRUMENT OUTCOMES",
+        }
+        write_json_exclusive(manifest_path, manifest)
+        survivor_index[backbone] = {
+            "manifest_path": str(manifest_path.resolve()),
+            "manifest_sha256": sha256_file(manifest_path),
+            "unit_count": len(survivors[backbone]),
+        }
+    write_json_exclusive(
+        output_root / "survivors" / "manifest.json",
+        {
+            "backbones": survivor_index,
+            "human_gold_claims": False,
+            "schema_version": 1,
+            "stage1_result_sha256": sha256_file(result_path),
+            "status": "STAGE1_SURVIVOR_INDEX_COMPLETE",
+            "watermark": "AUTOMATIC-INSTRUMENT OUTCOMES",
+        },
+    )
     return summary

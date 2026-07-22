@@ -7,15 +7,25 @@ from pathlib import Path
 import pytest
 
 from scoring.common import load_json, sha256_file
+from scripts import run_stage1_outcome_gates
 from stage1.gates import (
     AXES,
     BACKBONES,
+    FROZEN_BASELINE_FAILURE_MAXIMUM,
+    FROZEN_BASELINE_FAILURE_MINIMUM,
+    FROZEN_MIXED_PROMPT_MINIMUM,
     GATE_RULE,
+    MIXED_OUTCOME_PROMPT_DEFINITION,
+    POLICY_SCHEMA_SHA256,
     GatePolicy,
     Stage1SpecificationError,
     compute_gate_results,
+    gate_verdict,
     load_gate_policy,
     plan_cancellations,
+    plan_survivors,
+    policy_decision_assignments,
+    verify_policy_decision,
     write_stage1_artifacts,
 )
 
@@ -78,6 +88,7 @@ def _policy() -> GatePolicy:
     return GatePolicy(
         decision_id="D-TEST",
         baseline_failure_rate_minimum=0.25,
+        baseline_failure_rate_maximum=0.75,
         mixed_outcome_prompt_share_minimum=0.25,
         bootstrap_replicates=50,
         bootstrap_seed=123,
@@ -122,35 +133,145 @@ def _queue_bindings(tmp_path: Path) -> list[dict[str, str]]:
     return bindings
 
 
-def test_committed_configuration_is_deliberately_fail_closed() -> None:
+def test_committed_configuration_is_frozen_before_outcome_execution() -> None:
     path = ROOT / "configs" / "stage1_outcome_gates_v2.json"
     value = load_json(path)
-    assert value["status"] == "BLOCKED_MISSING_FROZEN_THRESHOLDS"
-    assert value["decision_id"] is None
-    assert set(value["thresholds"].values()) == {None}
-    with pytest.raises(Stage1SpecificationError, match="not frozen"):
-        load_gate_policy(path)
+    assert value["status"] == "FROZEN"
+    assert value["decision_id"] == "D-0046"
+    assert value["schema_version"] == 2
+    assert value["schema_binding"]["sha256"] == POLICY_SCHEMA_SHA256
+    assert value["thresholds"] == {
+        "baseline_failure_rate_maximum": FROZEN_BASELINE_FAILURE_MAXIMUM,
+        "baseline_failure_rate_minimum": FROZEN_BASELINE_FAILURE_MINIMUM,
+        "mixed_outcome_prompt_share_minimum": FROZEN_MIXED_PROMPT_MINIMUM,
+    }
+    policy = load_gate_policy(path)
+    assert policy.baseline_failure_rate_minimum == 0.10
+    assert policy.baseline_failure_rate_maximum == 0.60
+    assert policy.mixed_outcome_prompt_share_minimum == 0.20
 
 
-def test_policy_requires_both_explicit_frozen_thresholds(tmp_path: Path) -> None:
+def test_policy_json_schema_freezes_the_same_complete_rule() -> None:
+    schema_path = ROOT / "configs" / "stage1_outcome_gates_v2.schema.json"
+    schema = load_json(schema_path)
+    assert sha256_file(schema_path) == POLICY_SCHEMA_SHA256
+    assert schema["properties"]["decision_id"]["const"] == "D-0046"
+    assert schema["properties"]["thresholds"]["const"] == {
+        "baseline_failure_rate_maximum": 0.60,
+        "baseline_failure_rate_minimum": 0.10,
+        "mixed_outcome_prompt_share_minimum": 0.20,
+    }
+    assert schema["properties"]["gate_rule"]["const"] == GATE_RULE
+
+
+def test_policy_rejects_an_incomplete_or_changed_frozen_policy(tmp_path: Path) -> None:
     value = load_json(ROOT / "configs" / "stage1_outcome_gates_v2.json")
-    value["status"] = "FROZEN"
-    value["decision_id"] = "D-TEST"
     path = tmp_path / "policy.json"
+    value["thresholds"]["baseline_failure_rate_maximum"] = None
     _write_json(path, value)
     with pytest.raises(Stage1SpecificationError, match="must be numeric"):
         load_gate_policy(path)
 
     value["thresholds"] = {
-        "baseline_failure_rate_minimum": 0.25,
-        "mixed_outcome_prompt_share_minimum": 0.5,
+        "baseline_failure_rate_maximum": 0.61,
+        "baseline_failure_rate_minimum": 0.10,
+        "mixed_outcome_prompt_share_minimum": 0.20,
     }
     _write_json(path, value)
-    policy = load_gate_policy(path)
-    assert policy.decision_id == "D-TEST"
-    assert policy.baseline_failure_rate_minimum == 0.25
-    assert policy.mixed_outcome_prompt_share_minimum == 0.5
-    assert value["gate_rule"] == GATE_RULE
+    with pytest.raises(Stage1SpecificationError, match="D-0046 freeze"):
+        load_gate_policy(path)
+
+
+def test_gate_boundaries_are_inclusive_and_upper_excess_stops() -> None:
+    policy = GatePolicy(
+        decision_id="D-0046",
+        baseline_failure_rate_minimum=0.10,
+        baseline_failure_rate_maximum=0.60,
+        mixed_outcome_prompt_share_minimum=0.20,
+    )
+    assert gate_verdict(0.10, 0.20, policy) == "OUTCOME_SCREEN_PASS"
+    assert gate_verdict(0.60, 0.20, policy) == "OUTCOME_SCREEN_PASS"
+    assert gate_verdict(0.099999, 1.0, policy) == "STOP_AXIS_STAGE1"
+    assert gate_verdict(0.600001, 1.0, policy) == "STOP_AXIS_STAGE1"
+    assert gate_verdict(0.50, 0.199999, policy) == "STOP_AXIS_STAGE1"
+
+
+def test_runner_validates_policy_before_any_input_binding_or_outcome_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[str] = []
+
+    def reject_policy(path: Path) -> GatePolicy:
+        calls.append(f"policy:{path.name}")
+        raise Stage1SpecificationError("sentinel invalid policy")
+
+    def forbidden_bindings(path: Path) -> dict[str, object]:
+        calls.append(f"bindings:{path.name}")
+        raise AssertionError("bindings and outcome files must not be touched")
+
+    monkeypatch.setattr(run_stage1_outcome_gates, "load_gate_policy", reject_policy)
+    monkeypatch.setattr(run_stage1_outcome_gates, "validated_bindings", forbidden_bindings)
+    with pytest.raises(Stage1SpecificationError, match="sentinel"):
+        run_stage1_outcome_gates.run(
+            tmp_path / "invalid.json",
+            tmp_path / "output",
+            decisions_path=tmp_path / "DECISIONS.md",
+        )
+    assert calls == ["policy:invalid.json"]
+
+
+def test_runner_verifies_decision_before_any_input_binding_or_outcome_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[str] = []
+
+    def frozen_policy(path: Path) -> GatePolicy:
+        calls.append("policy")
+        return _policy()
+
+    def reject_decision(
+        config_path: Path, decisions_path: Path, *, policy: GatePolicy
+    ) -> dict[str, str]:
+        calls.append("decision")
+        raise Stage1SpecificationError("sentinel missing decision")
+
+    def forbidden_bindings(path: Path) -> dict[str, object]:
+        calls.append("bindings")
+        raise AssertionError("outcome bindings must not be touched")
+
+    monkeypatch.setattr(run_stage1_outcome_gates, "load_gate_policy", frozen_policy)
+    monkeypatch.setattr(run_stage1_outcome_gates, "verify_policy_decision", reject_decision)
+    monkeypatch.setattr(run_stage1_outcome_gates, "validated_bindings", forbidden_bindings)
+    with pytest.raises(Stage1SpecificationError, match="sentinel missing decision"):
+        run_stage1_outcome_gates.run(
+            tmp_path / "config.json",
+            tmp_path / "output",
+            decisions_path=tmp_path / "DECISIONS.md",
+        )
+    assert calls == ["policy", "decision"]
+
+
+def test_policy_decision_binds_exact_config_before_outcome_read(tmp_path: Path) -> None:
+    config_path = ROOT / "configs" / "stage1_outcome_gates_v2.json"
+    decisions_path = tmp_path / "DECISIONS.md"
+    assignments = policy_decision_assignments(config_path)
+    decisions_path.write_text(
+        "## D-0046 — Stage-1 outcome-screen policy freeze\n\n"
+        + "\n".join(assignments)
+        + "\n",
+        encoding="utf-8",
+    )
+    receipt = verify_policy_decision(config_path, decisions_path)
+    assert receipt["decision_id"] == "D-0046"
+    decisions_path.write_text(
+        decisions_path.read_text(encoding="utf-8").replace(
+            "STAGE1_BASELINE_FAILURE_RATE_MAXIMUM = 0.60",
+            "STAGE1_BASELINE_FAILURE_RATE_MAXIMUM = 0.61",
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(Stage1SpecificationError, match="complete frozen config"):
+        verify_policy_decision(config_path, decisions_path)
 
 
 def test_six_cells_are_deterministic_and_use_selected_base_rows_only() -> None:
@@ -180,6 +301,11 @@ def test_six_cells_are_deterministic_and_use_selected_base_rows_only() -> None:
         assert row["human_gold_claims"] is False
         assert row["prompt_count"] == 12
         assert row["root_count_per_prompt"] == 8
+        assert row["baseline_failure_rate"]["maximum"] == 0.75
+        assert (
+            row["mixed_outcome_prompt_share"]["definition"]
+            == MIXED_OUTCOME_PROMPT_DEFINITION
+        )
         if (row["backbone"], row["axis"]) in stopped:
             assert row["baseline_failure_rate"]["point"] == 0.0
             assert row["mixed_outcome_prompt_share"]["point"] == 0.0
@@ -221,9 +347,13 @@ def test_integrity_invalid_file_is_counted_as_failure_not_dropped() -> None:
 
 
 def test_stop_units_form_exact_no_execute_no_score_plan(tmp_path: Path) -> None:
+    bindings = _queue_bindings(tmp_path)
     results = compute_gate_results(_rows(), _statistics(), _policy())
-    cancellations = plan_cancellations(results, _queue_bindings(tmp_path))
+    cancellations = plan_cancellations(results, bindings)
+    survivors = plan_survivors(results, bindings)
     assert len(cancellations) == 288
+    assert sum(len(rows) for rows in survivors.values()) == 576
+    assert all(len(rows) == 288 for rows in survivors.values())
     assert all(row["status"] == "CANCELLED_STAGE1" for row in cancellations)
     assert all(row["prohibited_operations"] == ["EXECUTE", "SCORE"] for row in cancellations)
     identities = {
@@ -240,18 +370,22 @@ def test_stop_units_form_exact_no_execute_no_score_plan(tmp_path: Path) -> None:
 
 
 def test_artifacts_are_no_clobber_and_cancellations_are_hash_chained(tmp_path: Path) -> None:
+    bindings = _queue_bindings(tmp_path)
     results = compute_gate_results(_rows(), _statistics(), _policy())
-    cancellations = plan_cancellations(results, _queue_bindings(tmp_path))[:2]
+    cancellations = plan_cancellations(results, bindings)
+    survivors = plan_survivors(results, bindings)
     output = tmp_path / "stage1"
     summary = write_stage1_artifacts(
         output,
         results=results,
         cancellations=cancellations,
+        survivors=survivors,
+        queue_bindings=bindings,
         provenance={"fixture": True},
     )
-    assert summary["cancelled_unit_count"] == 2
+    assert summary["cancelled_unit_count"] == 288
     events = sorted((output / "cancellations" / "events").glob("[0-9]*-*.json"))
-    assert len(events) == 2
+    assert len(events) == 288
     first = load_json(events[0])
     second = load_json(events[1])
     assert first["previous_event_sha256"] == "0" * 64
@@ -260,9 +394,36 @@ def test_artifacts_are_no_clobber_and_cancellations_are_hash_chained(tmp_path: P
         write_stage1_artifacts(
             output,
             results=results,
-            cancellations=[],
+            cancellations=cancellations,
+            survivors=survivors,
+            queue_bindings=bindings,
             provenance={"fixture": True},
         )
+
+
+def test_survivor_manifests_are_exact_and_hash_bound(tmp_path: Path) -> None:
+    bindings = _queue_bindings(tmp_path)
+    results = compute_gate_results(_rows(), _statistics(), _policy())
+    survivors = plan_survivors(results, bindings)
+    output = tmp_path / "stage1"
+    write_stage1_artifacts(
+        output,
+        results=results,
+        cancellations=plan_cancellations(results, bindings),
+        survivors=survivors,
+        queue_bindings=bindings,
+        provenance={"fixture": True},
+    )
+    for backbone, slug in {
+        "ACE-Step v1": "ace-step-v1",
+        "stable-audio-3-medium-base": "stable-audio-3-medium-base",
+    }.items():
+        manifest = load_json(output / "survivors" / slug / "manifest.json")
+        units_path = Path(manifest["units_path"])
+        assert manifest["backbone"] == backbone
+        assert manifest["unit_count"] == len(survivors[backbone])
+        assert manifest["units_sha256"] == sha256_file(units_path)
+        assert units_path.stat().st_mode & 0o222 == 0
 
 
 def test_report_and_readiness_do_not_claim_obtained_verdicts() -> None:

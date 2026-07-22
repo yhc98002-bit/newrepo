@@ -30,6 +30,7 @@ from stage1.gates import (
     BASE_CONDITION,
     FAILURE_POLARITY,
     GATE_RULE,
+    MIXED_OUTCOME_PROMPT_DEFINITION,
     PRIMARY_METRICS,
     VERDICTS,
     GatePolicy,
@@ -37,6 +38,7 @@ from stage1.gates import (
     load_gate_policy,
     plan_cancellations,
     validated_bindings,
+    verify_policy_decision,
 )
 
 RESULT_STATUS = "STAGE1_OUTCOME_GATES_COMPLETE"
@@ -58,6 +60,9 @@ _PROVENANCE_KEYS = {
     "config_sha256",
     "outcome_rows_path",
     "outcome_rows_sha256",
+    "policy_decision_block_sha256",
+    "policy_decision_id",
+    "policy_decisions_path",
     "statistics_config_path",
     "statistics_config_sha256",
 }
@@ -82,7 +87,8 @@ _ROW_KEYS = {
     "verdict",
     "watermark",
 }
-_ESTIMATE_KEYS = {"ci_high", "ci_low", "minimum", "point"}
+_BASELINE_ESTIMATE_KEYS = {"ci_high", "ci_low", "maximum", "minimum", "point"}
+_MIXED_ESTIMATE_KEYS = {"ci_high", "ci_low", "definition", "minimum", "point"}
 _SUMMARY_KEYS = {
     "cancelled_unit_count",
     "last_event_sha256",
@@ -161,9 +167,14 @@ def _validate_estimate(
     raw: Any,
     *,
     expected_minimum: float,
+    expected_maximum: float | None = None,
+    expected_definition: str | None = None,
     label: str,
 ) -> float:
-    value = require_exact_keys(raw, _ESTIMATE_KEYS, label)
+    expected_keys = (
+        _BASELINE_ESTIMATE_KEYS if expected_maximum is not None else _MIXED_ESTIMATE_KEYS
+    )
+    value = require_exact_keys(raw, expected_keys, label)
     point = _probability(value["point"], f"{label}.point")
     ci_low = _probability(value["ci_low"], f"{label}.ci_low")
     ci_high = _probability(value["ci_high"], f"{label}.ci_high")
@@ -172,6 +183,12 @@ def _validate_estimate(
         raise Stage1TerminalError(f"{label} CI bounds are reversed")
     if minimum != expected_minimum:
         raise Stage1TerminalError(f"{label} minimum differs from the frozen policy")
+    if expected_maximum is not None:
+        maximum = _probability(value["maximum"], f"{label}.maximum")
+        if maximum != expected_maximum:
+            raise Stage1TerminalError(f"{label} maximum differs from the frozen policy")
+    if expected_definition is not None and value["definition"] != expected_definition:
+        raise Stage1TerminalError(f"{label} definition differs from the frozen policy")
     return point
 
 
@@ -198,13 +215,23 @@ def _validate_provenance(
     )
     try:
         policy = load_gate_policy(config_path)
+        decisions_path = Path(str(provenance["policy_decisions_path"])).resolve(strict=True)
+        if provenance["policy_decisions_path"] != str(decisions_path):
+            raise Stage1TerminalError("Stage-1 policy decisions path is not canonical")
+        decision_binding = verify_policy_decision(
+            config_path, decisions_path, policy=policy
+        )
         bindings = validated_bindings(config_path)
     except (OSError, ValueError) as exc:
         raise Stage1TerminalError(f"frozen Stage-1 policy/provenance is invalid: {exc}") from exc
     outcome_binding = bindings["outcome_rows"]
     statistics_binding = bindings["statistics_config"]
     if (
-        Path(outcome_binding["path"]).resolve(strict=True) != outcome_path
+        provenance["policy_decision_id"] != decision_binding["decision_id"]
+        or provenance["policy_decision_block_sha256"]
+        != decision_binding["decision_block_sha256"]
+        or provenance["policy_decisions_path"] != decision_binding["decisions_path"]
+        or Path(outcome_binding["path"]).resolve(strict=True) != outcome_path
         or outcome_binding["sha256"] != outcome_sha256
         or Path(statistics_binding["path"]).resolve(strict=True) != statistics_path
         or statistics_binding["sha256"] != statistics_sha256
@@ -252,16 +279,19 @@ def _validate_rows(raw_rows: Any, policy: GatePolicy) -> list[dict[str, Any]]:
         failure_point = _validate_estimate(
             row["baseline_failure_rate"],
             expected_minimum=policy.baseline_failure_rate_minimum,
+            expected_maximum=policy.baseline_failure_rate_maximum,
             label=f"{backbone}/{axis}.baseline_failure_rate",
         )
         mixed_point = _validate_estimate(
             row["mixed_outcome_prompt_share"],
             expected_minimum=policy.mixed_outcome_prompt_share_minimum,
+            expected_definition=MIXED_OUTCOME_PROMPT_DEFINITION,
             label=f"{backbone}/{axis}.mixed_outcome_prompt_share",
         )
         recomputed = (
             PASS
             if failure_point >= policy.baseline_failure_rate_minimum
+            and failure_point <= policy.baseline_failure_rate_maximum
             and mixed_point >= policy.mixed_outcome_prompt_share_minimum
             else STOP
         )
@@ -346,7 +376,7 @@ def validate_stage1_terminal(
             raise Stage1TerminalError("Stage-1 summary content binding drifted")
         result = require_exact_keys(load_json(result_path), _RESULT_KEYS, "Stage-1 result")
         if (
-            result["schema_version"] != 1
+            result["schema_version"] != 2
             or result["status"] != RESULT_STATUS
             or result["human_gold_claims"] is not False
             or result["watermark"] != WATERMARK
