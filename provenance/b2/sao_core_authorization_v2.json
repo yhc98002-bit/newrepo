@@ -1,0 +1,14 @@
+{
+  "access_receipt_sha256": "41f4ac3200c5292ac4f93a992e789031f7a7180f372fb1c3c32a605b91f37b52",
+  "backbone_config_sha256": "fd3c77b1aa6b07f63d9ca207d795dbfc9c82c103358a2aabff3a6bb48e282e2b",
+  "decision_id": "D-0037",
+  "eligibility_scope_expanded": false,
+  "exact_generations": 1536,
+  "max_clip_seconds": 30,
+  "max_gpus_per_worker": 1,
+  "mini_smoke_result_sha256": "825eac8e43583871fbb2a4b59f73226e68d5577fecb9255fe82b62dd6945a692",
+  "schema_version": 1,
+  "scope": "SAO_BENCHMARK_CORE_GENERATION_ONLY",
+  "state_capability": "NOT_ATTEMPTED",
+  "status": "ACCESS_AND_MINI_SMOKE_VERIFIED_CORE_AUTHORIZED"
+}

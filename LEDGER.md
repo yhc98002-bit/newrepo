@@ -693,3 +693,50 @@ manifest and artifacts are named here with SHA-256 digests.
   `3944b835ee5224b9b2156ff8049fc4d641fdf7da95b13acbb6814af65da17097`;
   CPU factory optional-import failure SHA-256
   `cb7df87510b2314361b2d5fa177fbc196870d64962d82ce27e994f9781c0a6ac`
+
+## L-0021 — Stable Audio Open repaired mini-smoke completed
+
+- Time: 2026-07-22T16:03:33Z
+- Kind: exact three-call non-benchmark engineering smoke; measured PASS
+- Authority: D-0045 and D-0050
+- Node/placement: `an12`, physical GPU 7, TP1, one replica; preflight saw
+  85,171,634,176 free bytes, 0% utilization, and no compute neighbor
+- Run: `sao-mini-smoke-v2-003`; official revision
+  `f21265c1e2710b3bd2386596943f0007f55f802e`; environment
+  `sao-env-v2-002`
+- Calls/outputs: 3 / 3, exactly 30 seconds requested and 100 actual NFE per
+  call; all sanity checks PASS under the 0.25-second duration rule
+- Reproducibility: calls 0/1 decoded-waveform SHA-256
+  `c83f50f1e3ef8abf8c2a5b53f4e271af13b7788b342709490ad64e589c291d30`,
+  exact match
+- Measured cost: cold-plus-first `161.5567436106503 s`; resident unit
+  `19.28598228469491 s`; 1,536-call cap `59,369.522357624024 GPU-s`
+  (`16.491533988228895 GPU-h`)
+- Peak allocated/reserved VRAM: `8,538,524,672 / 10,733,223,936 B`
+- Terminal / ledger / manifest / claim SHA-256s:
+  `825eac8e43583871fbb2a4b59f73226e68d5577fecb9255fe82b62dd6945a692` /
+  `cfb5cb32a015fd174f9f061556db29c9e715e89e3715371a91cbf858aa1317c9` /
+  `1481056390932b6456743756a56addb1a63aca04b3d7180b491cca12a328f295` /
+  `173c6bd534730e8da01aa5b3c5afef73b709389ed1c39a6d64a328c1c7ce4f7c`
+- Token/network: all HF token variables absent and provider networking
+  disabled; no token value was read, printed, logged, ledgered, or committed
+- Scope: benchmark endpoints 0; human-gold claims 0; state capability
+  `NOT_ATTEMPTED`; eligibility expansion false
+
+## L-0022 — Stable Audio Open core package sealed after two engineering failures
+
+- Time: 2026-07-22T16:21:20Z
+- Kind: CPU-only core-package preparation and validator repair; no model call
+- Authority: D-0045 and D-0051
+- Attempts 001/002: respectively wrong interpreter dependency selection and
+  incorrect hard-coded v2-001/v2-002 path invariant; both failed before
+  output publication with 0 GPU seconds, 0 calls, and 0 audio outputs
+- Immutable combined failure receipt SHA-256:
+  `215df0f7e4deb9e7f806113f611861a333e5fac02ceae8dc5a539644ac37e9b5`
+- Attempt 003: PASS after exact D-0050 v2-003 claim/environment/decision/
+  prior-failure lineage validation; scientific settings changed: no
+- Core authorization / Phase-B terminal / core-config SHA-256s:
+  `01c93e72bf6d110a310442cf20a8d5c7ab1991db6915b0dc82400f5c290f7b84` /
+  `e51057d133684b607473629f8791244216b8cbc18939f47558753fd16949e977` /
+  `4e96142e35553d391f89ad98b6c8bd055a5583746d15b2461f145713297a7713`
+- Calls/outputs/GPU time across all three package attempts: 0 / 0 / 0 seconds

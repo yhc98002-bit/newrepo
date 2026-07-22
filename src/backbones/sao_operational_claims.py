@@ -67,6 +67,18 @@ SAO_MINI_SMOKE_ORIGINAL_ADAPTER_SHA256 = (
     "b4d36f87e2e48436498fb5b59e38fbf33882e560a3fd8fa6aeb58259fafd85ef"
 )
 SAO_MINI_SMOKE_REPLACEMENT_DECISION_ID = "D-0042"
+SAO_D0042_REPLACEMENT_RUNNER_SHA256 = (
+    "116f30e60d8b2878142dbbf887dddccb5c11575470ddc7e35d9e84f50358e44f"
+)
+SAO_D0042_REPLACEMENT_IMPLEMENTATION_SHA256 = (
+    "d6d4091a7d14986f8e215c0acdcabfb8df6a9ff064fc6d67146107ccb18e9644"
+)
+SAO_D0042_REPLACEMENT_CLAIMS_SHA256 = (
+    "aa3397f702a17a33f0e4bbe8bd5f002f2e90fa7e37528e001bb5b071791495b9"
+)
+SAO_D0042_REPLACEMENT_ADAPTER_SHA256 = (
+    "b4d36f87e2e48436498fb5b59e38fbf33882e560a3fd8fa6aeb58259fafd85ef"
+)
 SAO_MINI_SMOKE_ORIGINAL_FAILURE_PHASE = "PRE_MODEL_RUN_DIRECTORY_CREATION"
 SAO_MINI_SMOKE_SEED_SCHEDULE = (
     ("S-0011", 73193011),
@@ -763,9 +775,13 @@ def _single_decision_assignment(block: str, key: str) -> str:
 
 
 def sao_mini_smoke_pre_model_replacement_decision_assignments() -> dict[str, str]:
-    """Return the exact D-0042 vocabulary, including all execution source hashes."""
+    """Return the historical D-0042 vocabulary consumed by the finished run.
 
-    root = Path(__file__).resolve().parents[2]
+    These source hashes deliberately remain the exact bytes authorized by
+    D-0042. Later fail-closed evidence validators must not reinterpret that
+    append-only decision against their newer implementation bytes.
+    """
+
     return {
         "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_AUTHORIZED": "YES",
         "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_RUN_ID": SAO_MINI_SMOKE_RUN_ID,
@@ -811,17 +827,17 @@ def sao_mini_smoke_pre_model_replacement_decision_assignments() -> dict[str, str
         "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ORIGINAL_ADAPTER_SHA256": (
             SAO_MINI_SMOKE_ORIGINAL_ADAPTER_SHA256
         ),
-        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_RUNNER_SHA256": _sha256_file(
-            root / "scripts" / "run_sao_mini_smoke_v2.py"
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_RUNNER_SHA256": (
+            SAO_D0042_REPLACEMENT_RUNNER_SHA256
         ),
-        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_IMPLEMENTATION_SHA256": _sha256_file(
-            root / "src" / "backbones" / "sao_mini_smoke.py"
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_IMPLEMENTATION_SHA256": (
+            SAO_D0042_REPLACEMENT_IMPLEMENTATION_SHA256
         ),
-        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIMS_SHA256": _sha256_file(
-            root / "src" / "backbones" / "sao_operational_claims.py"
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIMS_SHA256": (
+            SAO_D0042_REPLACEMENT_CLAIMS_SHA256
         ),
-        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ADAPTER_SHA256": _sha256_file(
-            root / "src" / "backbones" / "stable_audio_open.py"
+        "SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_ADAPTER_SHA256": (
+            SAO_D0042_REPLACEMENT_ADAPTER_SHA256
         ),
     }
 

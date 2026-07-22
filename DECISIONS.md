@@ -2595,3 +2595,167 @@ the scientific lane for PI review.
 `SAO_STATE_CAPABILITY = NOT_ATTEMPTED`
 
 `SAO_ELIGIBILITY_SCOPE_EXPANDED = NO`
+
+## D-0051 — Stable Audio Open repaired mini-smoke accepted and deep evidence gate repaired
+
+- Date: 2026-07-22
+- Status: accepted measured PASS and completed pre-scientific validator repair
+- Authority: D-0045 and D-0050
+
+The exact D-0050 offline engineering run `sao-mini-smoke-v2-003` completed
+all three authorized calls on an12 physical GPU 7. Each call used 100 actual
+NFE and passed the frozen audio sanity and 0.25-second duration rules. The
+two fixed-seed calls have identical decoded-waveform SHA-256
+`c83f50f1e3ef8abf8c2a5b53f4e271af13b7788b342709490ad64e589c291d30`.
+Measured cold-plus-first time is `161.5567436106503 s`, measured resident
+unit time is `19.28598228469491 s`, and the frozen 1,536-call cap is
+`59369.522357624024 GPU-s` (`16.491533988228895 GPU-h`). Peak allocated and
+reserved VRAM were `8,538,524,672 / 10,733,223,936 B`.
+
+The first two core-package preparation attempts stopped before publication,
+GPU use, or model calls: the first used an interpreter without `soundfile`;
+the second exposed a deep-evidence validator that recognized only the fixed
+v2-001 and v2-002 paths. Their combined immutable receipt is
+`provenance/b2/sao_core_preparation_engineering_failures_v2.json`, SHA-256
+`215df0f7e4deb9e7f806113f611861a333e5fac02ceae8dc5a539644ac37e9b5`.
+The targeted repair admits only the exact fixed v2-003 path and consumed
+claim, revalidates the D-0050 decision block, environment/package freeze,
+runtime authorization, live config, and prior failure lineage, and keeps the
+v2-001/v2-002 branches unchanged. The retained v2-003 evidence then passed
+the full core admission validator. This is an engineering invariant repair;
+no prompt, seed, weight, sampler, inference budget, evaluator, endpoint, or
+scientific threshold changed.
+
+`SAO_MINI_SMOKE_STATUS = PASS_MEASURED_READY`
+
+`SAO_MINI_SMOKE_RUN_ID = sao-mini-smoke-v2-003`
+
+`SAO_MINI_SMOKE_MODEL_CALLS = 3`
+
+`SAO_MINI_SMOKE_GENERATED_OUTPUTS = 3`
+
+`SAO_MINI_SMOKE_TERMINAL_SHA256 = 825eac8e43583871fbb2a4b59f73226e68d5577fecb9255fe82b62dd6945a692`
+
+`SAO_MINI_SMOKE_LEDGER_SHA256 = cfb5cb32a015fd174f9f061556db29c9e715e89e3715371a91cbf858aa1317c9`
+
+`SAO_MINI_SMOKE_MANIFEST_SHA256 = 1481056390932b6456743756a56addb1a63aca04b3d7180b491cca12a328f295`
+
+`SAO_MINI_SMOKE_CLAIM_SHA256 = 173c6bd534730e8da01aa5b3c5afef73b709389ed1c39a6d64a328c1c7ce4f7c`
+
+`SAO_MINI_SMOKE_ACTUAL_NFE_PER_CALL = 100`
+
+`SAO_MEASURED_COLD_PLUS_FIRST_SECONDS = 161.5567436106503`
+
+`SAO_MEASURED_RESIDENT_UNIT_SECONDS = 19.28598228469491`
+
+`SAO_CORE_GPU_SECONDS_CAP = 59369.522357624024`
+
+`SAO_CORE_DEEP_EVIDENCE_STATUS = PASS`
+
+`SAO_CORE_PREPARATION_ENGINEERING_FAILURES_RETAINED = YES`
+
+`SAO_SCIENTIFIC_CONFIGURATION_CHANGED = NO`
+
+`SAO_STATE_CAPABILITY = NOT_ATTEMPTED`
+
+`SAO_ELIGIBILITY_SCOPE_EXPANDED = NO`
+
+## D-0052 — Stable Audio Open exact ordinary-core run opened
+
+- Date: 2026-07-22
+- Status: accepted exact SAO-only ordinary-core generation opening
+- Authority: PI consolidated SAO-live goal, D-0037, D-0045, and D-0051
+
+The measured PASS terminal and official offline snapshot now satisfy every
+SAO generation precondition. Exactly one fresh ordinary-core run,
+`benchmark-core-v2-sao-20260722t162200z`, may be prepared and launched. Its
+allowlist contains only `stabilityai/stable-audio-open-1.0`: 1,536 registered
+30-second requests, shard size four, one an12 A800 on physical GPU 7, TP1,
+one replica, and the exact measured cap `59,369.522357624024 GPU-s`. The
+official provider revision remains
+`f21265c1e2710b3bd2386596943f0007f55f802e`.
+
+The completed SA3 and ACE core runs are immutable prior completions and
+receive no generation row. There is no row replacement, extra seed, prompt
+change, shorter clip, model substitution, state execution, eligibility-scope
+expansion, or human-packet assembly authority. Automatic scoring remains a
+separate completed-shard opening. Queue-don't-preempt applies, every output
+is retained, and every request crosses the durable claim boundary before its
+model call.
+
+The exact launch inputs are:
+
+| Path | SHA-256 |
+| --- | --- |
+| `configs/benchmark_core_v2_sao_incremental.json` | `4e96142e35553d391f89ad98b6c8bd055a5583746d15b2461f145713297a7713` |
+| `provenance/b2/build_status_terminal_v2_sao_amendment.json` | `e51057d133684b607473629f8791244216b8cbc18939f47558753fd16949e977` |
+| `configs/backbones/stable_audio_open_1_0.json` | `fd3c77b1aa6b07f63d9ca207d795dbfc9c82c103358a2aabff3a6bb48e282e2b` |
+| `provenance/core/ace_core_completion_v2.json` | `813c81219c7bcf3035f377248afd6a4996de1a6c2c3cbc1b5c396888149dc2a0` |
+| `provenance/core/sa3_core_completion_v2.json` | `4574f439c6f74a7a1b6fac9bf850135f7903f3e49ffd09477e91853826c5bac6` |
+| `src/backbones/sao_operational_claims.py` | `f89fd13cc50698e4f3bf1d6824c6c459c5eacfd8411892034314dd1c9460a487` |
+| `BENCHMARK_PREREG_v2.md` | `77c8d17d91088ffe9a9c2a47a4af4bb97ffb9d7b7313b4ca0e7e707232a946aa` |
+| `BENCHMARK_CORE_PROTOCOL_v2.md` | `869856603666c9d5b8a0ffbcb7e286a20f35bb3ca03955279b2777cc3e0ab685` |
+| `provenance/b2/build_status_terminal_v2.json` | `d31c45f80f2397ee7dc9456d543da0bced560de8b299db1b10d495c4162efe72` |
+| `configs/backbones/stable_audio_3_medium_base.json` | `e1bcc0d03e6929b8fd2b655f8fc8c182a2be0eb6316549a94f48c4b040a98f75` |
+| `configs/backbones/ace_step_v1.json` | `b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879` |
+| `src/audio_duration_policy.py` | `54268349d62a35e86b55127c374219749e33c66995aeded6750b26944efb568e` |
+| `src/backbones/__init__.py` | `e42845b1df342a56a55aca378f6994a2b56fe50c08cc11cac87296826e7248f0` |
+| `src/backbones/ace_step_v1.py` | `a18aeb11d199656b46a18793e1e75bf03a54d0c135894db46738da0f18d8b0d7` |
+| `src/backbones/contracts.py` | `9368e2044380000e74bbefcd528d2f09fc22ef2b484b6f3b8bf298617b09f2d2` |
+| `src/backbones/duration_sanity.py` | `a06818e4ccb0a0da67a664783bd29181269cc00bfeeb65c4f3d5c5089a283bd6` |
+| `src/backbones/io.py` | `fe3e4d101ef34c846b7b86a2cba9e44f36b839364c99487de209406e7254aa3a` |
+| `src/backbones/license_gate.py` | `de94a4c7116a613cfbf80ffe7e810970643122b8534a17613ecdb192740882c3` |
+| `src/backbones/runtime.py` | `d2e42754a4599e64d43d9ce43db8cfe057034581db2b5099ca6886d1eeedfeed` |
+| `src/backbones/sao_engineering_retry.py` | `3dd7fbc98cbbb1e3c31294374fa1133893b8317f04485e7cb030392069430420` |
+| `src/backbones/sao_environment.py` | `69111c5fb21d42df9bcc7ffd6294f2c3cca67e848515e1e3a0121a2218f1f4fc` |
+| `src/backbones/sao_mini_smoke.py` | `daad6dc1c3044d79a0891f2a9a6d4bc3b78f5cef34cecbd441d1ad51e9bf2457` |
+| `src/backbones/sao_t5.py` | `b8470ee65b1c466ebb6ff312726672a720178e4d55034d9f467897dc2f584baf` |
+| `src/backbones/stable_audio_3.py` | `909f3efceb296caca59667ae4d0a4aa777d74d37a9e86b5170bdaba23ae2aa6b` |
+| `src/backbones/stable_audio_open.py` | `b4d36f87e2e48436498fb5b59e38fbf33882e560a3fd8fa6aeb58259fafd85ef` |
+| `src/benchmark_core/__init__.py` | `5fe552169fdb0ed47cb4f92cac51ab982d72ceff67a028c88dd8a461fb9d602c` |
+| `src/benchmark_core/adapter_bridge.py` | `d719e9bb24b40dc18ecd5cd30a8c59f8c10a01e88bebb74791e313d2a12e1c6f` |
+| `src/benchmark_core/artifacts.py` | `aec1a672456df5cdae8adf2c2900cd5f4c0fa7904bb3420b16128ac9c4179a8c` |
+| `src/benchmark_core/claims.py` | `76f3adacaf9ee65884bafa3c53ba11dd3921d5378a79f116107f33c854e92b2c` |
+| `src/benchmark_core/config.py` | `49e840f0bb5850258fe37ebf34e14c185a9df241efe28875c723f8dad89c3edd` |
+| `src/benchmark_core/heartbeat.py` | `dfd77b90541d0099d6495280d7f7dad4e88c2b9703b91e09617195285bbd8480` |
+| `src/benchmark_core/launcher.py` | `eb4e8ad60e066dc50b6835a5eefd7b4930ca8276476a15eae2d11299410e9919` |
+| `src/benchmark_core/ledger.py` | `6953bab158fc494b133ddaf8dde76597e1b9515e5c1ae8d3c5fc82a2ec95540f` |
+| `src/benchmark_core/placement.py` | `961193d3ab08ded1decc5f7f9086495362948ad296b9dbdba77877881b2b4902` |
+| `src/benchmark_core/queue.py` | `df7b37f29ca000ad26a33944ae9f4e9f08677bc7c122b981e8aeb23bacf8f7f7` |
+| `src/benchmark_core/state_queue.py` | `fafdbed02820fde1bbf8945d3c2d6679b66bdabbe59ed86200d3f9f08ef619ef` |
+| `src/benchmark_core/supervisor.py` | `3e24f8b9d0de58f3b5a204e330e39d6857a4dcaea83e9a7374bbe22dbb032e4c` |
+| `src/benchmark_core/worker.py` | `2f23b6172b9d5d012caa15eb4d07a6fc0ee6d20ebe88e4ea2c7bbf6fbafdecea` |
+| `src/sa3_smoke/__init__.py` | `18704985ac543674c1b8a1ac78764fba1b6f2fa3bf7748efa3fb26f40173af60` |
+| `src/sa3_smoke/artifacts.py` | `c51f2417577927180fa86b4282562a4781446a15d32cd466eda9213c7d679df3` |
+| `src/sa3_smoke/audio.py` | `c17634f7e06ff1b2b315f91077a27b0677c34844eb2c916c6f36dcf1186d0a24` |
+| `src/sa3_smoke/budget.py` | `dc1b5ecfdb193e1defd90e48f6fe7a7fb05ce38b9191ea9a1271c0e39a91c332` |
+| `src/sa3_smoke/environment_validation.py` | `684e736671055ffc5ad5e14ffe160aef9816ccc3317b080d7beef56dc38cc6fa` |
+| `src/sa3_smoke/model_runtime.py` | `614fc7e6d016e1dc07971a028653749318edac2c3c980a40d73aaf8be709fde4` |
+| `scripts/prepare_benchmark_core_run.py` | `7722932e2587ae19a489bb526ca23563c4fff1111f2be2ecba89cdeeace09910` |
+| `scripts/run_benchmark_core_worker.py` | `9961f057d56dd7cad820dc4075362650cc9a20ff9ec36ac3bc5ad39830fc5b25` |
+
+`BENCHMARK_CORE_GENERATION_AUTHORIZED = YES`
+
+`BENCHMARK_CORE_AUTHORIZED_MODEL_IDS = stabilityai/stable-audio-open-1.0`
+
+`BENCHMARK_CORE_AUTHORIZED_RUN_ID = benchmark-core-v2-sao-20260722t162200z`
+
+`SAO_CORE_EXACT_ROWS = 1536`
+
+`SAO_CORE_MAX_CLIP_SECONDS = 30`
+
+`SAO_CORE_GPU_SECONDS_CAP = 59369.522357624024`
+
+`SAO_CORE_PLACEMENT = an12:[7];TP1;R1`
+
+`QUEUE_DO_NOT_PREEMPT = YES`
+
+`SAO_AUTOMATIC_SCORING_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_INITIAL_QUEUE_AUTHORIZED = NO`
+
+`BENCHMARK_STATE_SUPPLEMENTAL_QUEUE_AUTHORIZED = NO`
+
+`SAO_STATE_CAPABILITY = NOT_ATTEMPTED`
+
+`SAO_ELIGIBILITY_SCOPE_EXPANDED = NO`

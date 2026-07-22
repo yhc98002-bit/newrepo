@@ -26,6 +26,8 @@ from backbones.sao_operational_claims import (
 )
 from benchmark_core.launcher import GitLaunchState, LaunchAuthorizationError, prepare_run
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def _write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -349,6 +351,16 @@ def test_repository_d0042_binds_the_final_replacement_sources() -> None:
     )
     assert observed["decision_id"] == "D-0042"
     assert len(observed["decision_block_sha256"]) == 64
+    assignments = sao_mini_smoke_pre_model_replacement_decision_assignments()
+    assert assignments["SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_IMPLEMENTATION_SHA256"] == (
+        claims_module.SAO_D0042_REPLACEMENT_IMPLEMENTATION_SHA256
+    )
+    assert assignments["SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_IMPLEMENTATION_SHA256"] != _sha(
+        ROOT / "src/backbones/sao_mini_smoke.py"
+    )
+    assert assignments["SAO_MINI_SMOKE_PRE_MODEL_REPLACEMENT_CLAIMS_SHA256"] == (
+        claims_module.SAO_D0042_REPLACEMENT_CLAIMS_SHA256
+    )
 
 
 def test_mini_smoke_runner_claims_only_after_offline_preflight_and_safe_device_lease(
@@ -489,6 +501,29 @@ def test_exact_sao_core_decision_requires_one_run_and_sao_only(tmp_path: Path) -
             requested_run_id="sao-core-v2-001",
             expected_decision_block_sha256=hashlib.sha256(duplicate_block.encode()).hexdigest(),
         )
+
+
+def test_committed_d0052_opens_only_the_hash_bound_sao_core_run() -> None:
+    decisions = ROOT / "DECISIONS.md"
+    block = claims_module._decision_block(decisions.read_text(encoding="utf-8"), "D-0052")
+    block_sha256 = hashlib.sha256(block.encode()).hexdigest()
+
+    observed = verify_exact_sao_core_decision(
+        decisions,
+        decision_id="D-0052",
+        requested_run_id="benchmark-core-v2-sao-20260722t162200z",
+        expected_decision_block_sha256=block_sha256,
+    )
+    assert observed["authorized_run_id"] == "benchmark-core-v2-sao-20260722t162200z"
+    assert _sha(ROOT / "configs/benchmark_core_v2_sao_incremental.json") == (
+        "4e96142e35553d391f89ad98b6c8bd055a5583746d15b2461f145713297a7713"
+    )
+    assert _sha(ROOT / "provenance/b2/sao_core_authorization_v2.json") == (
+        "01c93e72bf6d110a310442cf20a8d5c7ab1991db6915b0dc82400f5c290f7b84"
+    )
+    assert _sha(ROOT / "provenance/b2/build_status_terminal_v2_sao_amendment.json") == (
+        "e51057d133684b607473629f8791244216b8cbc18939f47558753fd16949e977"
+    )
 
 
 def test_sao_core_global_claim_is_external_and_replay_proof(tmp_path: Path) -> None:

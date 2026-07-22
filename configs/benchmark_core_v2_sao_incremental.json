@@ -1,0 +1,181 @@
+{
+  "execution": {
+    "authorized_model_ids": [
+      "stabilityai/stable-audio-open-1.0"
+    ],
+    "heartbeat_interval_seconds": 30,
+    "heartbeat_stale_after_seconds": 90,
+    "max_duration_seconds": 30.0,
+    "prior_model_completions": {
+      "ACE-Step/ACE-Step-v1-3.5B": {
+        "path": "provenance/core/ace_core_completion_v2.json",
+        "sha256": "813c81219c7bcf3035f377248afd6a4996de1a6c2c3cbc1b5c396888149dc2a0"
+      },
+      "stabilityai/stable-audio-3-medium-base": {
+        "path": "provenance/core/sa3_core_completion_v2.json",
+        "sha256": "4574f439c6f74a7a1b6fac9bf850135f7903f3e49ffd09477e91853826c5bac6"
+      }
+    },
+    "run_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/core-v2",
+    "shard_size": 4,
+    "state_capture": {
+      "axes": [
+        "vocal_instrumental",
+        "tempo",
+        "integrity"
+      ],
+      "capture_mode": "SEPARATE_LEDGERED_STATE_CAPTURE_QUEUE",
+      "checkpoint_fractions": [
+        0.25,
+        0.5,
+        0.75
+      ],
+      "conditions": [
+        "BASE"
+      ],
+      "doubling_root_indices": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "eligible_model_ids": [
+        "stabilityai/stable-audio-3-medium-base",
+        "ACE-Step/ACE-Step-v1-3.5B"
+      ],
+      "initial_root_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "ordinary_core_launch_status": "CLOSED_AT_ORDINARY_CORE_LAUNCH",
+      "preview_source": "ONLY_THE_SAME_UNITS_ROOT_LOCAL_PRE_ACTION_DECODED_PREVIEW",
+      "restart_outcome_label": "RESTART_POOL_SHARED_AT_PROMPT_LEVEL"
+    }
+  },
+  "integrity_synthetic_validation": {
+    "report_path": "provenance/b1/integrity_synthetic_validation.json",
+    "report_sha256": "4e1b124ad2247eced85d21f049ad5b3849a4e1dd1a395689c235ec3d998a4dab",
+    "status": "PASS"
+  },
+  "models": [
+    {
+      "core_execution": {
+        "adapter_config_path": "configs/backbones/stable_audio_3_medium_base.json",
+        "adapter_config_sha256": "e1bcc0d03e6929b8fd2b655f8fc8c182a2be0eb6316549a94f48c4b040a98f75",
+        "budget": {
+          "cold_plus_first_seconds": 116.34399104863405,
+          "gpu_seconds_cap": 76939.90662887692,
+          "resident_unit_seconds": 25.023961771279573,
+          "scheduled_calls": 1536
+        },
+        "duration_tolerance_seconds": 0.25,
+        "expected_channels": 2,
+        "placement": {
+          "lock_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/locks/core-v2",
+          "logical_gpu_id": 0,
+          "maximum_idle_utilization_percent": 5,
+          "minimum_free_vram_bytes": 60000000000,
+          "node": "an12",
+          "physical_gpu_id": 4,
+          "post_load_reserve_bytes": 20000000000,
+          "replica_count": 1,
+          "required_gpu_name_substring": "A800",
+          "tp_width": 1
+        },
+        "state_capture_status": "READY"
+      },
+      "model_id": "stabilityai/stable-audio-3-medium-base",
+      "queue_status": "READY",
+      "slug": "sa3-medium-base"
+    },
+    {
+      "core_execution": {
+        "adapter_config_path": "configs/backbones/stable_audio_open_1_0.json",
+        "adapter_config_sha256": "fd3c77b1aa6b07f63d9ca207d795dbfc9c82c103358a2aabff3a6bb48e282e2b",
+        "budget": {
+          "cold_plus_first_seconds": 161.5567436106503,
+          "gpu_seconds_cap": 59369.522357624024,
+          "resident_unit_seconds": 19.28598228469491,
+          "scheduled_calls": 1536
+        },
+        "duration_tolerance_seconds": 0.25,
+        "expected_channels": 2,
+        "placement": {
+          "lock_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/locks/core-v2",
+          "logical_gpu_id": 0,
+          "maximum_idle_utilization_percent": 5,
+          "minimum_free_vram_bytes": 60000000000,
+          "node": "an12",
+          "physical_gpu_id": 7,
+          "post_load_reserve_bytes": 20000000000,
+          "replica_count": 1,
+          "required_gpu_name_substring": "A800",
+          "tp_width": 1
+        },
+        "sao_runtime": {
+          "access_receipt_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/acquisition/sao-acquisition-recovery-v2-002/access-receipt.json",
+          "access_receipt_sha256": "41f4ac3200c5292ac4f93a992e789031f7a7180f372fb1c3c32a605b91f37b52",
+          "core_authorization_path": "provenance/b2/sao_core_authorization_v2.json",
+          "core_authorization_sha256": "01c93e72bf6d110a310442cf20a8d5c7ab1991db6915b0dc82400f5c290f7b84",
+          "mini_smoke_result_path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/sao-live-v2/mini-smoke/sao-mini-smoke-v2-003/sao-mini-smoke-terminal.json",
+          "mini_smoke_result_sha256": "825eac8e43583871fbb2a4b59f73226e68d5577fecb9255fe82b62dd6945a692",
+          "snapshot_dir": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/models/stable-audio-open-1.0/f21265c1e2710b3bd2386596943f0007f55f802e"
+        },
+        "state_capture_status": "AUTOMATIC_OUTPUT_ONLY"
+      },
+      "model_id": "stabilityai/stable-audio-open-1.0",
+      "queue_status": "READY",
+      "slug": "stable-audio-open-1-0"
+    },
+    {
+      "core_execution": {
+        "adapter_config_path": "configs/backbones/ace_step_v1.json",
+        "adapter_config_sha256": "b3cfc59e661a7bb10f16e6c1296fe0de8810945815847ace6f99abbabfe0c879",
+        "budget": {
+          "cold_plus_first_seconds": 272.9365928955376,
+          "gpu_seconds_cap": 95254.39525944367,
+          "resident_unit_seconds": 30.9385858848691,
+          "scheduled_calls": 1536
+        },
+        "duration_tolerance_seconds": 0.25,
+        "expected_channels": 2,
+        "placement": {
+          "lock_root": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/locks/core-v2",
+          "logical_gpu_id": 0,
+          "maximum_idle_utilization_percent": 5,
+          "minimum_free_vram_bytes": 60000000000,
+          "node": "an12",
+          "physical_gpu_id": 4,
+          "post_load_reserve_bytes": 20000000000,
+          "replica_count": 1,
+          "required_gpu_name_substring": "A800",
+          "tp_width": 1
+        },
+        "state_capture_status": "AUTOMATIC_OUTPUT_ONLY"
+      },
+      "model_id": "ACE-Step/ACE-Step-v1-3.5B",
+      "queue_status": "READY",
+      "slug": "ace-step-v1"
+    }
+  ],
+  "phase_b_terminal": {
+    "path": "provenance/b2/build_status_terminal_v2_sao_amendment.json",
+    "sha256": "e51057d133684b607473629f8791244216b8cbc18939f47558753fd16949e977",
+    "status": "TERMINAL"
+  },
+  "prompt_root": "prompts/v2",
+  "prompt_sha256": {
+    "integrity.json": "be0e7c65fa8dfad8c7fdbf4456b2c1ad7e6f4fe0bbeb67eba2fcbf96b5f16d03",
+    "seed_registry.json": "2115d7e70a6c3f4dd19f38503861b8aeb3595a8f64dd1fc839d7a209e80724eb",
+    "structure_exploratory.json": "6e9ca89c20ebb43313d9b492140970d876a5cfc657cf123cfe44b7d89e974af8",
+    "tempo.json": "16e31c155e1d535f2211fcd85c8d666c9ba7a6636e4487fd43ea2fd5fa0e36ab",
+    "vocal_instrumental.json": "602c4e0fb419d7a300116eb5fb76c30a8e19364aaef566aec05425caffed9f90"
+  },
+  "schema_version": 2,
+  "statistics_config": {
+    "path": "configs/statistics_v2.json",
+    "sha256": "d2397bee6fa5b93bfde7287fda08c5b804fcf080448bc8ed1a8abb9feaffe36d"
+  }
+}

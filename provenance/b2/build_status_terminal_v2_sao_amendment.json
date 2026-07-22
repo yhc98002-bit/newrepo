@@ -1,0 +1,254 @@
+{
+  "accounting_scope": "CUMULATIVE_B2_ENGINEERING_SMOKES_THROUGH_SAO_V2",
+  "benchmark_endpoints_scored": 0,
+  "created_at_utc": "2026-07-22T16:20:23.566113Z",
+  "generated_outputs_total": 5,
+  "model_generation_calls_total": 5,
+  "models": {
+    "ACE-Step/ACE-Step-v1-3.5B": {
+      "build_status": "MEASURED_READY",
+      "cold_plus_first_seconds": 272.9365928955376,
+      "cost_calibration": {
+        "arithmetic_rule": "u=max(W0,W1); c=max(L0+W0,L1+W1); cap=c+1535*(2*u)",
+        "cold_plus_first_candidates_seconds": [
+          209.70260244235396,
+          272.9365928955376
+        ],
+        "cold_plus_first_seconds": 272.9365928955376,
+        "gpu_hours_cap_approximate": 26.459554238734356,
+        "gpu_seconds_cap": 95254.39525944367,
+        "resident_unit_candidates_seconds": [
+          27.25068249553442,
+          30.9385858848691
+        ],
+        "resident_unit_seconds": 30.9385858848691,
+        "scheduled_calls": 1536,
+        "startup_reservation_seconds": 241.99800701066852,
+        "subsequent_call_reservation_seconds": 61.8771717697382
+      },
+      "cost_observations": [
+        {
+          "actual_nfe": 45,
+          "cold_plus_first_seconds": 209.70260244235396,
+          "decoded_duration_seconds_exact": 29.9073125,
+          "duration_error_seconds_exact_from_frames": 0.0926875,
+          "duration_tolerance_seconds": 0.25,
+          "load_wall_seconds": 182.45191994681954,
+          "observation_id": "S-0008_RETAINED_CALL_READJUDICATED",
+          "original_row_status": "AUDIO_SANITY_FAILED",
+          "pass_status": "PASS_UNDER_AMENDED_DURATION_RULE",
+          "peak_allocated_bytes": 8371735040,
+          "peak_reserved_bytes": 10085203968,
+          "requested_duration_seconds": 30.0,
+          "requested_steps": 30,
+          "sample_count": 1435551,
+          "sample_rate_hz": 48000,
+          "seed": 73193008,
+          "seed_id": "S-0008",
+          "wall_seconds": 27.25068249553442
+        },
+        {
+          "actual_nfe": 45,
+          "cold_plus_first_seconds": 272.9365928955376,
+          "decoded_duration_seconds_exact": 29.9073125,
+          "duration_error_seconds_exact_from_frames": 0.0926875,
+          "duration_error_seconds_recorded_float": 0.09268750000000026,
+          "duration_tolerance_seconds": 0.25,
+          "gpu_residency_seconds": 281.0608921535313,
+          "load_wall_seconds": 241.99800701066852,
+          "observation_id": "S-0009_DURATION_CONFIRMATION",
+          "pass_status": "PASS",
+          "peak_allocated_bytes": 8371731968,
+          "peak_reserved_bytes": 10085203968,
+          "requested_duration_seconds": 30.0,
+          "requested_steps": 30,
+          "sample_count": 1435551,
+          "sample_rate_hz": 48000,
+          "seed": 73193009,
+          "seed_id": "S-0009",
+          "wall_seconds": 30.9385858848691
+        }
+      ],
+      "cost_status": "MEASURED",
+      "duration_policy": {
+        "rule": "abs(decoded_duration_seconds - requested_duration_seconds) <= tolerance_seconds",
+        "tolerance_seconds": 0.25
+      },
+      "generated_outputs": 2,
+      "mini_smoke_status": "MEASURED_MINI_SMOKE_PASS",
+      "model_calls": 2,
+      "no_retry": true,
+      "queue_status": "READY",
+      "resident_unit_seconds": 30.9385858848691,
+      "state_capability": "AUTOMATIC_OUTPUT_ONLY"
+    },
+    "stabilityai/stable-audio-3-medium-base": {
+      "build_status": "MEASURED_READY",
+      "cold_plus_first_seconds": 116.34399104863405,
+      "cost_evidence": {
+        "decision": "D-0020",
+        "measurement_scope": "FOUNDATION_SINGLETON",
+        "p95_status": "INSUFFICIENT_REPETITIONS",
+        "run_id": "sa3-smoke-e-retry-20260720T140212.582413Z-1e639ad82b24",
+        "terminal_result_sha256": "10a14bf3fc0d5cddf4dcc8edd07ac0cca2ab8336fab572204ada21d77cb2f117"
+      },
+      "cost_status": "MEASURED",
+      "queue_status": "READY",
+      "resident_unit_seconds": 25.023961771279573,
+      "state_capability": "PASS"
+    },
+    "stabilityai/stable-audio-open-1.0": {
+      "access_receipt_sha256": "41f4ac3200c5292ac4f93a992e789031f7a7180f372fb1c3c32a605b91f37b52",
+      "build_status": "MEASURED_READY",
+      "cold_plus_first_seconds": 161.5567436106503,
+      "cost_status": "MEASURED",
+      "eligibility_scope_expanded": false,
+      "generated_outputs": 3,
+      "mini_smoke_result_sha256": "825eac8e43583871fbb2a4b59f73226e68d5577fecb9255fe82b62dd6945a692",
+      "mini_smoke_status": "MEASURED_MINI_SMOKE_PASS",
+      "model_calls": 3,
+      "queue_status": "READY",
+      "resident_unit_seconds": 19.28598228469491,
+      "state_capability": "NOT_ATTEMPTED"
+    }
+  },
+  "old_valid_observation_evidence": {
+    "adapter_preflight": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-001/adapter-preflight.json",
+      "sha256": "906ace95a5aeb8fe4ed3f552c269a183e094fa55d14a6e43d082a7c982151636"
+    },
+    "authorization": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/authorizations/b2-ace-v1-mini-smoke-v2-001.authorization-02.json",
+      "sha256": "504b91ebdee19a2f3203f45a1d6d3079ad12492bea8131db4edbfa969b9c183d"
+    },
+    "authorization_and_placement_preclaim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-001/authorization-and-placement-preclaim.json",
+      "sha256": "aecc7aa9ef57c379ba3bf8d9136c6888699af988cc9112ff0d07d1d4314a365d"
+    },
+    "call_claim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-001/call-00.claim.json",
+      "sha256": "93fc96218ef13524237f3a67d2313fed6e18e6dd55c9a919cabcc63198ae0123"
+    },
+    "common_result": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/result.json",
+      "sha256": "012a6ebb57c2273cf4cea5d4a678bc4285acc92a20d199d481baceb2fd120f36"
+    },
+    "duration_quantization_provenance": {
+      "path": "provenance/b2/ace_duration_quantization_provenance_v1.json",
+      "sha256": "1e7628491badc2d70cfc8357b7502d1facb6b6ed5b8282e73e60302ef5b9f254"
+    },
+    "duration_readjudication": {
+      "path": "provenance/b2/ace_call0_duration_readjudication_v1.json",
+      "sha256": "be4e3a9d705c1e8cb627b08fec3be28fad6ff4623d530283b7f32056a031129e"
+    },
+    "generation_ledger": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/generation_ledger.jsonl",
+      "sha256": "d6b9aa821f8a4031b370ec267c864a3bbe5d68f8fb8fed26efad4cdc58b9c627"
+    },
+    "global_claim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-one-shot.claim.json",
+      "sha256": "deb9d1c3bff85f96fe162f624a52e54b3b9cc94f84e620efd58d65152a545084"
+    },
+    "log": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/logs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001.jsonl",
+      "sha256": "7faccba0587237d653e355cc9555c83c5d9a23f0c0ab559f9e11f4124fb9028d"
+    },
+    "manifest": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/manifest.json",
+      "sha256": "466b56249594724e0241cf6fe0f447fa71012bac23bd3a63cde4a38cdd8470e2"
+    },
+    "retained_audio": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/audio/call-00.wav",
+      "sha256": "1a86fb30dceeb03f5da4e0bcb1cbf488aa2fc7490ac1c8297125e451635bd458"
+    },
+    "retained_audio_provenance": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/audio/call-00.wav.provenance.json",
+      "sha256": "881f09abeb1b4aa103db37125dc3017aa289f6a8b0e6d493b5f15568eaa70f4b"
+    },
+    "runtime_environment_preclaim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-mini-smoke-v2-001/runtime-environment-preclaim.json",
+      "sha256": "f9413c2ea9abaedbdfe66422d5cd5bcce1ce89d1daf9e9c828cec343a839fa7f"
+    },
+    "terminal_result": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-mini-smoke-v2/b2-ace-v1-mini-smoke-v2-001/b2_mini_smoke_result.json",
+      "sha256": "66c4aafd3dc1d7c8da774d539f003fe03c94ae276e248d85386411461a693df0"
+    }
+  },
+  "pass_confirmation_evidence": {
+    "adapter_preflight": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-duration-confirmation-v1-001/adapter-preflight.json",
+      "sha256": "906ace95a5aeb8fe4ed3f552c269a183e094fa55d14a6e43d082a7c982151636"
+    },
+    "authorization": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/authorizations/b2-ace-v1-duration-confirmation-v1-001.authorization.json",
+      "sha256": "d0a166c349eb30298d61679f2645b2b5a79b326494363c424fa9facfc3253530"
+    },
+    "authorization_and_placement_preclaim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-duration-confirmation-v1-001/authorization-and-placement-preclaim.json",
+      "sha256": "4101da634031a2ed7e016d149a42ccbbf207d63f363f7f60497f2e774f5288ca"
+    },
+    "authorized_attempt_claim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-duration-confirmation-v1-authorized-attempt.claim.json",
+      "sha256": "be7c10cfd2f8240e15b70ccd89957955ee6c18f75a2acf4388004c47fc50e4ef"
+    },
+    "call_claim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-duration-confirmation-v1-001/call-00.claim.json",
+      "sha256": "2ce0b8c1da213e86fa388ae3e2d64f30c924b5b2d5ce8699dfd26315149e64c5"
+    },
+    "generation_ledger": {
+      "ledger_tail_sha256": "b20716c3da07886df1b652514e0a2da66df920aa8323d5270242b65ba900f6d9",
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-ace-duration-confirmation-v1/b2-ace-v1-duration-confirmation-v1-001/generation_ledger.jsonl",
+      "sha256": "714c40d22ee6f8285feb64e0102d03eef5923d4face628b2c0fb957f913d562e"
+    },
+    "global_claim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-duration-confirmation-v1-one-shot.claim.json",
+      "sha256": "bdbde44981fdca3578580dd64256089c6b53b7f7530931ac282940d5e138de25"
+    },
+    "log": {
+      "chain_status": "PASS",
+      "event_count": 4,
+      "ledger_tail_sha256": "e2e201b934eeb3edce260c6c0f3cd64808e5a1d900d4ac5d472567023ba34d34",
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/logs/b2-ace-duration-confirmation-v1/b2-ace-v1-duration-confirmation-v1-001.jsonl",
+      "sha256": "34cfe3ba1cf785eebc52ae57ad3fa29e41fb0cf74ca4f8741ad74e7d08308e72"
+    },
+    "manifest": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-ace-duration-confirmation-v1/b2-ace-v1-duration-confirmation-v1-001/manifest.json",
+      "sha256": "a0ecd2229575e2702dc55c9bc1bb4b679300ddb7a9ec8d8ba6933b4a25af1ce1"
+    },
+    "origin": {
+      "branch": "main",
+      "commit": "549f6942599047a579d7561af823adc20154a8d5",
+      "remote_tracking_ref": "origin/main"
+    },
+    "placement": {
+      "node": "an12",
+      "physical_gpu_id": 4,
+      "replica_count": 1,
+      "tensor_parallel_width": 1
+    },
+    "retained_audio": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-ace-duration-confirmation-v1/b2-ace-v1-duration-confirmation-v1-001/audio/confirmation-00.wav",
+      "sha256": "5070dc1b8916cc0cdc7d8fdf533968e72b5fe4198829546bd01fed4525b3a052"
+    },
+    "retained_audio_provenance": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-ace-duration-confirmation-v1/b2-ace-v1-duration-confirmation-v1-001/audio/confirmation-00.wav.provenance.json",
+      "sha256": "b1c141a59d3eebded4f7cf587d9325c46328bf4fc9d4d459af10321cec08fe67"
+    },
+    "run_id": "b2-ace-v1-duration-confirmation-v1-001",
+    "runtime_environment_preclaim": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/claims/b2-ace-v1-duration-confirmation-v1-001/runtime-environment-preclaim.json",
+      "sha256": "517a75a0c331d395bce697e81a64c28966b6ef95c2dc313b3dced6856114ea7c"
+    },
+    "terminal_result": {
+      "path": "/XYFS02/HDD_POOL/paratera_xy/pxy1289/HaocunYe/Research/benchmark_v2_runtime/runs/b2-ace-duration-confirmation-v1/b2-ace-v1-duration-confirmation-v1-001/b2_ace_duration_confirmation_result.json",
+      "sha256": "213ab5fa2937ae263a1c2fbee1276774755a69d60a0e0032f388ed7677720f75"
+    }
+  },
+  "schema_version": 1,
+  "status": "TERMINAL",
+  "supersedes": {
+    "path": "provenance/b2/build_status_terminal_v2_ace_amendment.json",
+    "sha256": "619eb06b21012624b446dfa0d41dc6602c060889406ec431ff52d5a9cb879a34",
+    "status": "TERMINAL"
+  }
+}
